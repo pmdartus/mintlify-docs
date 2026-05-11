@@ -1,0 +1,38 @@
+---
+title: "Targeting a specific version"
+description: "Targeting a specific version"
+icon: "code-branch"
+---
+
+## Default API version
+
+All requests use your organization's "pinned version".
+By default, this is the most recent version of the API at the creation time of your organization.
+This value can be checked and updated on the Console in [API Keys](https://pro.nabla.com/developers/api-keys).
+We allow you to pin your API version to any existing version.
+
+## API updates
+
+When backwards-incompatible changes are made to the API, a new, dated version is released.
+The current version is `2026-04-24`.
+For a list of all available versions and their associated changes, check out our [Changelog & Upgrades](/guides/api-versioning/changelog-and-upgrades) page. {/* TODO: link to ported spec */}
+
+## Manually set the API version
+
+### Via header
+
+To set the API version on a specific request, you can add a specific header named `X-Nabla-Api-Version` with the value of the version you are targeting:
+
+```bash
+curl https://us.api.nabla.com/{endpoint} -H "X-Nabla-Api-Version: 2026-04-24"
+```
+
+### Via query parameter
+
+Alternatively, you can use a query parameter named `nabla-api-version`:
+
+```bash
+curl https://us.api.nabla.com/{endpoint}?nabla-api-version=2026-04-24
+```
+
+This syntax can be particularly useful with WebSockets, for which web clients generally don't allow to provide a custom header.

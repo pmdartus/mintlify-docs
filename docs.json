@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "aspen",
-  "name": "mintlify-docs",
+  "name": "Nabla Developer Docs",
   "colors": {
     "primary": "#16A34A",
     "light": "#07C983",
@@ -9,83 +9,69 @@
   },
   "favicon": "/favicon.svg",
   "navigation": {
-    "tabs": [
+    "products": [
       {
-        "tab": "Guides",
-        "groups": [
+        "product": "Core API",
+        "description": "Transcribe, generate notes, and extract clinical data.",
+        "icon": "plug",
+        "tabs": [
           {
-            "group": "Getting started",
-            "pages": [
-              "index",
-              "quickstart",
-              "development"
-            ]
-          },
-          {
-            "group": "Customization",
-            "pages": [
-              "essentials/settings",
-              "essentials/navigation"
-            ]
-          },
-          {
-            "group": "Writing content",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/components",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "Agent ready",
-            "pages": [
-              "agent-ready/prompt",
-              "agent-ready/visibility",
-              "agent-ready/contextual",
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+            "tab": "Guides",
+            "groups": [
+              {
+                "group": "Get started",
+                "pages": [
+                  "core-api/introduction",
+                  "core-api/authentication",
+                  "core-api/error-handling",
+                  "core-api/setup-webhooks",
+                  "core-api/ehr-integration",
+                  "core-api/dictation-commands"
+                ]
+              },
+              {
+                "group": "Note templates and customization",
+                "pages": [
+                  "core-api/note-templates/sections",
+                  "core-api/note-templates/customization"
+                ]
+              },
+              {
+                "group": "API versioning",
+                "pages": [
+                  "core-api/api-versioning/changelog",
+                  "core-api/api-versioning/targeting-a-version",
+                  "core-api/api-versioning/migrating-pre-2024-10-01"
+                ]
+              },
+              {
+                "group": "Recommendations & best practices",
+                "pages": [
+                  "core-api/best-practices/async-note-generation",
+                  "core-api/best-practices/transcription-network-resilience"
+                ]
+              }
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
-        "groups": [
+        "product": "Nabla Connect",
+        "description": "Embed Nabla in your product.",
+        "icon": "rocket",
+        "tabs": [
           {
-            "group": "API documentation",
-            "pages": [
-              "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Endpoint examples",
-            "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+            "tab": "Guides",
+            "groups": [
+              {
+                "group": "Get started",
+                "pages": ["connect/overview"]
+              }
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
+    ]
   },
   "logo": {
     "light": "/logo/light.svg",
@@ -95,7 +81,7 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "href": "mailto:hi@nabla.com"
       }
     ],
     "primary": {
@@ -118,9 +104,9 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "x": "https://x.com/nabla_ai",
+      "github": "https://github.com/nabla",
+      "linkedin": "https://linkedin.com/company/nablahq"
     }
   }
 }

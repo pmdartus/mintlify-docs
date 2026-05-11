@@ -1,0 +1,106 @@
+---
+title: "Introduction"
+description: "Nabla Core API — Medical transcription, clinical note generation, and more"
+icon: "book-open"
+---
+
+The Nabla Core API provides advanced tools to transcribe medical encounters, generate structured clinical notes, extract FHIR-normalized data, and more — all optimized for clinical workflows and seamless integration.
+
+Whether you’re building a telehealth platform, an EHR, or a voice-enabled documentation tool, the Nabla Core API is designed to help you go from raw audio to structured data with minimal effort.
+
+## Core capabilities
+
+### 🩺 Medical encounter transcription
+
+Transcribe doctor–patient conversations using a medical-grade speech-to-text engine, fine-tuned to recognize terminology like medications, symptoms, and diagnoses.
+
+- For real-time use cases: Use the [WebSocket Transcribe endpoint](/server/transcribe-ws). {/* TODO: link to ported spec */}
+- For recorded files (≤10 minutes): Use the [REST Transcription endpoint](/server/transcribe).
+- For longer files (≤60 minutes): Use [the asynchronous REST endpoint](/server/transcribe-async).
+
+### 📝 Clinical note generation
+
+Transform a transcript into a well-structured clinical note using medical templates like SOAP, APSO, or WCC.
+
+- Supports synchronous and asynchronous workflows.
+- Customize per-section content, format (paragraphs vs bullet points), and level of detail.
+- Add patient context or enrich an existing note incrementally.
+
+### ✏️ Edit note with instructions
+
+Also known as **Magic Edit**, this feature lets you refine a Nabla-generated clinical note using natural language instructions.
+
+- Provide short, human-readable guidance like _"Make note more concise"_ or _"Add more details in the Plan section"_.
+- The original transcript and note are used as context to ensure accurate and relevant edits.
+- Great for last-mile customization or for incorporating provider feedback post-generation.
+
+### 📋 Patient-friendly instructions
+
+Generate post-visit summaries written in patient-friendly language.
+
+- Supports pediatric contexts via `recipient_type` (e.g., "PARENT").
+- Multi-language support with localized output.
+
+### 🧠 Normalize structured data
+
+Extract FHIR-compatible structured data from a Nabla-generated clinical note:
+
+- Extract conditions with **ICD-10** codes.
+- Capture family history and patient observations with **LOINC** codes.
+- Output aligns with EHR-ready formats for seamless integration.
+
+### 🎙️ Medical dictation
+
+Accurately transcribe dictated speech in real-time, optionally including dictated punctuation:
+
+- Supports both real-time (WebSocket) and asynchronous use cases.
+- Ideal for physician notes, documentation, and internal summaries.
+
+### ⚡️ Dot Phrases
+
+Automatically detect and suggest **Dot Phrases** — provider-defined macros that expand into structured sections during note generation.
+
+- Triggered based on transcript content (e.g., if the provider says "Your physical exam is normal").
+- Each Dot Phrase defines a **trigger** and a **replacement** block of text.
+- Optionally, Dot Phrases can **auto-adapt** based on the encounter context:
+  - If `content_auto_update_enabled` is set to `true`, the suggested content will be dynamically refined based on the transcript.
+  - For example, the engine may adjust a standard exam note to mention exceptions or emphasize relevant findings from the encounter.
+
+### 📚 Custom dictionary
+
+Add user-specific terms to improve transcription accuracy in specialized contexts.
+
+- Useful for names of organizations, local procedures, or uncommon acronyms specific to your workflows.
+- Helps ensure consistent recognition of expressions that aren’t part of the default medical vocabulary.
+
+### 🗳️ Report feedback
+
+Submit structured feedback on generated content to the support team for review.
+
+- Report issues with clinical notes, patient instructions, or normalized data.
+- Optionally include corrected output and comments from the provider.
+- This helps us automate user feedback and ensure the API maintains the highest possible quality.
+- If a `reply_to` email is provided, the support team may reach out for clarification or follow-up.
+
+---
+
+<Tip>
+
+**Sample app**
+
+To see an example of the API in action, check out our [sample-app repository](https://github.com/nabla/sample-app) for real-world examples (JavaScript).
+
+</Tip>
+
+<Note>
+
+**OpenAPI specs**
+
+Download our OpenAPI specs to use in tools like [Postman](https://learning.postman.com/docs/integrations/available-integrations/working-with-openAPI/) or [Swagger](https://editor.swagger.io):
+
+- [Server API OpenAPI file](core_server_oas.json) {/* TODO: re-link once OpenAPI specs are ported */}
+- [User API OpenAPI file](core_user_oas.json) {/* TODO: re-link once OpenAPI specs are ported */}
+
+_Note that WebSocket endpoints are not included in these files._
+
+</Note>

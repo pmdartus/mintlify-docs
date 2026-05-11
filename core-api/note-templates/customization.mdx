@@ -1,0 +1,601 @@
+---
+title: "Note customization"
+description: "Options for customizing the generated note"
+icon: "sliders"
+---
+
+# Per-section note customization options
+
+In addition to specifying a template that the generated note will conform to, you can also customize each section's content such as style (paragraph vs bullet points) or level of detail (concise or detailed).
+All those customization options are optional: you can specify only the ones that you are interested in.
+
+Following are the currently supported per-section customization options.
+
+| Customization option | Description | Availability |
+| --- | --- | --- |
+| **Style** | Whether you prefer bullet points formatting or a paragraph-like one. In some cases, for instance if the content of the section is very brief, requesting a "bullet points" style will still yield a paragraph because bullet points won't make sense. | *Style (paragraph or bullet points)* is supported for all sections of all templates. |
+| **Custom instruction** | Allow to customize a note section by providing specific guidelines. These guidelines must be as clear and concise as possible for best results. | *Custom instruction* is supported for all sections of all templates. |
+| **Level of Detail** | Whether you prefer the default section level of detail or rich and more detailed one. Use 'detailed' to get more details in the note section content. | Applies for:<br/>- section `SUBJECTIVE` in templates `GENERIC_SOAP`, `GENERIC_SOAP_AP_MERGED`, `WCC_SOAP` and `EMERGENCY_SOAP`;<br/>- section `HISTORY_OF_PRESENT_ILLNESS` in templates `GENERIC_MULTIPLE_SECTIONS`, `GENERIC_MULTIPLE_SECTIONS_AP_MERGED`, `CARDIOLOGY_MULTIPLE_SECTIONS`, `WCC_MULTIPLE_SECTIONS` and `EMERGENCY_MULTIPLE_SECTIONS`.<br/><br/>Please note that templates `DIET`, `PSYCHOLOGY_MULTIPLE_SECTIONS`, `PSYCHIATRY_MULTIPLE_SECTIONS`, and `PSYCHIATRY_SOAP` are not supported for level of detail customization at this time. |
+| **Split by Problem** *(Only available in English.)* | For structuring the section content according to distinct clinical problems or topics addressed during the consultation. This format aims to enhance the clarity and organization of the clinical note, making it easier to read and understand the different issues discussed during the consultation. When this flag is enabled, the section text is organized into subsections, each corresponding to a specific problem or topic. The subsections are separated using a human-readable formatting with-in the same single string-typed field, so this flag does *not* change the section's API schema. |  |
+
+## Example customization code
+
+Following is a Typescript code snippet demonstrating how to customize the sections within the `GENERIC_MULTIPLE_SECTIONS_AP_MERGED` template.
+
+```typescript
+const generateNoteRequestBody = {
+  ...otherFields, // transcript, etc.
+  note_locale: "ENGLISH_US",
+  note_template: "GENERIC_MULTIPLE_SECTIONS_AP_MERGED", // to generate a note following the GENERAL_MEDICINE_AP_MERGED template
+  note_sections_customization: [
+    // in which 'History Of Present Illness' section is detailed and split by problem.
+    {
+      section_key: "HISTORY_OF_PRESENT_ILLNESS",
+      level_of_detail: "DETAILED",
+      split_by_problem: true,
+    },
+    // Also, 'Vitals' and 'Allergies' are formatted in bullet points, with custom instructions.
+    {
+      section_key: "VITALS",
+      custom_instruction:
+        "Include discussion about the patient's diet and nutritional concerns",
+      style: "BULLET_POINTS",
+    },
+    {
+      section_key: "ALLERGIES",
+      style: "BULLET_POINTS",
+    },
+  ],
+};
+```
+
+You should:
+
+- only specify sections that apply for the given template (check the [Templates and sections](/guides/note-templates/note-templates-sections));{/* TODO: link to ported spec */}
+- only specify customization options that are supported for the given section and template (check the compatibility table below);
+- also, there should be at most one customization options object per section in the list.
+
+## Customization options compatibility matrix
+
+As mentioned above, some customization options are only available for specific templates and specific sections.
+Following is the exhaustive matrix of availability. Select a locale tab, then expand a template to view its supported customization options.
+
+<Tabs>
+  <Tab title="ENGLISH_US">
+    <AccordionGroup>
+      <Accordion title="GENERIC_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_ILLNESS` | Yes | Yes | Yes | Yes |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_SURGICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_OBSTETRIC_HISTORY` | Yes | Yes | - | - |
+        | `FAMILY_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `ALLERGIES` | Yes | Yes | - | - |
+        | `CURRENT_MEDICATIONS` | Yes | Yes | - | - |
+        | `IMMUNIZATIONS` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `LAB_RESULTS` | Yes | Yes | - | - |
+        | `IMAGING_RESULTS` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+        | `PRESCRIPTION` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="GENERIC_MULTIPLE_SECTIONS_AP_MERGED">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_ILLNESS` | Yes | Yes | Yes | Yes |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_SURGICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_OBSTETRIC_HISTORY` | Yes | Yes | - | - |
+        | `FAMILY_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `ALLERGIES` | Yes | Yes | - | - |
+        | `CURRENT_MEDICATIONS` | Yes | Yes | - | - |
+        | `IMMUNIZATIONS` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `LAB_RESULTS` | Yes | Yes | - | - |
+        | `IMAGING_RESULTS` | Yes | Yes | - | - |
+        | `ASSESSMENT_AND_PLAN` | Yes | Yes | - | - |
+        | `PRESCRIPTION` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="GENERIC_SOAP">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `SUBJECTIVE` | Yes | Yes | Yes | Yes |
+        | `OBJECTIVE` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="GENERIC_SOAP_AP_MERGED">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `SUBJECTIVE` | Yes | Yes | Yes | Yes |
+        | `OBJECTIVE` | Yes | Yes | - | - |
+        | `ASSESSMENT_AND_PLAN` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="GENERIC_SOAP_PLUS_EXAM_TESTS_AP_MERGED">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `SUBJECTIVE` | Yes | Yes | Yes | Yes |
+        | `OBJECTIVE` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `DIAGNOSTIC_TESTS_ORDERED` | Yes | Yes | - | - |
+        | `ASSESSMENT_AND_PLAN` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="GENERIC_APSO_AP_MERGED">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `ASSESSMENT_AND_PLAN` | Yes | Yes | - | - |
+        | `SUBJECTIVE` | Yes | Yes | Yes | Yes |
+        | `OBJECTIVE` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="EMERGENCY_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_ILLNESS` | Yes | Yes | Yes | Yes |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_SURGICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_OBSTETRIC_HISTORY` | Yes | Yes | - | - |
+        | `FAMILY_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `ALLERGIES` | Yes | Yes | - | - |
+        | `CURRENT_MEDICATIONS` | Yes | Yes | - | - |
+        | `IMMUNIZATIONS` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `LAB_RESULTS` | Yes | Yes | - | - |
+        | `IMAGING_RESULTS` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+        | `PRESCRIPTION` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="EMERGENCY_SOAP">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `SUBJECTIVE` | Yes | Yes | Yes | Yes |
+        | `OBJECTIVE` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="WCC_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_ILLNESS` | Yes | Yes | Yes | Yes |
+        | `WELL_CHILD_CARE` | Yes | Yes | - | - |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_SURGICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_OBSTETRIC_HISTORY` | Yes | Yes | - | - |
+        | `FAMILY_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `ALLERGIES` | Yes | Yes | - | - |
+        | `CURRENT_MEDICATIONS` | Yes | Yes | - | - |
+        | `IMMUNIZATIONS` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `LAB_RESULTS` | Yes | Yes | - | - |
+        | `IMAGING_RESULTS` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+        | `PRESCRIPTION` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="WCC_SOAP">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `SUBJECTIVE` | Yes | Yes | Yes | Yes |
+        | `WELL_CHILD_CARE` | Yes | Yes | - | - |
+        | `OBJECTIVE` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="PSYCHIATRY_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_ILLNESS` | Yes | Yes | - | - |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_SURGICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_OBSTETRIC_HISTORY` | Yes | Yes | - | - |
+        | `FAMILY_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `ALLERGIES` | Yes | Yes | - | - |
+        | `CURRENT_MEDICATIONS` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `IMMUNIZATIONS` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `LAB_RESULTS` | Yes | Yes | - | - |
+        | `IMAGING_RESULTS` | Yes | Yes | - | - |
+        | `MENTAL_HEALTH_EXAM` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+        | `PRESCRIPTION` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="PSYCHIATRY_SOAP">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `SUBJECTIVE` | Yes | Yes | - | - |
+        | `OBJECTIVE` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="PSYCHOLOGY_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_COMPLAINT` | Yes | Yes | - | - |
+        | `MENTAL_HEALTH_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `MENTAL_HEALTH_EXAM` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="CARDIOLOGY_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_ILLNESS` | Yes | Yes | Yes | Yes |
+        | `CARDIOVASCULAR_RISK_FACTORS` | Yes | Yes | - | - |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_SURGICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_OBSTETRIC_HISTORY` | Yes | Yes | - | - |
+        | `FAMILY_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `ALLERGIES` | Yes | Yes | - | - |
+        | `CURRENT_MEDICATIONS` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `IMMUNIZATIONS` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `LAB_RESULTS` | Yes | Yes | - | - |
+        | `IMAGING_RESULTS` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+        | `PRESCRIPTION` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="DIET_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `LIFESTYLE` | Yes | Yes | - | - |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `FOOD_HABITS` | Yes | Yes | - | - |
+        | `OBJECTIVES_AND_ADVICE` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+    </AccordionGroup>
+  </Tab>
+  <Tab title="ENGLISH_UK">
+    <AccordionGroup>
+      <Accordion title="GENERIC_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_ILLNESS` | Yes | Yes | Yes | Yes |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_SURGICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_OBSTETRIC_HISTORY` | Yes | Yes | - | - |
+        | `FAMILY_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `ALLERGIES` | Yes | Yes | - | - |
+        | `CURRENT_MEDICATIONS` | Yes | Yes | - | - |
+        | `IMMUNIZATIONS` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `LAB_RESULTS` | Yes | Yes | - | - |
+        | `IMAGING_RESULTS` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+        | `PRESCRIPTION` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="GENERIC_MULTIPLE_SECTIONS_AP_MERGED">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_ILLNESS` | Yes | Yes | Yes | Yes |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_SURGICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_OBSTETRIC_HISTORY` | Yes | Yes | - | - |
+        | `FAMILY_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `ALLERGIES` | Yes | Yes | - | - |
+        | `CURRENT_MEDICATIONS` | Yes | Yes | - | - |
+        | `IMMUNIZATIONS` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `LAB_RESULTS` | Yes | Yes | - | - |
+        | `IMAGING_RESULTS` | Yes | Yes | - | - |
+        | `ASSESSMENT_AND_PLAN` | Yes | Yes | - | - |
+        | `PRESCRIPTION` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="GENERIC_SOAP">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `SUBJECTIVE` | Yes | Yes | Yes | Yes |
+        | `OBJECTIVE` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="GENERIC_SOAP_AP_MERGED">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `SUBJECTIVE` | Yes | Yes | Yes | Yes |
+        | `OBJECTIVE` | Yes | Yes | - | - |
+        | `ASSESSMENT_AND_PLAN` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="GENERIC_SOAP_PLUS_EXAM_TESTS_AP_MERGED">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `SUBJECTIVE` | Yes | Yes | Yes | Yes |
+        | `OBJECTIVE` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `DIAGNOSTIC_TESTS_ORDERED` | Yes | Yes | - | - |
+        | `ASSESSMENT_AND_PLAN` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="GENERIC_APSO_AP_MERGED">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `ASSESSMENT_AND_PLAN` | Yes | Yes | - | - |
+        | `SUBJECTIVE` | Yes | Yes | Yes | Yes |
+        | `OBJECTIVE` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="EMERGENCY_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_ILLNESS` | Yes | Yes | Yes | Yes |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_SURGICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_OBSTETRIC_HISTORY` | Yes | Yes | - | - |
+        | `FAMILY_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `ALLERGIES` | Yes | Yes | - | - |
+        | `CURRENT_MEDICATIONS` | Yes | Yes | - | - |
+        | `IMMUNIZATIONS` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `LAB_RESULTS` | Yes | Yes | - | - |
+        | `IMAGING_RESULTS` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+        | `PRESCRIPTION` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="EMERGENCY_SOAP">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `SUBJECTIVE` | Yes | Yes | Yes | Yes |
+        | `OBJECTIVE` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="WCC_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_ILLNESS` | Yes | Yes | Yes | Yes |
+        | `WELL_CHILD_CARE` | Yes | Yes | - | - |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_SURGICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_OBSTETRIC_HISTORY` | Yes | Yes | - | - |
+        | `FAMILY_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `ALLERGIES` | Yes | Yes | - | - |
+        | `CURRENT_MEDICATIONS` | Yes | Yes | - | - |
+        | `IMMUNIZATIONS` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `LAB_RESULTS` | Yes | Yes | - | - |
+        | `IMAGING_RESULTS` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+        | `PRESCRIPTION` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="WCC_SOAP">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `SUBJECTIVE` | Yes | Yes | Yes | Yes |
+        | `WELL_CHILD_CARE` | Yes | Yes | - | - |
+        | `OBJECTIVE` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="PSYCHIATRY_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_ILLNESS` | Yes | Yes | - | - |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_SURGICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_OBSTETRIC_HISTORY` | Yes | Yes | - | - |
+        | `FAMILY_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `ALLERGIES` | Yes | Yes | - | - |
+        | `CURRENT_MEDICATIONS` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `IMMUNIZATIONS` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `LAB_RESULTS` | Yes | Yes | - | - |
+        | `IMAGING_RESULTS` | Yes | Yes | - | - |
+        | `MENTAL_HEALTH_EXAM` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+        | `PRESCRIPTION` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="PSYCHIATRY_SOAP">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `SUBJECTIVE` | Yes | Yes | - | - |
+        | `OBJECTIVE` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="PSYCHOLOGY_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_COMPLAINT` | Yes | Yes | - | - |
+        | `MENTAL_HEALTH_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `MENTAL_HEALTH_EXAM` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="CARDIOLOGY_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_ILLNESS` | Yes | Yes | Yes | Yes |
+        | `CARDIOVASCULAR_RISK_FACTORS` | Yes | Yes | - | - |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_SURGICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_OBSTETRIC_HISTORY` | Yes | Yes | - | - |
+        | `FAMILY_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `ALLERGIES` | Yes | Yes | - | - |
+        | `CURRENT_MEDICATIONS` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `IMMUNIZATIONS` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `LAB_RESULTS` | Yes | Yes | - | - |
+        | `IMAGING_RESULTS` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+        | `PRESCRIPTION` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="DIET_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `LIFESTYLE` | Yes | Yes | - | - |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `FOOD_HABITS` | Yes | Yes | - | - |
+        | `OBJECTIVES_AND_ADVICE` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+    </AccordionGroup>
+  </Tab>
+  <Tab title="FRENCH_FR">
+    <AccordionGroup>
+      <Accordion title="GENERIC_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_ILLNESS` | Yes | Yes | Yes | - |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_SURGICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_OBSTETRIC_HISTORY` | Yes | Yes | - | - |
+        | `FAMILY_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `ALLERGIES` | Yes | Yes | - | - |
+        | `CURRENT_MEDICATIONS` | Yes | Yes | - | - |
+        | `IMMUNIZATIONS` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `LAB_RESULTS` | Yes | Yes | - | - |
+        | `IMAGING_RESULTS` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+        | `PRESCRIPTION` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="GENERIC_SOAP">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `SUBJECTIVE` | Yes | Yes | Yes | - |
+        | `OBJECTIVE` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="PSYCHIATRY_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_ILLNESS` | Yes | Yes | - | - |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_SURGICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_OBSTETRIC_HISTORY` | Yes | Yes | - | - |
+        | `FAMILY_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `ALLERGIES` | Yes | Yes | - | - |
+        | `CURRENT_MEDICATIONS` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `IMMUNIZATIONS` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `LAB_RESULTS` | Yes | Yes | - | - |
+        | `IMAGING_RESULTS` | Yes | Yes | - | - |
+        | `MENTAL_HEALTH_EXAM` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+        | `PRESCRIPTION` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="PSYCHOLOGY_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_COMPLAINT` | Yes | Yes | - | - |
+        | `MENTAL_HEALTH_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `MENTAL_HEALTH_EXAM` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="CARDIOLOGY_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `HISTORY_OF_PRESENT_ILLNESS` | Yes | Yes | Yes | - |
+        | `CARDIOVASCULAR_RISK_FACTORS` | Yes | Yes | - | - |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_SURGICAL_HISTORY` | Yes | Yes | - | - |
+        | `PAST_OBSTETRIC_HISTORY` | Yes | Yes | - | - |
+        | `FAMILY_HISTORY` | Yes | Yes | - | - |
+        | `SOCIAL_HISTORY` | Yes | Yes | - | - |
+        | `ALLERGIES` | Yes | Yes | - | - |
+        | `CURRENT_MEDICATIONS` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `IMMUNIZATIONS` | Yes | Yes | - | - |
+        | `PHYSICAL_EXAM` | Yes | Yes | - | - |
+        | `LAB_RESULTS` | Yes | Yes | - | - |
+        | `IMAGING_RESULTS` | Yes | Yes | - | - |
+        | `ASSESSMENT` | Yes | Yes | - | - |
+        | `PLAN` | Yes | Yes | - | - |
+        | `PRESCRIPTION` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+      <Accordion title="DIET_MULTIPLE_SECTIONS">
+        | Section | Style | Custom instruction | Level of Detail | Split by Problem |
+        | --- | :---: | :---: | :---: | :---: |
+        | `LIFESTYLE` | Yes | Yes | - | - |
+        | `PAST_MEDICAL_HISTORY` | Yes | Yes | - | - |
+        | `CHIEF_COMPLAINT` | Yes | Yes | - | - |
+        | `VITALS` | Yes | Yes | - | - |
+        | `FOOD_HABITS` | Yes | Yes | - | - |
+        | `OBJECTIVES_AND_ADVICE` | Yes | Yes | - | - |
+        | `APPOINTMENTS` | Yes | Yes | - | - |
+      </Accordion>
+    </AccordionGroup>
+  </Tab>
+</Tabs>

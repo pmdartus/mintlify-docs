@@ -1,0 +1,169 @@
+---
+title: "Error Handling"
+description: "How to properly handle API error response"
+icon: "circle-exclamation"
+---
+
+This guide explains how Nabla surfaces error information in both HTTP and WebSocket endpoints, and how to build resilient client-side behavior by leveraging structured error metadata.
+
+## Handling of HTTP calls errors
+
+You can implement error handling logic based on either the **HTTP response status code** or the more granular **error code** provided in the error response JSON body.
+While both can guide your behavior, the `code` field in the response JSON often offers finer distinctions and should be preferred when available.
+
+Avoid basing any logic on the error message, as it is intended for human readability and may change.
+Likewise, do not implement specific behavior for the overly generic HTTP status code `400 Bad Request`, which can encompass a variety of unrelated issues.
+In contrast, codes like `401 Unauthorized` are tied to a well-defined scenario and can safely drive specific actions — such as refreshing an expired token.
+
+### Notable HTTP 4xx status codes
+
+| Status Code                      | Details                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **400**<br/>Bad Request          | A generic error indicating a variety of client-side issues — ranging from malformed or invalid JSON, incorrect data types, or improperly encoded content (e.g., invalid Base64 strings), to semantically invalid requests such as incompatible or missing input fields. <br/><br/>**️🙅‍♂️ Do not base any specific client behavior on this generic status code.**<br/>Some special error cases that currently return HTTP 400 may receive a more specific status code in the future. Always refer to the `code` field in the error frame for more precise error handling. |
+| **401**<br/>Unauthorized         | Authentication failed — typically due to an invalid or expired bearer token.<br/>You should refresh the user's session or prompt them to re-authenticate before retrying the request.                                                                                                                                                                                                                                                                                                                                                                                   |
+| **403**<br/>Forbidden            | Authentication succeeded (if credentials were provided), but the user is not authorized to access the resource — for example, due to deactivation.<br/>Ensure the user has appropriate access (e.g., by reactivating their account) before retrying.                                                                                                                                                                                                                                                                                                                    |
+| **404**<br/>Not Found            | The requested endpoint or resource could not be found — this can occur if the path is invalid or if, given the specified API version, the targeted endpoint has been removed or is not yet available.                                                                                                                                                                                                                                                                                                                                                                   |
+| **409**<br/>Conflict             | The request conflicts with a uniqueness constraint — for instance, attempting to create a user with an `external_id` that already exists.                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **413**<br/>Payload Too Large    | The input is too large, for example the transcript is too long or the audio file is too large.                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **422**<br/>Unprocessable Entity | The input is syntactically valid but cannot be processed — for example, if an uploaded audio file is corrupted.                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **429**<br/>Too Many Requests    | You have exceeded your API rate limit. Please contact support if you need a higher quota.                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+
+### Error response JSON body
+
+When an HTTP call returns an error (i.e., a non-2xx status code), it includes a structured JSON object in the response body. See [Error JSON Structure](#error-json-structure) for field descriptions.
+
+#### Examples
+
+- _HTTP status code = `404`_
+
+  ```json
+  {
+    "message": "A user entity was not found.",
+    "code": 20000,
+    "name": "ENTITY_NOT_FOUND",
+    "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+  }
+  ```
+
+- _HTTP status code = `400`_
+  ```json
+  {
+    "message": "Unable to parse JSON at path $.speech_locales",
+    "code": 400,
+    "name": "BAD_REQUEST",
+    "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+  }
+  ```
+
+## Handling of WebSocket close codes
+
+You can implement error handling logic based on either the **WebSocket close code** or the more granular **error code** provided in the error details frame.
+While both can guide your behavior, the `code` field in the error frame often offers finer distinctions and should be preferred when available.
+
+Avoid basing any logic on the error message, as it is intended for human readability and may change.
+Likewise, do not implement specific behavior for the overly generic close code `1002 (Protocol Error)`, which can encompass a variety of unrelated issues.
+In contrast, codes like `4401 (Unauthorized)` are tied to a well-defined scenario and can safely drive specific actions—such as refreshing an expired token.
+
+### Notable WebSocket close codes
+
+When a WebSocket connection is terminated, the server sends a numeric close code as defined by the WebSocket protocol ([RFC 6455](https://datatracker.ietf.org/doc/html/rfc6455#section-7.1.5)).
+This code indicates the reason for the closure. It can be one of the standard 1xxx codes defined by the protocol, or a custom application-level code in the 4000–4999 range specific to the Nabla Core API.
+The table below explains the meaning of each code and how your client should respond.
+
+| Close Code                      | Details                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1000**<br/>Normal Closure     | Equivalent to HTTP 200 OK. This code is used when the server considers that it has successfully served the session and can cleanly close the WebSocket. For instance, in the transcription WebSocket, this happens after the client sends the termination frame and the server has finished processing any remaining audio.                                                                                                                                                                                                              |
+| **1001**<br/>Going Away         | The server is shutting down the connection. Possible reasons include long-lived sessions or temporary server restarts due to maintenance or deployment. This is not an error on the client side — it is safe and expected to simply reopen a new WebSocket connection.                                                                                                                                                                                                                                                                   |
+| **1002**<br/>Protocol Error     | Equivalent to HTTP 400 Bad Request. A generic code used when the server encounters a fatal input error — e.g., malformed JSON, invalid config, or unsupported audio format. This code is used for a wide variety of unrelated issues. <br/><br/>**️🙅‍♂️ Do not base any specific client behavior on this generic close code.**<br/>Some special error cases that currently close with code 1002 may receive a more specific close code in the future. Always refer to the `code` field in the error frame for more precise error handling. |
+| **1009**<br/>Too Big            | Equivalent to HTTP 413 Payload Too Large, used when a frame in the websocket exceeds the maximum size allowed.                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **1011**<br/>Internal Error     | Equivalent to HTTP 500 Internal Server Error. Indicates an unexpected failure on Nabla’s side. These are rare, and Nabla engineers are notified automatically. Contact support with the trace ID if needed.                                                                                                                                                                                                                                                                                                                              |
+| **1012**<br/>Service Restart    | Not currently used, but may be introduced in the future. Treat as equivalent to _1001 Going Away_.                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **1013**<br/>Try Again Later    | Indicates temporary server-side load balancing due to a traffic spike. Clients should retry using exponential backoff.                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **4001**<br/>Streaming Too Long | Sent when a single WebSocket session exceeds the 3-hour streaming limit. Clients should stop and reinitiate the session if needed.                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **4401**<br/>Unauthorized       | Equivalent to HTTP 401 Unauthorized. The token is invalid or expired. Refer to the error frame for details.<br/>_Note: This specific code may not be enabled for your organization due to backward compatibility. Please check [Expected Behavior Per Close Code](#expected-behavior-per-close-code)_                                                                                                                                                                                                                                    |
+| **4403**<br/>Forbidden          | Equivalent to HTTP 403 Forbidden. Authentication (if present) succeeded, but the user is not allowed to access the WebSocket — commonly due to deactivation.<br/>_Note: This specific code may not be enabled for your organization due to backward compatibility. Please check [Expected Behavior Per Close Code](#expected-behavior-per-close-code)_                                                                                                                                                                                   |
+
+### Expected behavior per close code
+
+- **1000**: Nothing to do, everything went well.
+- **1002**: Review the error details. If you suspect a client-side mistake, fix it before retrying. If the issue seems transient — for example, due to a ping timeout caused by poor connectivity — retrying may be appropriate.
+- **1009**: Review your implementation to prevent sending frames that exceed the server’s accepted size limits.
+- **4001**: streaming has been going on for too long and should likely just stop until the user chooses to start it again (e.g., the user forgot the app was recording for hours).
+- **4401**: the user token should be refreshed, or the user should be re-authenticated before retrying.
+- **4403**: the user state (activated vs. deactivated) should be fixed before retrying.
+
+  <Note>
+  **4401 & 4403**
+
+  We are currently in the process of migrating to more specific close codes. Until that migration is complete, you may still receive code 1002. Please write your client logic assuming that the more specific close codes 4401 and 4403 will be used in the future.
+  In the meantime, you will need to rely on the error code in the [error details frame](#error-details-frame) to check whether it specifies `50025 (JWT_EXPIRED)` or `403 (HTTP_FORBIDDEN)`.
+  </Note>
+
+For all other codes (1001, 1011, 1012, 1013), along with unlisted or unknown ones,
+**you should retry opening a new WebSocket with an exponential backoff** (first attempt immediately, then 2 seconds later, then 4s, 8s, 16s, etc) and resume transcription from the latest acknowledged audio chunk.
+See [resilience best practices](https://docs.nabla.com/guides/best-practices/transcription-network-resilience).
+
+### Error details frame
+
+The WebSocket protocol’s close control frame only includes a numeric close code and an optional message limited to 127 characters — often not enough to convey meaningful error information.
+To address this, Nabla also sends a final application-level frame just before closing the connection.
+This frame provides richer context in a structured JSON error object. See [Error JSON Structure](#error-json-structure) for field descriptions.
+
+#### Examples
+
+- _WebSocket close code = `1002`_
+
+  ```json
+  {
+    "type": "ERROR_MESSAGE",
+    "message": "Received a huge amount of audio in a very short time window.",
+    "code": 83016,
+    "name": "AUDIO_CHUNKS_BUFFER_OVERFLOW",
+    "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+  }
+  ```
+
+- _WebSocket close code = `4401`_
+  ```json
+  {
+    "type": "ERROR_MESSAGE",
+    "message": "Invalid JWT token: The Token has expired on Mon Apr 21 10:28:20 GMT 2025.",
+    "code": 50025,
+    "name": "JWT_EXPIRED",
+    "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+  }
+  ```
+
+## Error JSON structure
+
+Both HTTP error response and WebSocket error details frame include a structured JSON object with the following fields:
+
+- `message`: A human-readable explanation of the error, often including contextual details to help understand what went wrong.
+- `code`: A numeric identifier for the error. This may either be a standard HTTP status code (e.g., `400`, `401`) or a more specific application-level code (typically in the 10,000+ range).
+- `name`: An internal enum-style name associated with the error code. While it may help with debugging, it’s mainly for reference — always rely on the numeric code for programmatic handling.
+- _(Optional)_ `trace_id`: A unique identifier for the failed API request or WebSocket session. Useful when contacting Nabla support to trace the exact error.
+- _(Only in WebSocket)_ `type`: The polymorphic discriminator for application-level frames in the WebSocket.
+- _Other fields might be added later — make sure your parsing logic tolerates unknown extra fields._
+
+## Notable application-level error codes
+
+The `code` field in error responses may contain application-specific values (typically in the 10,000+ range). These codes are consistent across HTTP and WebSocket responses and provide more precise information than standard status codes.
+
+Below is a non-exhaustive list of application-level error codes that are commonly encountered and may warrant specific handling in your client logic.
+
+| Code / Name                                              | Description                                                                                   | HTTP Status | WebSocket Close Code |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------- | -------------------- |
+| `20000`<br/>Entity Not Found                             | The requested entity (e.g. user) could not be found.                                          | `404`       | —                    |
+| `40052`<br/>Entity Is Not Unique                         | A resource with the same unique identifier already exists.                                    | `409`       | —                    |
+| `50025`<br/>JWT Expired                                  | The provided JWT token has expired and must be refreshed.                                     | `401`       | `4401` / `1002`      |
+| `403`<br/>HTTP Forbidden                                 | The user is authenticated but not authorized to perform the operation.                        | `403`       | `4403` / `1002`      |
+| `83005`<br/>Transcript Too Short                         | The input transcript is too short to generate a meaningful clinical note.                     | `422`       | —                    |
+| `83006`<br/>No Medical Data Found                        | No medically relevant data was detected in the provided transcript.                           | `400`       | —                    |
+| `83014`<br/>Invalid Note Generation Parameters           | One or more parameters used for note generation are invalid or incompatible.                  | `400`       | —                    |
+| `83019`<br/>Template Customization Option Not Available  | The requested customization option is not available for the selected note template or locale. | `400`       | —                    |
+| `83023`<br/>Note Has No Patient Instructions Information | The note does not contain sufficient information to generate patient instructions.            | `400`       | —                    |
+| `85000`<br/>Organization Rate Limited                    | The organization has exceeded its API quota.                                                  | `429`       | `4429`               |
+| `40101`<br/>Ping Timeout                                 | The server did not receive audio frames or pings in time — idle timeout reached.              | —           | `1002`               |
+| `83011`<br/>Audio Stream Idle Timeout                    | Server timed out waiting for audio on a given transcription audio stream.                     | —           | `1002`               |
+| `83015`<br/>Unexpected Audio Chunk Sequence ID           | The received audio chunk had an unexpected sequence ID, breaking continuity.                  | —           | `1002`               |
+| `83016`<br/>Audio Chunks Buffer Overflow                 | Too many audio chunks were sent too quickly, exceeding the allowed buffer size.               | —           | `1002`               |

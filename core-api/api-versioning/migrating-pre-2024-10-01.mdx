@@ -1,0 +1,241 @@
+---
+title: "Migrating from API versions prior to 2024-10-01"
+description: "Migrating from API versions prior to 2024-10-01"
+icon: "right-left"
+---
+
+The Nabla Core API version `2024-10-01` introduces many new features and structural changes.
+This step-by-step guide will help you migrate your existing integration to the latest version, enabling you to fully utilize the Nabla Core API.
+
+## Determine your current version
+
+To determine which API version you are currently targeting, please refer to [Targeting a specific version](/guides/api-versioning/usage). {/* TODO: link to ported spec */}
+You might be either explicitly specifying an API version for all your calls or relying on the pinned version set in the API Admin Console.
+
+During the migration, we recommend to use the explicit version header for new migrated API calls to target the newer version. Once all your clients are migrated you can go upgrade the pinned version in the API Admin Console.
+
+## Upgrade to the latest version before `2024-10-01`
+
+This guide details migration from the latest version prior to `2024-10-01`, i.e. version `2024-04-22`.
+
+## Use an OAuth Client instead of Server Keys
+
+Starting with version `2024-10-01`, the long-lived Server Keys will no longer be accepted for Server API authentication.
+The new flow for authenticating your server calls is now based on [OAuth Private Key JWT](https://oauth.net/private-key-jwt/) standard for higher security.
+
+Please check the dedicated [OAuth Client authentication](/guides/authentication) page for details on how to start using this new authentication flow. {/* TODO: link to ported spec */}
+
+## Change your base URL
+
+### Product name change
+
+Apply the following renaming to the base URL:
+
+- `/v1/copilot-api/server` become `/v1/core/server`
+- `/v1/copilot-api/user` become `/v1/core/user`
+
+### Specify your region
+
+Specify the region on which your Nabla Core API organization is hosted, `us` for the United States and `eu` for European Union.
+
+- `https://us.api.nabla.com/v1/core` + (`/server` or `/user`) + `/path/to/endpoint`
+- `https://eu.api.nabla.com/v1/core` + (`/server` or `/user`) + `/path/to/endpoint`
+
+## New locales
+
+Instead of a single enum, we now have two separate enums for languages, henceforth called _locales_:
+
+- Speech locale: Supports 35 values for various languages with regional dialects and variations. Used for transcription (speech-to-text) and generated patient instructions.
+- Note locale: Supports 3 values, i.e. `ENGLISH_US`, `ENGLISH_UK` and `FRENCH_FR`, used for generated notes.
+
+## Asynchronous requests response flow
+
+Asynchronous requests, such as `/digest_async` and `/listen_async` used to take a `callback_url` to which the response was sent in an HTTP POST call.
+
+This behavior is deprecated and replaced by a polling mechanism, along with an alternative webhook mechanism.
+
+Please refer to the [Asynchronous note generation](/guides/best-practices/asynchronous-note-generation) guide for more details. {/* TODO: link to ported spec */}
+
+## Each old endpoint's migration
+
+### Create or update a user: `/users`
+
+Remove `email` and `roles` fields from both input and output, those fields were already deprecated.
+
+### Create, read, update or delete dot phrases: `/dot_phrases`
+
+Endpoints case changed from snake to kebab: `/dot_phrases` becomes `/dot-phrases`.
+
+### Listen websocket `/listen-ws`
+
+- Endpoint renamed to `/transcribe-ws`.
+- Protocol renamed to `transcribe-protocol`.
+- Removed `output_objects` input field (if you need to filter out frames, this should be done client-side).
+- Polymorphism discriminator field key in all frames (both input and output frames) renamed from `object` to `type`.
+- Enums values now follow `SCREAMING_SNAKE_CASE`, e.g. `pcm_s16le` becomes `PCM_S16LE` and `patient` becomes `PATIENT`.
+- Changes specific to the _Configuration_ frame:
+  - Discriminator value renamed from `listen_config` to `CONFIG`.
+  - Field `language` replaced by `speech_locale` (see [New locales](#new-locales) above).
+  - Example:
+
+<CodeGroup>
+
+```json Before
+{ "object": "listen_config", "output_objects": ["transcript_item"], "encoding": "pcm_s16le", "sample_rate": 16000, "language": "en-US", "streams": [ { "id": "doctor_stream", "speaker_type": "doctor" } ] }
+```
+
+```json After
+{ "type": "CONFIG", "encoding": "PCM_S16LE", "sample_rate": 16000, "speech_locale": "ENGLISH_US", "streams": [ { "id": "doctor_stream", "speaker_type": "DOCTOR" } ] }
+```
+
+</CodeGroup>
+
+- Changes specific to the _Transcript item_ frame:
+  - Field `speaker` renamed to `speaker_type`.
+- No particular changes other than those mentioned above for the frames: _Audio chunk, End, Audio chunk ack,_ and _error message_.
+
+### Listen from audio file
+
+- Previously known as `/listen`, it's now called `/transcribe`.
+- Previously known as `/listen_async`, it's now called `/transcribe-async`.
+
+#### Changes common to both sync & async Listen endpoints
+
+- Removed `output_objects` field.
+- Field `language` replaced by `speech_locale` (see [New locales](#new-locales) above).
+- In output (response) schema: Field `speaker` (inside `transcript[]`) renamed to `speaker_type`.
+- Removed note generation capability. The Transcribe endpoint is only meant for transcription. You should combine with dedicated note generation endpoints if needed.
+- Note generation related fields removed: `section_style`, `split_by_problem` and `note_template`.
+
+#### Changes specific to the asynchronous transcription
+
+- Field `callback_url` removed.
+- Check the [Asynchronous requests response flow](#asynchronous-requests-response-flow) for how to migrate your usage of `callback_url`.
+
+### Note generation endpoints
+
+- Previously known as `/digest`, it's now called `/generate-note`.
+- Previously known as `/digest_async`, it's now called `/generate-note-async`.
+
+#### Changes common to both sync & async note generation endpoints
+
+- Removed `output_objects` field.
+- Field `language` replaced by `note_locale` (see [New locales](#new-locales) above).
+- In `transcript_items` schema: Field `speaker` renamed to `speaker_type`.
+- Field `note` renamed to `previous_note`.
+  - You can also specify an optional `title` field (note title), as it might have been generated by Nabla.
+- Fields `section_style` and `split_by_problem` removed, to be replaced by [per-section customization capabilities](/guides/note-templates/note-customization) that offer more and finer customization options. {/* TODO: link to ported spec */}
+  - Please notice that the value `PARAGRAPHS` from `section_style` enum maps to the singular `PARAGRAPH` (without an _S_).
+- Field `note_template` enum values changed, here's a mapping:
+  - `GENERAL_MEDICINE` becomes `GENERIC_MULTIPLE_SECTIONS`.
+  - `GENERAL_MEDICINE_AP_MERGED` becomes `GENERIC_MULTIPLE_SECTIONS_AP_MERGED`.
+  - `SOAP` becomes `GENERIC_SOAP`.
+  - `GENERAL_MEDICINE_WCC` becomes `WCC_MULTIPLE_SECTIONS`.
+  - `SOAP_WCC` becomes `WCC_SOAP`.
+  - `GENERAL_MEDICINE_EMERGENCY` becomes `EMERGENCY_MULTIPLE_SECTIONS`.
+  - `SOAP_EMERGENCY` becomes `EMERGENCY_SOAP`.
+  - `CARDIOLOGY` becomes `CARDIOLOGY_MULTIPLE_SECTIONS`.
+  - `PSYCHIATRY` becomes `PSYCHIATRY_MULTIPLE_SECTIONS`.
+  - `DIET` becomes `DIET_MULTIPLE_SECTIONS`.
+  - `PSYCHOLOGY` becomes `PSYCHOLOGY_MULTIPLE_SECTIONS`.
+- Generated note sections keys (e.g. `note.sections[].key`) enum values changed, here's a mapping:
+  - `SOAP_SUBJECTIVE` (_Subjective_) becomes `SUBJECTIVE`.
+  - `SOAP_OBJECTIVE` (_Objective_) becomes `OBJECTIVE`.
+  - `SOAP_ASSESSMENT` (_Assessment_) becomes `ASSESSMENT`.
+  - `SOAP_PLAN` (_Plan_) becomes `PLAN`.
+  - `SOAP_ASSESSMENT_AND_PLAN` (_Assessment & Plan_) becomes `ASSESSMENT_AND_PLAN`.
+  - `SOAP_DIAGNOSTIC_TESTS_ORDERED` (_Diagnostic tests ordered_) becomes `DIAGNOSTIC_TESTS_ORDERED`.
+  - `DIET_LIFESTYLE` (_Lifestyle_) becomes `LIFESTYLE`.
+  - `DIET_MEDICAL_HISTORY` (_Medical history_) becomes `PAST_MEDICAL_HISTORY`.
+  - `DIET_CHIEF_COMPLAINT` (_Reason for visit and goals_) becomes `CHIEF_COMPLAINT`.
+  - `DIET_VITALS` (_Vitals_) becomes `VITALS`.
+  - `DIET_HABITS` (_Food habits_) becomes `FOOD_HABITS`.
+  - `DIET_OBJECTIVES` (_Objectives and advice_) becomes `OBJECTIVES_AND_ADVICE`.
+  - `DIET_APPOINTMENTS` (_Appointment_) becomes `APPOINTMENTS`.
+  - `PSYCHOLOGY_HISTORY_OF_COMPLAINT` (_History of the present complaint_) becomes `HISTORY_OF_PRESENT_COMPLAINT`.
+  - `CARDIOVASCULAR_RISKS` (_Cardiovascular risk factors_) becomes `CARDIOVASCULAR_RISK_FACTORS`.
+- Check the new templates and their sections in [Note templates and sections](/guides/note-templates/note-templates-sections).
+
+<CodeGroup>
+
+```json Before
+{
+  "output_objects": ["note"],
+  "language": "en-US",
+  "note_template": "GENERAL_MEDICINE",
+  "section_style": "paragraphs",
+  "split_by_problem": true,
+  "patient_context": "43 y.o. with Diabetes",
+  "note": {
+    "sections": [
+      {
+        "key": "CHIEF_COMPLAINT",
+        "title": "Chief complaint",
+        "text": "Fatigue and headache"
+      }
+    ]
+  },
+  "transcript_items": [
+    {
+      "text": "Also, I’m allergic to peanuts.",
+      "speaker": "patient"
+    }
+  ]
+}
+```
+
+```json After
+{
+  "note_locale": "ENGLISH_US",
+  "note_template": "GENERIC_MULTIPLE_SECTIONS",
+  "patient_context": "43 y.o. with Diabetes",
+  "note_sections_customization": [
+    {
+      "section_key": "HISTORY_OF_PRESENT_ILLNESS",
+      "level_of_detail": "DETAILED",
+      "split_by_problem": true
+    },
+    { "section_key": "VITALS", "style": "BULLET_POINTS" },
+    { "section_key": "ALLERGIES", "style": "PARAGRAPH" }
+  ],
+  "previous_note": {
+    "title": "Fatigue",
+    "sections": [
+      {
+        "key": "CHIEF_COMPLAINT",
+        "title": "Chief complaint",
+        "text": "Fatigue and headache"
+      }
+    ]
+  },
+  "transcript_items": [
+    {
+      "text": "Also, I’m allergic to peanuts.",
+      "speaker_type": "patient"
+    }
+  ]
+}
+```
+
+</CodeGroup>
+
+#### Changes specific to the asynchronous note generation
+
+- Field `callback_url` removed.
+- Check the [Asynchronous requests response flow](#asynchronous-requests-response-flow) for how to migrate your usage of `callback_url`.
+
+### Generate normalized data endpoint
+
+- Replace the path `/generate_normalized_data` with `/generate-normalized-data` (case change).
+- New required input field: `note_template`.
+- Changes to `note_locale` field as per [New locales](#new-locales).
+- Changes to the input `note` as per the changes to the generated note, see [Note generation endpoints](#note-generation-endpoints).
+- Enums values for _FHIR condition clinical status_ and _FHIR condition category_ now follow `SCREAMING_SNAKE_CASE`, e.g. value `resolved` becomes `RESOLVED` and `encounter_diagnosis` becomes `ENCOUNTER_DIAGNOSIS`.
+
+### Generate patient instructions endpoint
+
+- Replace the path `/generate_patient_instructions` with `/generate-patient-instructions` (case change).
+- New required input field: `note_template`.
+- Changes to `note_locale` field as per note locale in [New locales](#new-locales).
+- Changes to `instructions_locale` field as per speech locale in [New locales](#new-locales).
+- Changes to the input `note` as per the changes to the generated note, see [Note generation endpoints](#note-generation-endpoints).

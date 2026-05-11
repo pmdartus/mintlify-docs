@@ -1,0 +1,209 @@
+---
+title: "Electronic Health Record (EHR) integration"
+description: "Strategies for integrating an EHR with Nabla"
+icon: "hospital"
+---
+
+If you're developing an EHR and are looking to integrate with Nabla, you may pick one of the strategies below.
+
+[Get in touch](https://www.nabla.com/copilot-contact/) if you wish to discuss your use case in more detail.
+
+| Method                                            | For                                              | Pros                                                                                                                                                                                        | How                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Front-end integration                             | Web-based EHRs                                   | Simple and straightforward flow, great for proof-of-concept and simple integrations.<br /><br />No need to set up the Nabla Core API.<br /><br />Ability to leverage the existing Nabla UI. | Using the Nabla Assistant [Chrome extension](https://chrome.google.com/webstore/detail/nabla-copilot/gdhbaoemgglcgmkidhnhcellgnehaeol).<br /><br />On your EHR domain, you may request the "Copy" button from the extension to be replaced with an "Export to `<YOUR_EHR>`" button. In that case, Nabla Assistant will export the generated note and structured information via JavaScript.<br /><br />The EHR web app should listen to `window` events to receive the required information when the button is clicked, and fill the right fields in the EHR (see example below). |
+| Back-end integration (through the Nabla Core API) | All EHRs including ones available on mobile apps | For deep UI integration.<br /><br />Highly customizable.                                                                                                                                    | Server-side integration using Nabla APIs.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+
+Example of message you can receive in the Front-end integration
+
+```json
+{
+  "nabla": {
+    "note": [
+      {
+        "type": "CHIEF_COMPLAINT",
+        "title": "Chief complaint",
+        "value": "- Persistent fatigue\n- Mild headaches on the right side"
+      },
+      {
+        "type": "HISTORY_OF_PRESENT_ILLNESS",
+        "title": "History of present illness",
+        "value": "- Fatigue started 4 months ago (April)\n- Experiences mild headaches on the right side at the end of the day\n- Difficulty focusing at work due to fatigue\n- Sleep issues, never feels rested\n- Reports snoring"
+      },
+      {
+        "type": "PAST_MEDICAL_HISTORY",
+        "title": "Past medical history",
+        "value": "- Hypertension\n- Elevated blood sugar levels"
+      },
+      {
+        "type": "FAMILY_HISTORY",
+        "title": "Family history",
+        "value": "Mother has type 2 diabetes"
+      },
+      {
+        "type": "SOCIAL_HISTORY",
+        "title": "Social history",
+        "value": "Son is expecting a child"
+      },
+      {
+        "type": "ALLERGIES",
+        "title": "Allergies",
+        "value": "Allergic to peanuts, causes hives"
+      },
+      {
+        "type": "VITALS",
+        "title": "Vitals",
+        "value": "- Blood sugar level: 1.4 g/L\n- LDL cholesterol: 2 g/L"
+      },
+      {
+        "type": "ASSESSMENT",
+        "title": "Assessment",
+        "value": "Possible sleep apnea or narcolepsy"
+      },
+      {
+        "type": "PLAN",
+        "title": "Plan",
+        "value": "- Order a home sleep test to investigate sleep patterns\n- Discuss results in next consultation"
+      },
+      {
+        "type": "PRESCRIPTION",
+        "title": "Prescription",
+        "value": "Home sleep test"
+      },
+      {
+        "type": "APPOINTMENTS",
+        "title": "Appointments",
+        "value": "Next consultation on January 12th to discuss sleep test results"
+      }
+    ],
+    "normalization": {
+      "vitals": [],
+      "pastMedicalHistory": [
+        {
+          "alternativeIcd10Entries": [
+            {
+              "code": "I11",
+              "description": "Hypertensive heart disease"
+            },
+            {
+              "code": "I12",
+              "description": "Hypertensive chronic kidney disease"
+            },
+            {
+              "code": "I13",
+              "description": "Hypertensive heart and chronic kidney disease"
+            },
+            {
+              "code": "I15",
+              "description": "Secondary hypertension"
+            },
+            {
+              "code": "I16",
+              "description": "Hypertensive crisis"
+            },
+            {
+              "code": "I1A",
+              "description": "Other hypertension"
+            }
+          ],
+          "deleted": false,
+          "endDate": null,
+          "familyMember": null,
+          "icd10Entry": {
+            "code": "I10",
+            "description": "Essential (primary) hypertension"
+          },
+          "selectedEntry": {
+            "code": "I10",
+            "description": "Essential (primary) hypertension"
+          },
+          "startDate": null,
+          "uuid": "24489701-f3ca-4e96-b2a3-f468b6a95e9e"
+        },
+        {
+          "alternativeIcd10Entries": [
+            {
+              "code": "R73.01",
+              "description": "Impaired fasting glucose"
+            },
+            {
+              "code": "R73.02",
+              "description": "Impaired glucose tolerance (oral)"
+            },
+            {
+              "code": "R73.03",
+              "description": "Prediabetes"
+            }
+          ],
+          "deleted": false,
+          "endDate": null,
+          "familyMember": null,
+          "icd10Entry": {
+            "code": "R73.09",
+            "description": "Other abnormal glucose"
+          },
+          "selectedEntry": {
+            "code": "R73.09",
+            "description": "Other abnormal glucose"
+          },
+          "startDate": null,
+          "uuid": "c5f4c2bc-8191-4839-be8d-df1ca66c1642"
+        }
+      ],
+      "pastSurgicalHistory": [],
+      "pastObstetricHistory": [],
+      "familyHistory": [],
+      "assessment": [
+        {
+          "alternativeIcd10Entries": [
+            {
+              "code": "G47.31",
+              "description": "Primary central sleep apnea"
+            },
+            {
+              "code": "G47.32",
+              "description": "High altitude periodic breathing"
+            },
+            {
+              "code": "G47.33",
+              "description": "Obstructive sleep apnea (adult) (pediatric)"
+            },
+            {
+              "code": "G47.34",
+              "description": "Idiopathic sleep related nonobstructive alveolar hypoventilation"
+            },
+            {
+              "code": "G47.35",
+              "description": "Congenital central alveolar hypoventilation syndrome"
+            },
+            {
+              "code": "G47.36",
+              "description": "Sleep related hypoventilation in conditions classified elsewhere"
+            },
+            {
+              "code": "G47.37",
+              "description": "Central sleep apnea in conditions classified elsewhere"
+            },
+            {
+              "code": "G47.39",
+              "description": "Other sleep apnea"
+            }
+          ],
+          "deleted": false,
+          "endDate": null,
+          "familyMember": null,
+          "icd10Entry": {
+            "code": "G47.30",
+            "description": "Sleep apnea, unspecified"
+          },
+          "selectedEntry": {
+            "code": "G47.30",
+            "description": "Sleep apnea, unspecified"
+          },
+          "startDate": null,
+          "uuid": "57141e7b-4a23-4cb1-883a-1b62c9823f69"
+        }
+      ]
+    }
+  }
+}
+```

@@ -1,0 +1,94 @@
+---
+title: "Asynchronous note generation"
+description: "Asynchronous note generation"
+icon: "clock"
+---
+
+Asynchronous note generation provides a seamless alternative to our standard note generation process, which typically takes a few seconds to complete.
+By utilizing this asynchronous endpoint, users can initiate a note generation request and receive an immediate response containing a unique request ID.
+This allows users to continue other tasks or quit the app while the note is being generated.
+
+Once you have the request ID, you can poll the status of your note generation at your convenience.
+This polling mechanism enables you to check whether the generation was successful or if it encountered any errors, along with retrieving the generated note payload once it is available.
+
+This approach optimizes the workflow, enhances user experience, and ensures that your application remains responsive while processing note generation tasks.
+
+Please note that the payload for successful requests is retained for two hours before being removed to ensure privacy.
+This value can potentially be overridden by your organization's settings, so please [reach out](mailto:api@nabla.com) for more details and further customization.
+
+<Tip>
+Asynchronous note generations created by a given user can only be accessed by the **same** user (through the User API) or **by the organisation's server** (through the Server API).
+
+Thus, when a user creates an asynchronous note generation, they can provide the request ID to their servers in case they want to poll the response on their behalf.
+</Tip>
+
+## Example asynchronous note generation
+
+You can create an asynchronous note generation that will start executing immediately (`status = ongoing`).
+Then, you can regularly poll the asynchronous note generation to check for its status.
+Once `status = succeeded` a payload will be provided as part of the asynchronous note generation poll response.
+The payload contains the generated note and the suggested Dot Phrases.
+
+### Create the asynchronous note generation
+
+POST `https://us.api.nabla.com/v1/core/user/generate-note-async` immediately returns:
+
+```json
+{
+  "id": "94cf4b36-7c82-4c80-a9d4-485dff2da309",
+  "client_request_id": "example-number-42",
+  "status": "ongoing"
+}
+```
+
+### Poll its status and results
+
+Regularly check for updates to the created asynchronous note generation by calling `/generate-note-async/<ASYNC-NOTE-GEN-ID>`
+
+```json
+{
+  "id": "94cf4b36-7c82-4c80-a9d4-485dff2da309",
+  "client_request_id": "example-number-42",
+  "status": "succeeded",
+  "payload": {
+    "note": {
+      "title": "Mrs Abbott - Feeling tired and unable to focus at work",
+      "sections": [
+        {
+          "key": "CHIEF_COMPLAINT",
+          "title": "Chief complaint",
+          "text": "Feeling tired all day, difficulty focusing at work, desire to rest, onset 4 months ago"
+        },
+        {
+          "key": "HISTORY_OF_PRESENT_ILLNESS",
+          "title": "History of present illness",
+          "text": "Name of the patient: Mrs Abbott\n\nGeneral fatigue\n- Started feeling tired all day long 4 months ago, in April\n- Difficulty focusing at work due to fatigue\n- No mention of any alleviating or aggravating factors\n- No mention of any triggers or circumstances during which fatigue occurs\n- No mention of any recurrence or abatement dates\n\nHeadaches\n- Experiencing headaches at the end of the day\n- No mention of any alleviating or aggravating factors\n- No mention of any triggers or circumstances during which headaches occur\n- No mention of any recurrence or abatement dates\n\nMisc:\n- No fever\n- Allergic to peanuts and penicillin (not related to current symptoms)"
+        },
+        {
+          "key": "ALLERGIES",
+          "title": "Allergies",
+          "text": "- Allergic to peanuts\n- History of penicillin allergy"
+        },
+        {
+          "key": "VITALS",
+          "title": "Vitals",
+          "text": "Normal body temperature"
+        },
+        {
+          "key": "PHYSICAL_EXAM",
+          "title": "Physical exam",
+          "text": "HEENT: Reports of headaches at the end of the day."
+        }
+      ]
+    },
+    "suggested_dot_phrases": []
+  }
+}
+```
+
+### Receive the response through webhooks
+
+You can also configure your servers to receive the results of successful note generation (or the error details in case of failure) through a webhook integration.
+
+{/* TODO: link to ported spec */}
+Check the [Setup Webhooks](/guides/setup-webhooks) guide and [Webhook events API specifications](/next/webhook/api-receive-webhook) for more details.

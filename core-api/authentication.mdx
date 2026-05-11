@@ -1,0 +1,145 @@
+---
+title: "Authenticate your API calls"
+description: "Authenticate your API calls"
+icon: "key"
+---
+
+In order to securely interact with the Nabla Core API, developers need to authenticate via two main API types: the Server API and the User API. Each API serves distinct use cases:
+
+- **Server API**: Intended for server-to-server interactions, it allows backend systems to authenticate and manage resources using OAuth 2.0 client credentials flow.
+- **User API**: Designed for client-side interactions, this API allows users to interact directly with Nabla via access tokens, which are provisioned and managed by the Server API.
+
+<Info>
+To get access to the Nabla Core API, please reach out to api@nabla.com.
+</Info>
+
+## Server API
+
+The Server API is intended to be used by your backend systems, allowing them to authenticate and interact with the Nabla Core API. Authentication for the Server API follows the OAuth 2.0 client credentials flow with JWT-based client assertions.
+
+### 1. Creating an OAuth Client
+
+An **OAuth Client** is the entity that authenticates with the Nabla Core API on behalf of your backend system.
+The OAuth Client is responsible for securely managing authentication credentials.
+To start, you'll need to create an OAuth Client in the <u>[API Admin Console](http://pro.nabla.com/developers/oauth-clients)</u>.
+When doing so, you should provide either of the two following options:
+
+- **JWKS URL**: This is the preferred method because it allows for seamless key rotation.
+  A JWKS (JSON Web Key Set) URL hosts one or more public keys, enabling Nabla to validate tokens using the correct key.
+  If your keys change, you can simply update the response of your JWKS endpoint without reconfiguring your OAuth Client.
+  <Tip>
+  **How to Obtain a JWKS URL?**
+
+  If you don’t already have a JWKS, you can expose one by setting up a service that hosts your public keys in the JWKS format.
+  Cloud services like _AWS Cognito_, _Google Identity Platform_ and _Auth0_ can help you automatically generate and expose your keys as a JWKS.
+  </Tip>
+
+- **Public Key (static)**: Alternatively, you can provide a static public key in X.509 format (base64-encoded).
+  This is a less flexible approach since key rotation would require updating the configuration in the API Admin Console.
+  In this specific case, only RSA 256 Algorithm is accepted.
+  You can generate a pair of public/private RSA keys using the following commands:
+  1. Generate the private key
+  ```bash
+  openssl genpkey -algorithm RSA -out private_key.pem
+  ```
+  2. Extract the public key from the private one
+  ```bash
+  openssl rsa -pubout -in private_key.pem -out public_key.pem
+  ```
+  You should then provide Nabla with the public key for OAuth Client creation, i.e. the `public_key.pem` file content that starts with `-----BEGIN PUBLIC KEY-----`.
+
+Upon creation, copy the OAuth Client's UUID to reference it when constructing the JWT Client Assertion.
+
+![Example OAuth Client created on the API Admin Console](/images/core-api/api-admin-console-oauth-clients.png)
+
+### 2. Constructing a JWT Client Assertion
+
+The client assertion is a one-time JWT used to authenticate your request to the [Generate Server Access Token](/server/oauth-generate-server-access-token) endpoint.
+{/* TODO: link to ported spec */}
+The JWT must include the following claims, split between the header and body:
+
+#### In the JWT header
+
+- **`alg` (Algorithm)**: Must be set to `RS256`.
+- **`typ` (Type)**: Must be set to `JWT`.
+- **`kid` (key ID)**: Required if your OAuth Client uses a JWKS URL. The `kid` corresponds to the key ID in the JWKS, ensuring the correct key is used to validate the JWT.
+
+#### In the JWT body
+
+- **`sub` (subject)**: The OAuth Client's UUID.
+- **`iss` (issuer)**: Same as `sub`, i.e., the OAuth Client's UUID.
+- **`aud` (audience)**: The full URL of the <u>[Generate Server Access Token](/server/oauth-generate-server-access-token)</u> endpoint.
+- **`exp` (expiration time)**: The JWT expiration time, which must not be in the past and no further than 5 minutes in the future.
+- **`iat` (issued at)**: Optional, but if included, it must be within 5 minutes of `exp` and should not be in the future.
+- **`jti` (JWT ID)**: Optional but highly recommended for enhanced security, as it prevents the reuse of the same JWT for future requests.
+
+The JWT needs to be signed using the private key from the public/private key pair corresponding to the specified OAuth Client.
+
+For constructing and signing JWTs, you can use open source libraries like the ones from [Auth0](https://github.com/auth0), notably [java-jwt](https://github.com/auth0/java-jwt) for Java.
+
+For more details on constructing a JWT assertion and its claims you can check [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523).
+
+### 3. Requesting a Server Access Token
+
+Once you've constructed your JWT assertion, you can use it to authenticate against the <u>[Generate Server Access Token](/server/oauth-generate-server-access-token)</u> endpoint:
+
+```yaml
+POST /oauth/token
+{
+  "grant_type": "client_credentials",
+  "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+  "client_assertion": "<your JWT here>"
+}
+```
+
+For now, only `"client_credentials"` and `"urn:ietf:params:oauth:client-assertion-type:jwt-bearer"` are supported for `"grant_type"` and `"client_assertion_type"`, respectively.
+
+The response will return an access token and its expiration time (`expires_in` in seconds):
+
+```yaml
+{ "access_token": "<JWT_ACCESS_TOKEN>", "expires_in": 3600 }
+```
+
+This Server Access Token can be used to access all the Server API endpoints, notably endpoints to provision and authenticate users.
+The expiration time is typically set to 1 hour, but it might be subject to change without prior notice.
+
+### 4. Handling Token Expiry
+
+When your server access token expires or approaches expiry, simply repeat the authentication process by [generating a new JWT client assertion](#2-constructing-a-jwt-client-assertion) and calling the /oauth/token endpoint again to get a fresh server token.
+
+### 5. Regularly Rotating Keys
+
+It’s critical to regularly rotate your keys to maintain the security of your integration.
+If you choose the JWKS URL option, rotating keys is easier because you can update the keys at your endpoint without any downtime.
+With a static public key, you’ll need at each rotation to manually create a new OAuth Client, migrate your assertion building and signing, then after a certain migration period manually delete the old OAuth Client.
+
+## User API
+
+The User API is designed for interactions on behalf of individual users. You can authenticate users by generating access and refresh tokens using the Server API. These tokens allow client-side applications to autonomously interact with the Nabla Core API on behalf of the user.
+
+### 1. Generating User Tokens
+
+To generate the initial pair of tokens (access and refresh) for a user, call the <u>[Authenticate a user](/server/jwt-authenticate-user)</u> endpoint using a valid server access token:
+{/* TODO: link to ported spec */}
+
+```
+POST /jwt/authenticate/{user_id}
+Authorization: Bearer <SERVER_ACCESS_TOKEN>
+```
+
+The resulting JWT tokens should be forwarded securely to the user's frontend.
+These tokens are scoped to the specified user and allow access only to the resources tied to that user.
+
+### 2. Refreshing User Tokens
+
+When the user’s access token expires, the client can request new tokens by calling the <u>[Refresh Token](/user/jwt-refresh)</u> endpoint:
+{/* TODO: link to ported spec */}
+
+```yaml
+POST /jwt/refresh
+{
+  "refresh_token": "<REFRESH_TOKEN>"
+}
+```
+
+The response will include a new access token and a new refresh token for continued API access.
