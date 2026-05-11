@@ -1,0 +1,257 @@
+---
+title: "Quickstart"
+description: "Authenticate, transcribe a short audio clip, and generate your first clinical note."
+icon: "bolt"
+---
+
+This quickstart takes you end-to-end through the Core API in under five minutes. You will:
+
+1. Generate a **Server API access token** with OAuth 2.0.
+2. Send a 30-second audio clip to `/transcribe` and receive a transcript.
+3. Send that transcript to `/generate-note` and receive a structured clinical note.
+
+By the end you'll have a working call you can extend into a real integration.
+
+## Prerequisites
+
+- A Nabla developer account. If you don't have one, [reach out](mailto:api@nabla.com) to request access.
+- An **OAuth Client** created in the [API Admin Console](https://pro.nabla.com/developers/oauth-clients) with either a JWKS URL or a static RSA public key. See [Authentication](/core-api/authentication) for the full setup.
+- A short audio file (WAV or MP3, ≤ 10 minutes) of a doctor–patient encounter. You can record a sample on your phone for testing.
+- Node 18+ (or any HTTP client of your choice).
+
+<Note>
+This walkthrough uses the **Server API**. For client-side flows (e.g., generating notes inside a mobile app), see the [Server vs User API](/core-api/concepts/server-vs-user-api) concept page.
+</Note>
+
+## 1. Get a Server access token
+
+Build a JWT client assertion signed with your OAuth Client's private key, then exchange it at the token endpoint.
+
+<Tabs>
+<Tab title="Node">
+
+```js
+import { SignJWT, importPKCS8 } from "jose";
+import fs from "node:fs/promises";
+
+const clientId = process.env.NABLA_CLIENT_ID;
+const privateKey = await importPKCS8(
+  await fs.readFile("./private_key.pem", "utf8"),
+  "RS256"
+);
+
+const tokenUrl = "https://us.api.nabla.com/v1/core/server/oauth/token";
+
+const assertion = await new SignJWT({})
+  .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+  .setIssuer(clientId)
+  .setSubject(clientId)
+  .setAudience(tokenUrl)
+  .setIssuedAt()
+  .setExpirationTime("5m")
+  .sign(privateKey);
+
+const res = await fetch(tokenUrl, {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    grant_type: "client_credentials",
+    client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+    client_assertion: assertion,
+  }),
+});
+
+const { access_token } = await res.json();
+console.log(access_token);
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+import os
+import time
+import jwt  # PyJWT
+import requests
+
+client_id = os.environ["NABLA_CLIENT_ID"]
+with open("private_key.pem", "rb") as f:
+    private_key = f.read()
+
+token_url = "https://us.api.nabla.com/v1/core/server/oauth/token"
+
+now = int(time.time())
+assertion = jwt.encode(
+    {"iss": client_id, "sub": client_id, "aud": token_url, "iat": now, "exp": now + 300},
+    private_key,
+    algorithm="RS256",
+)
+
+resp = requests.post(
+    token_url,
+    json={
+        "grant_type": "client_credentials",
+        "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+        "client_assertion": assertion,
+    },
+).json()
+
+print(resp["access_token"])
+```
+
+</Tab>
+<Tab title="cURL">
+
+```bash
+# Build the JWT in your language of choice, then:
+curl -X POST https://us.api.nabla.com/v1/core/server/oauth/token \
+  -H "content-type: application/json" \
+  -d '{
+    "grant_type": "client_credentials",
+    "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+    "client_assertion": "<YOUR_JWT_HERE>"
+  }'
+```
+
+</Tab>
+</Tabs>
+
+The response contains `access_token` (valid for ~1 hour) and `expires_in`. Cache it; don't mint a new one per request.
+
+## 2. Transcribe an audio file
+
+Send your clip to `POST /transcribe`. The endpoint accepts a multipart upload with an `audio` file and a JSON `config` part declaring the encoding and `speech_locales`.
+
+<Tabs>
+<Tab title="Node">
+
+```js
+import fs from "node:fs";
+
+const form = new FormData();
+form.append("audio", new Blob([fs.readFileSync("./encounter.wav")]), "encounter.wav");
+form.append(
+  "config",
+  new Blob([JSON.stringify({ encoding: "PCM_S16LE", sample_rate: 16000, speech_locales: ["ENGLISH_US"] })], {
+    type: "application/json",
+  })
+);
+
+const res = await fetch("https://us.api.nabla.com/v1/core/server/transcribe", {
+  method: "POST",
+  headers: { authorization: `Bearer ${access_token}` },
+  body: form,
+});
+
+const { transcript_items } = await res.json();
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+import requests
+
+resp = requests.post(
+    "https://us.api.nabla.com/v1/core/server/transcribe",
+    headers={"authorization": f"Bearer {access_token}"},
+    files={"audio": open("encounter.wav", "rb")},
+    data={"config": '{"encoding": "PCM_S16LE", "sample_rate": 16000, "speech_locales": ["ENGLISH_US"]}'},
+).json()
+
+transcript_items = resp["transcript_items"]
+```
+
+</Tab>
+<Tab title="cURL">
+
+```bash
+curl -X POST https://us.api.nabla.com/v1/core/server/transcribe \
+  -H "authorization: Bearer $ACCESS_TOKEN" \
+  -F "audio=@encounter.wav" \
+  -F 'config={"encoding":"PCM_S16LE","sample_rate":16000,"speech_locales":["ENGLISH_US"]}'
+```
+
+</Tab>
+</Tabs>
+
+You'll get back a list of `transcript_items`, each with a `text` and a `speaker_type` (`DOCTOR`, `PATIENT`, or `UNSPECIFIED`).
+
+## 3. Generate a clinical note
+
+Pass the transcript to `POST /generate-note`. Pick a `template` (we'll use `GENERIC_SOAP`) and a `locale`.
+
+<Tabs>
+<Tab title="Node">
+
+```js
+const res = await fetch("https://us.api.nabla.com/v1/core/server/generate-note", {
+  method: "POST",
+  headers: {
+    authorization: `Bearer ${access_token}`,
+    "content-type": "application/json",
+  },
+  body: JSON.stringify({
+    locale: "ENGLISH_US",
+    template: "GENERIC_SOAP",
+    transcript_items,
+  }),
+});
+
+const { note } = await res.json();
+console.log(note.sections);
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+resp = requests.post(
+    "https://us.api.nabla.com/v1/core/server/generate-note",
+    headers={"authorization": f"Bearer {access_token}", "content-type": "application/json"},
+    json={
+        "locale": "ENGLISH_US",
+        "template": "GENERIC_SOAP",
+        "transcript_items": transcript_items,
+    },
+).json()
+
+for section in resp["note"]["sections"]:
+    print(section["title"], section["text"], sep="\n")
+```
+
+</Tab>
+<Tab title="cURL">
+
+```bash
+curl -X POST https://us.api.nabla.com/v1/core/server/generate-note \
+  -H "authorization: Bearer $ACCESS_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{
+    "locale": "ENGLISH_US",
+    "template": "GENERIC_SOAP",
+    "transcript_items": [...]
+  }'
+```
+
+</Tab>
+</Tabs>
+
+You'll get a `note` with `title` and `sections`, each containing a `key`, `title`, and `text`. That's the same shape downstream guides (Magic Edit, FHIR normalization, patient instructions) expect.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Stream a live encounter" icon="microphone" href="/core-api/guides/stream-a-live-encounter">
+    Move from recorded files to real-time WebSocket transcription.
+  </Card>
+  <Card title="Set up webhooks" icon="webhook" href="/core-api/webhooks/setup">
+    Receive note-generation results asynchronously instead of waiting for the response.
+  </Card>
+  <Card title="Choose a template" icon="file-lines" href="/core-api/note-templates/choosing-a-template">
+    Pick the right template for your specialty and customize per-section output.
+  </Card>
+  <Card title="Production best practices" icon="shield-check" href="/core-api/best-practices/error-handling">
+    Error handling, retries, rate limits, and observability before you ship.
+  </Card>
+</Columns>

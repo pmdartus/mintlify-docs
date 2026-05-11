@@ -1,0 +1,71 @@
+---
+title: "Observability & debugging"
+description: "Trace IDs, log correlation, and how to file a useful support ticket."
+icon: "bug"
+---
+
+The Core API attaches a `trace_id` to every error response and every WebSocket `ERROR` frame. Capturing and logging it is the single highest-leverage thing you can do to debug a production integration.
+
+## What `trace_id` is
+
+`trace_id` is a server-side identifier of the form `projects/<project>/traces/<id>`. Nabla can look up your exact request across logs and audit trails using it. Without one, root-causing intermittent issues is much slower.
+
+## Logging recipe
+
+In every place you handle an error:
+
+1. Log the `trace_id`.
+2. Log the `code` (e.g., `85000`).
+3. Log the `name` (e.g., `ORGANIZATION_RATE_LIMITED`).
+4. Log the HTTP status (for HTTP) or WS close code (for WebSocket).
+5. **Do not** log the `message` as a key for routing logic — it's human-readable and can change.
+
+A minimal Node example:
+
+```js
+logger.error({
+  trace_id: body.trace_id,
+  code: body.code,
+  name: body.name,
+  http_status: res.status,
+  endpoint: res.url,
+  request_id: yourInternalRequestId,
+}, "Nabla call failed");
+```
+
+Tie your own request ID (the one you log on every inbound request to your service) to the `trace_id` so you can pivot from your logs to Nabla's.
+
+## Async tracing
+
+For async note generation:
+
+- The initial `POST /generate-note-async` returns `id` — log it.
+- Every webhook delivery carries an envelope `id` — log it too, and dedup by it.
+- Both `id`s, plus the `trace_id` from any error path, give you full coverage.
+
+For streaming transcription, log the connection start time and the `seq_id` of every audio chunk you sent. When troubleshooting "missing transcript" reports, this is what support will ask for.
+
+## Filing a useful support ticket
+
+When emailing api@nabla.com or your Nabla contact, include:
+
+- The `trace_id` (mandatory if you have one).
+- The endpoint and HTTP method, or the WebSocket URL.
+- The approximate timestamp (with timezone).
+- The region (`us` or `eu`).
+- The API version you target (`X-Nabla-Api-Version` header, or your organization's pinned version).
+- The request payload, minus any PHI you can't share. Replace text content with sentinel values.
+- The full error response body.
+
+Tickets that include `trace_id` are typically triaged in minutes; tickets without one can take much longer because we have to search by client-side hints.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Error handling" icon="circle-exclamation" href="/core-api/best-practices/error-handling">
+    The structured error payload and the retry pattern.
+  </Card>
+  <Card title="Rate limits & quotas" icon="gauge-high" href="/core-api/best-practices/rate-limits">
+    What 429s mean and how to handle them.
+  </Card>
+</Columns>

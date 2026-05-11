@@ -1,0 +1,63 @@
+---
+title: "Dot Phrases & custom dictionaries"
+description: "Provider-defined macros and term lists that improve recognition and structure."
+icon: "wand-sparkles"
+---
+
+**What you'll build.** A configuration where each provider's macros (Dot Phrases) and specialized vocabulary (custom dictionary) are applied automatically during transcription and note generation.
+
+**Prerequisites.**
+
+- A Server access token for managing data; the per-user effect applies when the same user authenticates against the User API.
+- A `user_id` to scope each provider's preferences.
+
+## Dot Phrases
+
+A **Dot Phrase** is a provider-defined macro: a `trigger` and a `replacement`. When the trigger is detected in a transcript, Nabla suggests the replacement as part of the generated note.
+
+### Create Dot Phrases in bulk
+
+`POST /dot-phrases/bulk-create` (User API) accepts up to 100 entries per request:
+
+```json
+{
+  "dot_phrases": [
+    {
+      "trigger": "normal physical exam",
+      "replacement": "Gen: Alert and oriented x3, no acute distress.\nHEENT: Normocephalic, atraumatic. PERRLA. ...",
+      "content_auto_update_enabled": true
+    },
+    {
+      "trigger": "follow up two weeks",
+      "replacement": "Patient to follow up in 2 weeks for re-evaluation."
+    }
+  ]
+}
+```
+
+Set `content_auto_update_enabled` to `true` to let Nabla refine the replacement using what was actually said (e.g., adjusting "normal physical exam" to call out abnormal findings from the encounter).
+
+### Update or delete in bulk
+
+`POST /dot-phrases/bulk-update` and `POST /dot-phrases/bulk-delete` accept the same 100-per-request limit.
+
+## Custom dictionary
+
+The custom dictionary adds user-specific terms that the transcription engine should recognize — useful for:
+
+- Organization or facility names that aren't household words.
+- Specialized procedure or device names.
+- Local acronyms.
+
+Terms are scoped per user and apply automatically to that user's transcription sessions.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Generate a clinical note" icon="file-lines" href="/core-api/guides/generate-a-clinical-note">
+    See how Dot Phrases surface in the generated note's `suggested_dot_phrases`.
+  </Card>
+  <Card title="Dictation commands" icon="microphone" href="/core-api/reference/dictation-commands">
+    The full list of voice commands recognised during dictation.
+  </Card>
+</Columns>

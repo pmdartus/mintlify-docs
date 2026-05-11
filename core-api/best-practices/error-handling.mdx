@@ -6,6 +6,67 @@ icon: "circle-exclamation"
 
 This guide explains how Nabla surfaces error information in both HTTP and WebSocket endpoints, and how to build resilient client-side behavior by leveraging structured error metadata.
 
+For a quick lookup of status codes and what action to take, see [Error codes reference](/core-api/reference/error-codes).
+
+## Retry pattern
+
+Build error handling around two ideas: **trust `code` over HTTP status** for routing logic, and **retry transient failures with exponential backoff**. A minimal pattern:
+
+<Tabs>
+<Tab title="Node">
+
+```js
+async function callWithRetry(fn, { maxAttempts = 5 } = {}) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const res = await fn();
+    if (res.ok) return res;
+
+    const body = await res.json().catch(() => ({}));
+    const retryable = res.status === 429 || res.status >= 500;
+    if (!retryable || attempt === maxAttempts) {
+      throw Object.assign(new Error(body.message ?? res.statusText), {
+        status: res.status,
+        code: body.code,
+        trace_id: body.trace_id,
+      });
+    }
+
+    // Exponential backoff with jitter: 0.5s, 1s, 2s, 4s, ...
+    const delay = 500 * 2 ** (attempt - 1) + Math.random() * 250;
+    await new Promise((r) => setTimeout(r, delay));
+  }
+}
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+import random
+import time
+
+def call_with_retry(fn, max_attempts=5):
+    for attempt in range(1, max_attempts + 1):
+        resp = fn()
+        if resp.ok:
+            return resp
+
+        body = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+        retryable = resp.status_code == 429 or resp.status_code >= 500
+        if not retryable or attempt == max_attempts:
+            raise RuntimeError(body.get("message") or resp.reason, body.get("code"), body.get("trace_id"))
+
+        time.sleep(0.5 * 2 ** (attempt - 1) + random.random() * 0.25)
+```
+
+</Tab>
+</Tabs>
+
+Two important rules:
+
+- **Never retry 4xx (other than 429) automatically.** They indicate a client-side issue you have to fix.
+- **Always log the `trace_id` from the JSON body.** It's how support traces your request server-side.
+
 ## Handling of HTTP calls errors
 
 You can implement error handling logic based on either the **HTTP response status code** or the more granular **error code** provided in the error response JSON body.
@@ -167,3 +228,14 @@ Below is a non-exhaustive list of application-level error codes that are commonl
 | `83011`<br/>Audio Stream Idle Timeout                    | Server timed out waiting for audio on a given transcription audio stream.                     | —           | `1002`               |
 | `83015`<br/>Unexpected Audio Chunk Sequence ID           | The received audio chunk had an unexpected sequence ID, breaking continuity.                  | —           | `1002`               |
 | `83016`<br/>Audio Chunks Buffer Overflow                 | Too many audio chunks were sent too quickly, exceeding the allowed buffer size.               | —           | `1002`               |
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Error codes reference" icon="list" href="/core-api/reference/error-codes">
+    Quick-scan table of every status and close code.
+  </Card>
+  <Card title="Observability & debugging" icon="bug" href="/core-api/best-practices/observability">
+    Trace IDs, log correlation, and how to file a useful support ticket.
+  </Card>
+</Columns>

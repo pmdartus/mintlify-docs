@@ -1,0 +1,67 @@
+---
+title: "Notes, sections & templates"
+description: "The vocabulary you'll see throughout the docs and the API."
+icon: "book-open"
+---
+
+A handful of terms appear everywhere in the Core API. Pinning them down once makes the rest of the docs scan much faster.
+
+## Note
+
+A **note** is the structured object returned by note-generation endpoints (`/generate-note`, `/generate-note-async`, `/edit-note-with-instructions`). It has:
+
+- a `title` (a short human-readable summary, auto-generated)
+- a list of `sections`
+- a `locale` and `template` indicating how it was produced
+
+## Section
+
+A **section** is a labelled block inside a note. Every section has:
+
+- a `key` — a stable enum identifier like `CHIEF_COMPLAINT`, `HISTORY_OF_PRESENT_ILLNESS`, `ASSESSMENT_AND_PLAN`.
+- a `title` — the localized display label.
+- a `text` — the section body (markdown-style; can include bullets or paragraphs depending on the customization).
+
+The set of valid section keys depends on the template. See [Templates reference](/core-api/note-templates/sections) for the full matrix.
+
+## Template
+
+A **template** is the overall shape of a note — which sections it contains, in what order. Templates are picked at request time via the `template` field; common ones include:
+
+- `GENERIC_MULTIPLE_SECTIONS` — the default, multi-section structure.
+- `GENERIC_SOAP` — classic SOAP (Subjective / Objective / Assessment / Plan).
+- `WCC_SOAP`, `EMERGENCY_SOAP`, `CARDIOLOGY_MULTIPLE_SECTIONS`, `PSYCHIATRY_MULTIPLE_SECTIONS`, and so on.
+
+See [Choosing a template](/core-api/note-templates/choosing-a-template) for how to pick one.
+
+## Customization
+
+A **customization** is a per-section override applied during generation. Each entry in `note_sections_customization` targets a single section and tweaks one or more of:
+
+- `style` — `PARAGRAPH` vs `BULLET_POINTS`.
+- `level_of_detail` — `CONCISE` vs `DETAILED`.
+- `custom_instruction` — a short free-text directive (≤700 characters) like _"List drug allergies on a separate line."_.
+- `split_by_problem` — for narrative sections like HPI or A&P, group content by clinical problem.
+
+Not every customization is available for every locale/template/section combination. See the [Customization page](/core-api/note-templates/customization) for the compatibility matrix.
+
+## Dot Phrase
+
+A **Dot Phrase** is a provider-defined macro that expands into a structured block of text in a note. Each Dot Phrase has a `trigger` (e.g., _"normal physical exam"_) and a `replacement`. Nabla can suggest Dot Phrases automatically based on transcript content; with `content_auto_update_enabled`, the suggested replacement is refined to reflect what was actually said.
+
+Dot Phrases are scoped to a **user**, so they're a User API concept.
+
+## Magic Edit
+
+**Magic Edit** is the natural-language editing capability behind `/edit-note-with-instructions`. You supply a short instruction (e.g., _"Add more detail to the Plan section"_) along with the original note and transcript; Nabla returns a revised note.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Choose a template" icon="file-lines" href="/core-api/note-templates/choosing-a-template">
+    A decision aid for picking a template by specialty.
+  </Card>
+  <Card title="Section customization" icon="sliders" href="/core-api/note-templates/customization">
+    The full compatibility matrix and per-section override options.
+  </Card>
+</Columns>

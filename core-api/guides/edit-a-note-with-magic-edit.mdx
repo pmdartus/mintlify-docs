@@ -1,0 +1,72 @@
+---
+title: "Edit a note with Magic Edit"
+description: "Refine a generated note with a natural-language instruction."
+icon: "wand-magic-sparkles"
+---
+
+**What you'll build.** A `POST /edit-note-with-instructions` call that takes a generated note plus a short instruction and returns a revised note.
+
+**Prerequisites.**
+
+- A generated note from `/generate-note`. See [Generate a clinical note](/core-api/guides/generate-a-clinical-note).
+- The original `transcript_items` you used to generate the note — they ground Magic Edit's revisions in what was actually said.
+
+## Make the call
+
+<Tabs>
+<Tab title="Node">
+
+```js
+const res = await fetch("https://us.api.nabla.com/v1/core/server/edit-note-with-instructions", {
+  method: "POST",
+  headers: {
+    authorization: `Bearer ${access_token}`,
+    "content-type": "application/json",
+  },
+  body: JSON.stringify({
+    note,
+    transcript_items,
+    instruction: "Make the Assessment & Plan more concise; keep bullet points.",
+  }),
+});
+
+const { note: revised_note } = await res.json();
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+resp = requests.post(
+    "https://us.api.nabla.com/v1/core/server/edit-note-with-instructions",
+    headers={"authorization": f"Bearer {access_token}", "content-type": "application/json"},
+    json={
+        "note": note,
+        "transcript_items": transcript_items,
+        "instruction": "Make the Assessment & Plan more concise; keep bullet points.",
+    },
+).json()
+
+revised_note = resp["note"]
+```
+
+</Tab>
+</Tabs>
+
+## Tips for good instructions
+
+- Keep it short and specific: _"Add ROS findings to the Subjective section"_ beats _"Improve the note"_.
+- Reference section names when possible.
+- Ask for one change at a time; chain calls if you need several revisions.
+- Magic Edit can't invent clinical facts not present in the transcript. If you ask for content that isn't supported, expect a no-op or a clarifying restructure rather than fabrication.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Patient instructions" icon="user-doctor" href="/core-api/guides/generate-patient-instructions">
+    Generate a post-visit summary in patient-friendly language.
+  </Card>
+  <Card title="Section customization" icon="sliders" href="/core-api/note-templates/customization">
+    Lock in style and detail at generation time so you need fewer edits.
+  </Card>
+</Columns>

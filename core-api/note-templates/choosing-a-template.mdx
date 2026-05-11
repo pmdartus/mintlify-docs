@@ -1,0 +1,47 @@
+---
+title: "Choosing a template"
+description: "Pick a clinical note template by specialty and use case."
+icon: "file-circle-question"
+---
+
+Nabla offers 15 note templates, each tuned for a specific clinical context. Picking the right one upfront saves you from over-customizing later.
+
+## By specialty
+
+| You're documenting | Start with | Why |
+|---|---|---|
+| Primary care, general medicine | `GENERIC_MULTIPLE_SECTIONS` or `GENERIC_SOAP` | Broad coverage, the most flexible templates. |
+| Pediatric well-child visits | `WCC_MULTIPLE_SECTIONS` or `WCC_SOAP` | Sections tailored for growth, milestones, and anticipatory guidance. |
+| Emergency department | `EMERGENCY_MULTIPLE_SECTIONS` or `EMERGENCY_SOAP` | Sections for triage, disposition, and procedures. |
+| Cardiology | `CARDIOLOGY_MULTIPLE_SECTIONS` | Cardiovascular history and risk factors front-and-center. |
+| Psychiatry | `PSYCHIATRY_MULTIPLE_SECTIONS` | Mental status exam and risk assessment sections. |
+| Psychology | `PSYCHOLOGY_MULTIPLE_SECTIONS` | History of present complaint and intervention plan. |
+| Dietetics / nutrition | `DIET_MULTIPLE_SECTIONS` | Food habits, lifestyle, objectives and advice. |
+
+## SOAP vs multi-section
+
+Each specialty (or generic) typically comes in two flavours:
+
+- **`*_SOAP`** — strict four-block layout (Subjective / Objective / Assessment / Plan). Good when downstream EHR fields are SOAP-shaped.
+- **`*_MULTIPLE_SECTIONS`** — richer layout with separate sections like Chief Complaint, HPI, Past Medical History, Allergies, Vitals, A&P, etc. Good when you want more structure than SOAP imposes.
+
+If your downstream EHR uses problem-list-driven A&P, also pass `note_sections_customization` with `split_by_problem: true` on the relevant section. See [Section customization](/core-api/note-templates/customization).
+
+## Locale support
+
+Note generation locales are limited to `ENGLISH_US`, `ENGLISH_UK`, and `FRENCH_FR`. Not every template is available in every locale — check the **Remarks** column in the [Templates reference](/core-api/note-templates/sections) before settling on a pair.
+
+## Switching templates later
+
+Templates are picked per request — there's no global "template setting" on your organization. You can ship multiple templates from the same app and let providers pick. For User API integrations, you can also persist a default per user via `PATCH /note-settings`.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Templates reference" icon="file-lines" href="/core-api/note-templates/sections">
+    The full section list for each template, with locale remarks.
+  </Card>
+  <Card title="Section customization" icon="sliders" href="/core-api/note-templates/customization">
+    Per-section style and detail overrides.
+  </Card>
+</Columns>

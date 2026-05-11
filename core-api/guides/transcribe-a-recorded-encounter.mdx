@@ -1,0 +1,92 @@
+---
+title: "Transcribe a recorded encounter"
+description: "Upload an audio file and get a structured transcript back."
+icon: "microphone-lines"
+---
+
+**What you'll build.** A request that uploads a recorded clinical encounter (WAV or MP3) and returns a list of transcript items with speaker labels.
+
+**Prerequisites.**
+
+- A Server access token. See [Authentication](/core-api/authentication).
+- An audio file in a supported format. Inputs up to 10 minutes go to the sync endpoint (`/transcribe`); longer files (up to 60 minutes) go to the async endpoint (`/transcribe-async`).
+
+## 1. Decide sync vs async
+
+| Audio length | Endpoint |
+|---|---|
+| ≤ 10 minutes | `POST /transcribe` (sync) |
+| ≤ 60 minutes | `POST /transcribe-async` (returns a request ID; poll or receive via webhook) |
+
+See [Sync, async & streaming](/core-api/concepts/sync-async-streaming) for the full decision flow.
+
+## 2. Send the audio (sync)
+
+<Tabs>
+<Tab title="Node">
+
+```js
+import fs from "node:fs";
+
+const form = new FormData();
+form.append("audio", new Blob([fs.readFileSync("./encounter.wav")]), "encounter.wav");
+form.append(
+  "config",
+  new Blob(
+    [JSON.stringify({ encoding: "PCM_S16LE", sample_rate: 16000, speech_locales: ["ENGLISH_US"] })],
+    { type: "application/json" }
+  )
+);
+
+const res = await fetch("https://us.api.nabla.com/v1/core/server/transcribe", {
+  method: "POST",
+  headers: { authorization: `Bearer ${access_token}` },
+  body: form,
+});
+
+const { transcript_items } = await res.json();
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+import requests
+
+resp = requests.post(
+    "https://us.api.nabla.com/v1/core/server/transcribe",
+    headers={"authorization": f"Bearer {access_token}"},
+    files={"audio": open("encounter.wav", "rb")},
+    data={"config": '{"encoding": "PCM_S16LE", "sample_rate": 16000, "speech_locales": ["ENGLISH_US"]}'},
+).json()
+```
+
+</Tab>
+<Tab title="cURL">
+
+```bash
+curl -X POST https://us.api.nabla.com/v1/core/server/transcribe \
+  -H "authorization: Bearer $ACCESS_TOKEN" \
+  -F "audio=@encounter.wav" \
+  -F 'config={"encoding":"PCM_S16LE","sample_rate":16000,"speech_locales":["ENGLISH_US"]}'
+```
+
+</Tab>
+</Tabs>
+
+Each `transcript_item` has a `text` and a `speaker_type` (`DOCTOR`, `PATIENT`, or `UNSPECIFIED`). Diarization runs automatically when `speaker_type` is left unspecified in the config.
+
+## 3. For longer files: switch to async
+
+`POST /transcribe-async` returns immediately with `{ id, status: "ongoing" }`. Then either poll `GET /transcribe-async/{id}` until `status` becomes `succeeded`, or register a webhook to receive the result. See [Async note generation](/core-api/best-practices/async-note-generation) — the same polling and webhook patterns apply.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Generate a clinical note" icon="file-lines" href="/core-api/guides/generate-a-clinical-note">
+    Turn the transcript into a structured note.
+  </Card>
+  <Card title="Stream a live encounter" icon="microphone" href="/core-api/guides/stream-a-live-encounter">
+    Move from recorded files to real-time WebSocket transcription.
+  </Card>
+</Columns>

@@ -6,8 +6,9 @@ icon: "sliders"
 
 # Per-section note customization options
 
-In addition to specifying a template that the generated note will conform to, you can also customize each section's content such as style (paragraph vs bullet points) or level of detail (concise or detailed).
-All those customization options are optional: you can specify only the ones that you are interested in.
+This page covers per-section overrides you can pass alongside `template` to fine-tune the output. If you haven't picked a template yet, start with [Choosing a template](/core-api/note-templates/choosing-a-template). For the underlying mental model (note → sections → template → customization), see [Notes, sections & templates](/core-api/concepts/notes-sections-templates).
+
+In addition to specifying a template that the generated note will conform to, you can also customize each section's content such as style (paragraph vs bullet points) or level of detail (concise or detailed). All customization options are optional — specify only the ones you care about.
 
 Following are the currently supported per-section customization options.
 
@@ -51,9 +52,35 @@ const generateNoteRequestBody = {
 
 You should:
 
-- only specify sections that apply for the given template (check the [Templates and sections](/guides/note-templates/note-templates-sections));{/* TODO: link to ported spec */}
+- only specify sections that apply for the given template (check the [Templates and sections](/core-api/note-templates/sections));
 - only specify customization options that are supported for the given section and template (check the compatibility table below);
 - also, there should be at most one customization options object per section in the list.
+
+## Writing good `custom_instruction` values
+
+`custom_instruction` accepts up to **700 characters per section**. Treat it as a short directive, not a paragraph of context. Things that work well:
+
+- Concrete output rules: _"List drug allergies on a separate line with the reaction in parentheses."_
+- Naming preferences: _"Use the brand name when the medication has one."_
+- Required fields: _"Always include onset date, severity, and aggravating factors."_
+
+Things that tend not to work:
+
+- Long background paragraphs about the practice or specialty — that's what `template` and your `unstructured_context`/`structured_context` are for.
+- Contradicting the chosen template (e.g., asking for SOAP structure inside a multi-section template).
+- Asking for clinical reasoning that isn't grounded in the transcript — Magic Edit and customization both refuse to fabricate.
+
+If a per-section instruction is the same on every request, lock it in via `PATCH /note-settings/note-sections-customization/:note_template` (User API) so it applies automatically.
+
+## How to read the compatibility matrix
+
+Each customization option is only available for certain (locale × template × section) combinations. The matrix below is the source of truth. To read it:
+
+1. Pick your **locale** tab (`ENGLISH_US`, `ENGLISH_UK`, or `FRENCH_FR`).
+2. Expand your **template**.
+3. Find your **section** and see which options are supported.
+
+If you request an unsupported option, the API will return an error. Reading the matrix once, before generating, will save you a debugging round-trip.
 
 ## Customization options compatibility matrix
 
@@ -599,3 +626,14 @@ Following is the exhaustive matrix of availability. Select a locale tab, then ex
     </AccordionGroup>
   </Tab>
 </Tabs>
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Generate a clinical note" icon="file-lines" href="/core-api/guides/generate-a-clinical-note">
+    Apply these customizations end-to-end with a runnable example.
+  </Card>
+  <Card title="Templates reference" icon="file-circle-question" href="/core-api/note-templates/sections">
+    The full section list for each template.
+  </Card>
+</Columns>

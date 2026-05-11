@@ -4,83 +4,38 @@ description: "Nabla Core API — Medical transcription, clinical note generation
 icon: "book-open"
 ---
 
-The Nabla Core API provides advanced tools to transcribe medical encounters, generate structured clinical notes, extract FHIR-normalized data, and more — all optimized for clinical workflows and seamless integration.
+The Nabla Core API turns raw clinical audio into structured, EHR-ready data. It powers medical transcription, clinical note generation, FHIR-normalized data extraction, dictation, and Dot Phrase suggestions — all tuned for healthcare workflows.
 
-Whether you’re building a telehealth platform, an EHR, or a voice-enabled documentation tool, the Nabla Core API is designed to help you go from raw audio to structured data with minimal effort.
+Whether you're building a telehealth platform, an EHR, or a voice-enabled documentation tool, the Core API gives you a small set of composable endpoints you can wire into existing systems quickly.
 
-## Core capabilities
+<Tip>
+**New here?** Head straight to the [Quickstart](/core-api/quickstart) to make your first call in under five minutes, then pick a Guide for the workflow you're building.
+</Tip>
 
-### 🩺 Medical encounter transcription
+## What you can build
 
-Transcribe doctor–patient conversations using a medical-grade speech-to-text engine, fine-tuned to recognize terminology like medications, symptoms, and diagnoses.
+Each capability has a dedicated guide with runnable code and "next steps" links.
 
-- For real-time use cases: Use the [WebSocket Transcribe endpoint](/server/transcribe-ws). {/* TODO: link to ported spec */}
-- For recorded files (≤10 minutes): Use the [REST Transcription endpoint](/server/transcribe).
-- For longer files (≤60 minutes): Use [the asynchronous REST endpoint](/server/transcribe-async).
+| Capability | What it does | Guide |
+|---|---|---|
+| Transcription (real-time) | Stream audio over WebSocket, receive transcript items as they arrive. | [Stream a live encounter](/core-api/guides/stream-a-live-encounter) |
+| Transcription (recorded) | Send an audio file (≤10 min sync, ≤60 min async) and get a full transcript back. | [Transcribe a recorded encounter](/core-api/guides/transcribe-a-recorded-encounter) |
+| Clinical note generation | Turn a transcript into a structured note using SOAP, APSO, WCC, or specialty templates. | [Generate a clinical note](/core-api/guides/generate-a-clinical-note) |
+| Magic Edit | Refine a generated note with a natural-language instruction (e.g., "Make it more concise"). | [Edit a note with Magic Edit](/core-api/guides/edit-a-note-with-magic-edit) |
+| Patient-friendly instructions | Generate post-visit summaries tuned for the patient or a caregiver. | [Generate patient instructions](/core-api/guides/generate-patient-instructions) |
+| FHIR-normalized data | Extract conditions (ICD-10) and observations (LOINC) from a generated note. | [Extract FHIR-normalized data](/core-api/guides/extract-fhir-normalized-data) |
+| Dictation | Real-time or async dictation with explicit punctuation commands. | [Use dictation commands](/core-api/reference/dictation-commands) |
+| Dot Phrases & custom dictionary | Provider-defined macros and term lists that improve recognition and structure. | [Dot Phrases & custom dictionaries](/core-api/guides/dot-phrases-and-custom-dictionaries) |
+| EHR integration | Push Nabla output into Epic, Cerner, or any web-based EHR via the browser or your backend. | [Integrate with an EHR](/core-api/guides/ehr-integration) |
 
-### 📝 Clinical note generation
+## Two surfaces: Server API and User API
 
-Transform a transcript into a well-structured clinical note using medical templates like SOAP, APSO, or WCC.
+The Core API exposes two surfaces with different auth shapes:
 
-- Supports synchronous and asynchronous workflows.
-- Customize per-section content, format (paragraphs vs bullet points), and level of detail.
-- Add patient context or enrich an existing note incrementally.
+- **Server API** — backend-to-backend, OAuth 2.0 client credentials with a JWT bearer assertion.
+- **User API** — short-lived per-user tokens issued by your backend, used directly from a frontend or mobile client.
 
-### ✏️ Edit note with instructions
-
-Also known as **Magic Edit**, this feature lets you refine a Nabla-generated clinical note using natural language instructions.
-
-- Provide short, human-readable guidance like _"Make note more concise"_ or _"Add more details in the Plan section"_.
-- The original transcript and note are used as context to ensure accurate and relevant edits.
-- Great for last-mile customization or for incorporating provider feedback post-generation.
-
-### 📋 Patient-friendly instructions
-
-Generate post-visit summaries written in patient-friendly language.
-
-- Supports pediatric contexts via `recipient_type` (e.g., "PARENT").
-- Multi-language support with localized output.
-
-### 🧠 Normalize structured data
-
-Extract FHIR-compatible structured data from a Nabla-generated clinical note:
-
-- Extract conditions with **ICD-10** codes.
-- Capture family history and patient observations with **LOINC** codes.
-- Output aligns with EHR-ready formats for seamless integration.
-
-### 🎙️ Medical dictation
-
-Accurately transcribe dictated speech in real-time, optionally including dictated punctuation:
-
-- Supports both real-time (WebSocket) and asynchronous use cases.
-- Ideal for physician notes, documentation, and internal summaries.
-
-### ⚡️ Dot Phrases
-
-Automatically detect and suggest **Dot Phrases** — provider-defined macros that expand into structured sections during note generation.
-
-- Triggered based on transcript content (e.g., if the provider says "Your physical exam is normal").
-- Each Dot Phrase defines a **trigger** and a **replacement** block of text.
-- Optionally, Dot Phrases can **auto-adapt** based on the encounter context:
-  - If `content_auto_update_enabled` is set to `true`, the suggested content will be dynamically refined based on the transcript.
-  - For example, the engine may adjust a standard exam note to mention exceptions or emphasize relevant findings from the encounter.
-
-### 📚 Custom dictionary
-
-Add user-specific terms to improve transcription accuracy in specialized contexts.
-
-- Useful for names of organizations, local procedures, or uncommon acronyms specific to your workflows.
-- Helps ensure consistent recognition of expressions that aren’t part of the default medical vocabulary.
-
-### 🗳️ Report feedback
-
-Submit structured feedback on generated content to the support team for review.
-
-- Report issues with clinical notes, patient instructions, or normalized data.
-- Optionally include corrected output and comments from the provider.
-- This helps us automate user feedback and ensure the API maintains the highest possible quality.
-- If a `reply_to` email is provided, the support team may reach out for clarification or follow-up.
+If you're not sure which to use, start with the [Server vs User API](/core-api/concepts/server-vs-user-api) concept page.
 
 ---
 
@@ -96,11 +51,17 @@ To see an example of the API in action, check out our [sample-app repository](ht
 
 **OpenAPI specs**
 
-Download our OpenAPI specs to use in tools like [Postman](https://learning.postman.com/docs/integrations/available-integrations/working-with-openAPI/) or [Swagger](https://editor.swagger.io):
-
-- [Server API OpenAPI file](core_server_oas.json) {/* TODO: re-link once OpenAPI specs are ported */}
-- [User API OpenAPI file](core_user_oas.json) {/* TODO: re-link once OpenAPI specs are ported */}
-
-_Note that WebSocket endpoints are not included in these files._
+OpenAPI specifications for the Server and User APIs are coming soon. Once published they will be downloadable here for use in tools like [Postman](https://learning.postman.com/docs/integrations/available-integrations/working-with-openAPI/) or [Swagger](https://editor.swagger.io). WebSocket endpoints will not be included in those files. In the meantime, please reach out to api@nabla.com if you need an early copy.
 
 </Note>
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Quickstart" icon="bolt" href="/core-api/quickstart">
+    Make your first API call in under five minutes.
+  </Card>
+  <Card title="Authentication" icon="key" href="/core-api/authentication">
+    Set up OAuth 2.0 and issue per-user tokens.
+  </Card>
+</Columns>
