@@ -131,6 +131,13 @@
                       "POST /dictate",
                       "POST /dictate-async",
                       "GET /dictate-async/{id}",
+                      {
+                        "group": "WebSocket /dictate-ws",
+                        "asyncapi": {
+                          "source": "/core-api/asyncapi/dictate-ws.json",
+                          "directory": "api-reference/server/dictate-ws"
+                        }
+                      },
                       "core-api/reference/dictation-commands"
                     ]
                   },
@@ -197,6 +204,13 @@
                       "POST /dictate",
                       "POST /dictate-async",
                       "GET /dictate-async/{id}",
+                      {
+                        "group": "WebSocket /dictate-ws",
+                        "asyncapi": {
+                          "source": "/core-api/asyncapi/dictate-ws.json",
+                          "directory": "api-reference/user/dictate-ws"
+                        }
+                      },
                       "core-api/reference/dictation-commands"
                     ]
                   },

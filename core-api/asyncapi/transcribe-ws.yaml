@@ -563,7 +563,7 @@ channels:
         - Nabla: closes the websocket.
         - You: filter-out non-final transcript items and sort them by `start_offset_ms` before calling the [note-generation API](/next/server/generate-note).
     bindings:
-      wss:
+      ws:
         headers:
           type: object
           description: >-

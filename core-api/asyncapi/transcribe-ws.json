@@ -1,0 +1,1520 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "Transcribe WebSocket API",
+    "version": "",
+    "description": "Transcribe WebSocket API takes audio streams of your encounters\nand returns a live transcription.\n\n>  🏇**Show me some code**\n>\n> We've published a [JavaScript example](https://github.com/nabla/sample-app) of how you can integrate the /transcribe-ws API on a web page.\n\n### General specifications\n- All messages sent and received via websockets are encoded as UTF-8 JSON text frames.\n- We don't keep any of your data beyond the websocket lifecycle.\n  So to be network-resilient, we recommend you store what is relevant for you to be back on track in case of untimely closure.\n\n### Authentication\n- Get an access token, details in _[Authentication](/next/guides/authentication)_. It can be a server access token or a user's one, depending on whether you are calling the Server API or the User API.\n- We support two different ways of specifying the authentication token:\n  - *The recommended way*: You pass your bearer authentication token as an `Authorization` header when initiating the websocket.\n\n    Example:\n    ```\n    url: 'wss://us.api.nabla.com/v1/core/server/transcribe-ws',\n    protocol: 'transcribe-protocol',\n    extra_headers: { 'Authorization': 'Bearer <YOUR_TOKEN>' }\n    ```\n  - An alternative way, especially when specifying extra headers is not supported by your websocket client (e.g. from web browsers),\n    is to pass the token as a second websocket protocol prefixed with `jwt-`.\n\n    Example:\n    ```\n    url: 'wss://us.api.nabla.com/v1/core/user/transcribe-ws',\n    protocols: ['transcribe-protocol', 'jwt-<YOUR_TOKEN>']\n    ```\n"
+  },
+  "servers": {
+    "Server API": {
+      "host": "{region}.api.nabla.com",
+      "pathname": "/v1/core/server",
+      "protocol": "wss",
+      "description": "Called from your servers, authenticated with a server key.",
+      "variables": {
+        "region": {
+          "enum": [
+            "us",
+            "eu"
+          ],
+          "description": "Geographical region where your Nabla Core API organization exists."
+        }
+      }
+    },
+    "User API": {
+      "host": "{region}.api.nabla.com",
+      "pathname": "/v1/core/user",
+      "protocol": "wss",
+      "description": "Called from front-end apps, authenticated with a user-scoped access token.",
+      "variables": {
+        "region": {
+          "enum": [
+            "us",
+            "eu"
+          ],
+          "description": "Geographical region where your Nabla Core API organization exists."
+        }
+      }
+    }
+  },
+  "channels": {
+    "/transcribe-ws": {
+      "address": "/transcribe-ws",
+      "messages": {
+        "publish.message.0": {
+          "summary": "Initiates the transcribeing feature with the given configuration.",
+          "description": "This should be your first message in the websocket.",
+          "payload": {
+            "type": "object",
+            "description": "First message to configure transcription (audio format, locale, etc).",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "CONFIG"
+                ]
+              },
+              "streams": {
+                "type": "array",
+                "description": "Describe the audio streams you intend to stream as input of the Transcribe API. Typically, if you have separate doctor/patient audio tracks (or do diarization yourself) you will configure two streams for transcription. Remember that a stream will expect audio to flow continuously, otherwise a timeout error will be thrown.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Give an identifier to this stream.",
+                      "example": "doctor_stream"
+                    },
+                    "speaker_type": {
+                      "description": "Who is going to speak in this audio stream.",
+                      "type": "string",
+                      "enum": [
+                        "DOCTOR",
+                        "PATIENT",
+                        "UNSPECIFIED"
+                      ],
+                      "example": "DOCTOR"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "speaker_type"
+                  ]
+                }
+              },
+              "encoding": {
+                "type": "string",
+                "description": "Encoding of the streamed audio.",
+                "enum": [
+                  "PCM_S16LE"
+                ],
+                "example": "PCM_S16LE"
+              },
+              "sample_rate": {
+                "type": "integer",
+                "description": "Sample rate of submitted streaming audio, in hertz.",
+                "minimum": 8000,
+                "maximum": 192000,
+                "example": 16000
+              },
+              "speech_locales": {
+                "description": "An array of up to two locales for transcription. The speech-to-text engine automatically detects the spoken locale from this list. Each `transcript_item` received in the websocket will then specify the detected locale, enabling accurate transcription of **bilingual encounters**.",
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "ENGLISH_US",
+                    "ENGLISH_UK",
+                    "SPANISH_ES",
+                    "SPANISH_MX",
+                    "FRENCH_FR",
+                    "ARABIC_EG",
+                    "ARABIC_LB",
+                    "ARABIC_MA",
+                    "ARABIC_SA",
+                    "ARMENIAN_AM",
+                    "BENGALI_IN",
+                    "CANTONESE_CN",
+                    "CROATIAN_HR",
+                    "FILIPINO_PH",
+                    "GERMAN_DE",
+                    "GREEK_GR",
+                    "GUJARATI_IN",
+                    "HEBREW_IL",
+                    "HINDI_IN",
+                    "ITALIAN_IT",
+                    "JAPANESE_JP",
+                    "KHMER_KH",
+                    "KOREAN_KR",
+                    "MANDARIN_CN",
+                    "PERSIAN_IR",
+                    "POLISH_PL",
+                    "PORTUGUESE_PT",
+                    "PUNJABI_IN",
+                    "RUSSIAN_RU",
+                    "SERBIAN_RS",
+                    "TAMIL_IN",
+                    "TELUGU_IN",
+                    "THAI_TH",
+                    "URDU_IN",
+                    "VIETNAMESE_VN"
+                  ],
+                  "example": "ENGLISH_US"
+                },
+                "minItems": 1,
+                "maxItems": 2,
+                "uniqueItems": true
+              },
+              "split_by_sentence": {
+                "type": "boolean",
+                "default": false,
+                "description": "Indicates whether to segment transcription results at sentence boundaries. Default is false, meaning that a single transcript item may encompass multiple sentences, provided they are not delineated by pauses (silence) in the audio."
+              },
+              "enable_audio_chunk_ack": {
+                "type": "boolean",
+                "default": false,
+                "description": "If enabled, audio chunks should contain a `seq_id`, and the server will periodically send acknowledgements up to the specified `seq_id`.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/next/guides/best-practices/transcription-network-resilience)."
+              },
+              "specialty": {
+                "type": "string",
+                "description": "The medical specialty of the provider.",
+                "nullable": true,
+                "enum": [
+                  "ADDICTION_MEDICINE",
+                  "PAIN_MEDICINE",
+                  "ALLERGY_AND_IMMUNOLOGY",
+                  "ANESTHESIOLOGY",
+                  "ONCOLOGY",
+                  "CARDIOLOGY",
+                  "SURGERY",
+                  "DERMATOLOGY",
+                  "DIABETOLOGY",
+                  "ENDOCRINOLOGY",
+                  "GENETICS",
+                  "GERIATRICS",
+                  "GYNECOLOGY",
+                  "HEMATOLOGY",
+                  "HEPATOLOGY",
+                  "GASTROENTEROLOGY",
+                  "SPORTS_MEDICINE",
+                  "OCCUPATIONAL_MEDICINE",
+                  "GENERAL_MEDICINE",
+                  "FORENSIC_MEDICINE",
+                  "PHYSICAL_MEDICINE_AND_REHABILITATION",
+                  "NEPHROLOGY",
+                  "NEUROLOGY",
+                  "NUTRITION",
+                  "DIETETICS",
+                  "OPHTHALMOLOGY",
+                  "ENT",
+                  "PEDIATRICS",
+                  "PULMONOLOGY",
+                  "PSYCHIATRY",
+                  "RHEUMATOLOGY",
+                  "RADIOLOGY",
+                  "IMMUNOLOGY",
+                  "INFECTIOUS_DISEASE",
+                  "SEXUAL_MEDICINE",
+                  "TOXICOLOGY",
+                  "UROLOGY",
+                  "MIDWIFE",
+                  "EMERGENCY_MEDICINE",
+                  "NURSE",
+                  "PSYCHOLOGY",
+                  "PSYCHOTHERAPY",
+                  "INTERNAL_MEDICINE",
+                  "FAMILY_MEDICINE",
+                  "DENTIST",
+                  "VETERINARIAN",
+                  "PHYSIOTHERAPY",
+                  "CHIROPRACTIC",
+                  "OSTEOPATHIC_MEDICINE",
+                  "ORTHOPEDICS",
+                  "OTHER",
+                  "LACTATION_CONSULTANT",
+                  "PODIATRY",
+                  "GENERAL_PRACTICE",
+                  "HOSPITAL_MEDICINE",
+                  "BEHAVIORAL_HEALTH",
+                  "MENTAL_HEALTH",
+                  "SUBSTANCE_USE_DISORDER",
+                  "VASCULAR_MEDICINE",
+                  "LIFESTYLE_MEDICINE",
+                  "PREVENTIVE_MEDICINE",
+                  "PUBLIC_HEALTH",
+                  "ADOLESCENT_MEDICINE",
+                  "WOUND_CARE",
+                  "NEUROSURGERY",
+                  "PLASTIC_SURGERY",
+                  "PALLIATIVE_CARE",
+                  "TRANSPLANT_MEDICINE",
+                  "OBESITY_MEDICINE",
+                  "CASE_MANAGEMENT",
+                  "CARE_MANAGEMENT",
+                  "CARE_COORDINATION",
+                  "SOCIAL_WORK",
+                  "PATHOLOGY",
+                  "RADIATION_ONCOLOGY",
+                  "SLEEP_MEDICINE",
+                  "AUDIOLOGY",
+                  "REPRODUCTIVE_ENDOCRINOLOGY",
+                  "PHARMACIST",
+                  "OCCUPATIONAL_THERAPY",
+                  "SPEECH_LANGUAGE_PATHOLOGY"
+                ],
+                "example": "GENERAL_PRACTICE"
+              }
+            },
+            "required": [
+              "type",
+              "streams",
+              "encoding",
+              "sample_rate",
+              "speech_locales"
+            ],
+            "example": {
+              "type": "CONFIG",
+              "encoding": "PCM_S16LE",
+              "sample_rate": 16000,
+              "speech_locales": [
+                "ENGLISH_US",
+                "SPANISH_ES"
+              ],
+              "streams": [
+                {
+                  "id": "DOCTOR_STREAM",
+                  "speaker_type": "DOCTOR"
+                },
+                {
+                  "id": "PATIENT_STREAM",
+                  "speaker_type": "PATIENT"
+                }
+              ],
+              "split_by_sentence": true
+            }
+          }
+        },
+        "publish.message.1": {
+          "summary": "A chunk of an audio track from the encounter.",
+          "description": "Chunk (little portion) of a single audio track from the encounter. Maximum allowed duration is 1 second, recommended is 100ms.",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "AUDIO_CHUNK"
+                ]
+              },
+              "payload": {
+                "type": "string",
+                "description": "Raw audio chunk in base64 string.",
+                "example": "ZXhhbXBsZQ=="
+              },
+              "stream_id": {
+                "type": "string",
+                "description": "Identifier of one of the streams you defined in `streams` in the configuration.",
+                "example": "doctor_stream"
+              },
+              "seq_id": {
+                "type": "integer",
+                "description": "A unique identifier for this audio chunk within its stream, expected to be sequential (n+1) from one audio chunk to the next.\nFirst value (i.e. for the first audio chunk of a stream) can start at any arbitrary value.\nThis field is required if you enabled the audio chunk acknowledgement protocol in the configuration.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/next/guides/best-practices/transcription-network-resilience)."
+              }
+            },
+            "required": [
+              "type",
+              "payload",
+              "stream_id"
+            ]
+          }
+        },
+        "publish.message.2": {
+          "summary": "End the streaming.",
+          "description": "Signal the end of streaming and ask the Nabla Core API to finish what is still in progress (e.g. gives a final state to the latest transcript item).",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "END"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "example": {
+              "type": "END"
+            }
+          }
+        },
+        "subscribe.message.0": {
+          "summary": "A transcript item.",
+          "description": "A portion of the transcript being generated. Typically, the currently being spoken sentence transcribed from the last transmitted audio chunks. This might be an incomplete sentence since we keep transcribing as audio chunks are received. You should patch the previously received transcript item with the same id until `is_final` is true.",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "TRANSCRIPT_ITEM"
+                ]
+              },
+              "id": {
+                "description": "ID of the object you're receiving. It will be re-used as you receive more refined versions of this object, until you get the final version (the one for which `is_final` is `true`).",
+                "type": "string",
+                "format": "uuid",
+                "example": "98FCE1EF-DBCA-41EF-8BC7-4D1621AC07C6"
+              },
+              "text": {
+                "type": "string",
+                "description": "The transcribed text.",
+                "example": "Also, I’m allergic to peanuts."
+              },
+              "speaker_type": {
+                "description": "Who said the text in this transcript item. If no diarization, then this is simply inferred from the speaker type of the audio stream from which this sentence got transcribed.",
+                "type": "string",
+                "enum": [
+                  "DOCTOR",
+                  "PATIENT",
+                  "UNSPECIFIED"
+                ],
+                "example": "DOCTOR"
+              },
+              "locale": {
+                "type": "string",
+                "enum": [
+                  "ENGLISH_US",
+                  "ENGLISH_UK",
+                  "SPANISH_ES",
+                  "SPANISH_MX",
+                  "FRENCH_FR",
+                  "ARABIC_EG",
+                  "ARABIC_LB",
+                  "ARABIC_MA",
+                  "ARABIC_SA",
+                  "ARMENIAN_AM",
+                  "BENGALI_IN",
+                  "CANTONESE_CN",
+                  "CROATIAN_HR",
+                  "FILIPINO_PH",
+                  "GERMAN_DE",
+                  "GREEK_GR",
+                  "GUJARATI_IN",
+                  "HEBREW_IL",
+                  "HINDI_IN",
+                  "ITALIAN_IT",
+                  "JAPANESE_JP",
+                  "KHMER_KH",
+                  "KOREAN_KR",
+                  "MANDARIN_CN",
+                  "PERSIAN_IR",
+                  "POLISH_PL",
+                  "PORTUGUESE_PT",
+                  "PUNJABI_IN",
+                  "RUSSIAN_RU",
+                  "SERBIAN_RS",
+                  "TAMIL_IN",
+                  "TELUGU_IN",
+                  "THAI_TH",
+                  "URDU_IN",
+                  "VIETNAMESE_VN"
+                ],
+                "example": "ENGLISH_US",
+                "description": "Locale for this transcript item, detected by the speech-to-text engine from the list of locales in the input."
+              },
+              "start_offset_ms": {
+                "type": "integer",
+                "description": "The initial point of the audio segment that this transcript entry represents, measured in milliseconds from the start of the audio stream.",
+                "example": 65100
+              },
+              "end_offset_ms": {
+                "type": "integer",
+                "description": "The concluding point of the audio segment that this transcript entry represents, measured in milliseconds from the start of the audio stream.\n\nIn other words: this basically equals `start_time_ms` plus the duration of the audio segment that this transcript entry represents (regardless of how it was chunked).",
+                "example": 69300
+              },
+              "is_final": {
+                "type": "boolean",
+                "description": "Indicates if this is the final version of the transcript item."
+              }
+            },
+            "required": [
+              "type",
+              "id",
+              "text",
+              "speaker_type",
+              "locale",
+              "start_offset_ms",
+              "end_offset_ms",
+              "is_final"
+            ]
+          }
+        },
+        "subscribe.message.1": {
+          "summary": "Acknowledgement for audio chunks up to the specified sequential id.",
+          "description": "When enabled in the configuration, server will regularly send audio chunks acknowledgement to signal receipt and imminent transcription of audio.\n\nClients should consider acknowledged audio as processed and delete it from their buffer.\n\nMoreover, audio acknowledgement is intended to set the pace for streaming speed: Clients should refrain from sending new audio chunks until acknowledgement is received for previous ones. Server will accept up to 10 seconds of not-yet-acknowledged audio: clients going further will face an \"audio chunks buffer overflow\" error.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/next/guides/best-practices/transcription-network-resilience).",
+          "payload": {
+            "type": "object",
+            "description": "Acknowledgement of audio receipt by the server up to the audio chunk with the sequential id `ack_id`.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/next/guides/best-practices/transcription-network-resilience).",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "AUDIO_CHUNK_ACK"
+                ]
+              },
+              "stream_id": {
+                "type": "string",
+                "description": "ID of the stream to which the ack-ed chunk belongs."
+              },
+              "ack_id": {
+                "type": "integer",
+                "description": "The sequential id of the audio chunk up to which this acknowledgment applies."
+              }
+            },
+            "example": {
+              "type": "AUDIO_CHUNK_ACK",
+              "stream_id": "patient_stream",
+              "ack_id": 42
+            },
+            "required": [
+              "type",
+              "ack_id",
+              "stream_id"
+            ]
+          }
+        },
+        "subscribe.message.2": {
+          "summary": "An error message.",
+          "description": "An error message sent right before closing the websocket due to a fatal error. It explains shortly what went wrong.",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "ERROR_MESSAGE"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "description": "A human-readable explanation of the error, often including contextual details to help understand what went wrong."
+              },
+              "code": {
+                "type": "integer",
+                "description": "A numeric identifier for the error. This may either be a standard HTTP status code (e.g. 400, 401) or a more specific application-level code (typically >1000). Some errors —like an audio buffer overflow due to client misuse— have dedicated codes, while others —like malformed JSON— use broader and generic codes.\n\n**Tip**: You should use this field as the primary reference for implementing error handling logic."
+              },
+              "name": {
+                "type": "string",
+                "description": "An internal enum-style name associated with the error code. While it may help with debugging, it’s mainly for reference—always rely on the numeric code for programmatic handling."
+              },
+              "trace_id": {
+                "type": "string",
+                "description": "A unique identifier for the failed API request. This is especially useful when reaching out to Nabla support, as it allows us to trace the exact request in our systems."
+              }
+            },
+            "required": [
+              "type",
+              "message",
+              "code",
+              "name"
+            ],
+            "example": [
+              {
+                "type": "ERROR_MESSAGE",
+                "message": "Unable to parse JSON at path $.speech_locales",
+                "code": 400,
+                "name": "BAD_REQUEST",
+                "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+              },
+              {
+                "type": "ERROR_MESSAGE",
+                "message": "Received a huge amount of audio in a very short window time.",
+                "code": 83016,
+                "name": "AUDIO_CHUNKS_BUFFER_OVERFLOW",
+                "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+              }
+            ]
+          }
+        }
+      },
+      "description": "Transcribe WebSocket API takes audio streams of your encounters\nand returns a live transcription.\n\nEach of the audio streams you declare in the configuration will expect audio chunks to flow continuously (even if silent),\n**if a stream does not receive any audio chunk for 10 seconds the websocket will fail with a timeout error (code: 83011).**\n\nExample communication:\n  - You: Open the websocket specifying an authorization token.\n  - You: Send a first message setting the configuration.\n  - You: continuously send small audio chunks for each stream.\n  - Nabla: continuously computes and sends transcript items.\n  - You: stop streaming audio and immediately send a `{ \"type\": \"END\" }`.\n  - Nabla: finishes processing audio and pushes any ongoing transcript item to a final state.\n  - Nabla: closes the websocket.\n  - You: filter-out non-final transcript items and sort them by `start_offset_ms` before calling the [note-generation API](/next/server/generate-note).\n",
+      "bindings": {
+        "ws": {
+          "headers": {
+            "type": "object",
+            "description": "Some websocket clients only support the `Sec-WebSocket-Protocol` header, so we suggest an alternative way of specifying your authentication header. See _Authentication_ section above.",
+            "properties": {
+              "Sec-WebSocket-Protocol": {
+                "type": "string",
+                "enum": [
+                  "transcribe-protocol"
+                ],
+                "description": "WebSocket Sub-protocol header, as per the _RFC 6455_."
+              },
+              "Authorization": {
+                "type": "string",
+                "description": "Your authentication token (_server key_ or _user access token_) prefixed by `Bearer `. To get one, check [Authentication](/next/guides/authentication)."
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "operations": {
+    "/transcribe-ws.publish": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/~1transcribe-ws"
+      },
+      "description": "Stream your encounter's audio by sending small chunks from each speaker.",
+      "messages": [
+        {
+          "$ref": "#/channels/~1transcribe-ws/messages/publish.message.0"
+        },
+        {
+          "$ref": "#/channels/~1transcribe-ws/messages/publish.message.1"
+        },
+        {
+          "$ref": "#/channels/~1transcribe-ws/messages/publish.message.2"
+        }
+      ]
+    },
+    "/transcribe-ws.subscribe": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/~1transcribe-ws"
+      },
+      "description": "Receive the live transcription.",
+      "messages": [
+        {
+          "$ref": "#/channels/~1transcribe-ws/messages/subscribe.message.0"
+        },
+        {
+          "$ref": "#/channels/~1transcribe-ws/messages/subscribe.message.1"
+        },
+        {
+          "$ref": "#/channels/~1transcribe-ws/messages/subscribe.message.2"
+        }
+      ]
+    }
+  },
+  "components": {
+    "messages": {
+      "transcribe_config": {
+        "summary": "Initiates the transcribeing feature with the given configuration.",
+        "description": "This should be your first message in the websocket.",
+        "payload": {
+          "type": "object",
+          "description": "First message to configure transcription (audio format, locale, etc).",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "CONFIG"
+              ]
+            },
+            "streams": {
+              "type": "array",
+              "description": "Describe the audio streams you intend to stream as input of the Transcribe API. Typically, if you have separate doctor/patient audio tracks (or do diarization yourself) you will configure two streams for transcription. Remember that a stream will expect audio to flow continuously, otherwise a timeout error will be thrown.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Give an identifier to this stream.",
+                    "example": "doctor_stream"
+                  },
+                  "speaker_type": {
+                    "description": "Who is going to speak in this audio stream.",
+                    "type": "string",
+                    "enum": [
+                      "DOCTOR",
+                      "PATIENT",
+                      "UNSPECIFIED"
+                    ],
+                    "example": "DOCTOR"
+                  }
+                },
+                "required": [
+                  "id",
+                  "speaker_type"
+                ]
+              }
+            },
+            "encoding": {
+              "type": "string",
+              "description": "Encoding of the streamed audio.",
+              "enum": [
+                "PCM_S16LE"
+              ],
+              "example": "PCM_S16LE"
+            },
+            "sample_rate": {
+              "type": "integer",
+              "description": "Sample rate of submitted streaming audio, in hertz.",
+              "minimum": 8000,
+              "maximum": 192000,
+              "example": 16000
+            },
+            "speech_locales": {
+              "description": "An array of up to two locales for transcription. The speech-to-text engine automatically detects the spoken locale from this list. Each `transcript_item` received in the websocket will then specify the detected locale, enabling accurate transcription of **bilingual encounters**.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "ENGLISH_US",
+                  "ENGLISH_UK",
+                  "SPANISH_ES",
+                  "SPANISH_MX",
+                  "FRENCH_FR",
+                  "ARABIC_EG",
+                  "ARABIC_LB",
+                  "ARABIC_MA",
+                  "ARABIC_SA",
+                  "ARMENIAN_AM",
+                  "BENGALI_IN",
+                  "CANTONESE_CN",
+                  "CROATIAN_HR",
+                  "FILIPINO_PH",
+                  "GERMAN_DE",
+                  "GREEK_GR",
+                  "GUJARATI_IN",
+                  "HEBREW_IL",
+                  "HINDI_IN",
+                  "ITALIAN_IT",
+                  "JAPANESE_JP",
+                  "KHMER_KH",
+                  "KOREAN_KR",
+                  "MANDARIN_CN",
+                  "PERSIAN_IR",
+                  "POLISH_PL",
+                  "PORTUGUESE_PT",
+                  "PUNJABI_IN",
+                  "RUSSIAN_RU",
+                  "SERBIAN_RS",
+                  "TAMIL_IN",
+                  "TELUGU_IN",
+                  "THAI_TH",
+                  "URDU_IN",
+                  "VIETNAMESE_VN"
+                ],
+                "example": "ENGLISH_US"
+              },
+              "minItems": 1,
+              "maxItems": 2,
+              "uniqueItems": true
+            },
+            "split_by_sentence": {
+              "type": "boolean",
+              "default": false,
+              "description": "Indicates whether to segment transcription results at sentence boundaries. Default is false, meaning that a single transcript item may encompass multiple sentences, provided they are not delineated by pauses (silence) in the audio."
+            },
+            "enable_audio_chunk_ack": {
+              "type": "boolean",
+              "default": false,
+              "description": "If enabled, audio chunks should contain a `seq_id`, and the server will periodically send acknowledgements up to the specified `seq_id`.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/next/guides/best-practices/transcription-network-resilience)."
+            },
+            "specialty": {
+              "type": "string",
+              "description": "The medical specialty of the provider.",
+              "nullable": true,
+              "enum": [
+                "ADDICTION_MEDICINE",
+                "PAIN_MEDICINE",
+                "ALLERGY_AND_IMMUNOLOGY",
+                "ANESTHESIOLOGY",
+                "ONCOLOGY",
+                "CARDIOLOGY",
+                "SURGERY",
+                "DERMATOLOGY",
+                "DIABETOLOGY",
+                "ENDOCRINOLOGY",
+                "GENETICS",
+                "GERIATRICS",
+                "GYNECOLOGY",
+                "HEMATOLOGY",
+                "HEPATOLOGY",
+                "GASTROENTEROLOGY",
+                "SPORTS_MEDICINE",
+                "OCCUPATIONAL_MEDICINE",
+                "GENERAL_MEDICINE",
+                "FORENSIC_MEDICINE",
+                "PHYSICAL_MEDICINE_AND_REHABILITATION",
+                "NEPHROLOGY",
+                "NEUROLOGY",
+                "NUTRITION",
+                "DIETETICS",
+                "OPHTHALMOLOGY",
+                "ENT",
+                "PEDIATRICS",
+                "PULMONOLOGY",
+                "PSYCHIATRY",
+                "RHEUMATOLOGY",
+                "RADIOLOGY",
+                "IMMUNOLOGY",
+                "INFECTIOUS_DISEASE",
+                "SEXUAL_MEDICINE",
+                "TOXICOLOGY",
+                "UROLOGY",
+                "MIDWIFE",
+                "EMERGENCY_MEDICINE",
+                "NURSE",
+                "PSYCHOLOGY",
+                "PSYCHOTHERAPY",
+                "INTERNAL_MEDICINE",
+                "FAMILY_MEDICINE",
+                "DENTIST",
+                "VETERINARIAN",
+                "PHYSIOTHERAPY",
+                "CHIROPRACTIC",
+                "OSTEOPATHIC_MEDICINE",
+                "ORTHOPEDICS",
+                "OTHER",
+                "LACTATION_CONSULTANT",
+                "PODIATRY",
+                "GENERAL_PRACTICE",
+                "HOSPITAL_MEDICINE",
+                "BEHAVIORAL_HEALTH",
+                "MENTAL_HEALTH",
+                "SUBSTANCE_USE_DISORDER",
+                "VASCULAR_MEDICINE",
+                "LIFESTYLE_MEDICINE",
+                "PREVENTIVE_MEDICINE",
+                "PUBLIC_HEALTH",
+                "ADOLESCENT_MEDICINE",
+                "WOUND_CARE",
+                "NEUROSURGERY",
+                "PLASTIC_SURGERY",
+                "PALLIATIVE_CARE",
+                "TRANSPLANT_MEDICINE",
+                "OBESITY_MEDICINE",
+                "CASE_MANAGEMENT",
+                "CARE_MANAGEMENT",
+                "CARE_COORDINATION",
+                "SOCIAL_WORK",
+                "PATHOLOGY",
+                "RADIATION_ONCOLOGY",
+                "SLEEP_MEDICINE",
+                "AUDIOLOGY",
+                "REPRODUCTIVE_ENDOCRINOLOGY",
+                "PHARMACIST",
+                "OCCUPATIONAL_THERAPY",
+                "SPEECH_LANGUAGE_PATHOLOGY"
+              ],
+              "example": "GENERAL_PRACTICE"
+            }
+          },
+          "required": [
+            "type",
+            "streams",
+            "encoding",
+            "sample_rate",
+            "speech_locales"
+          ],
+          "example": {
+            "type": "CONFIG",
+            "encoding": "PCM_S16LE",
+            "sample_rate": 16000,
+            "speech_locales": [
+              "ENGLISH_US",
+              "SPANISH_ES"
+            ],
+            "streams": [
+              {
+                "id": "DOCTOR_STREAM",
+                "speaker_type": "DOCTOR"
+              },
+              {
+                "id": "PATIENT_STREAM",
+                "speaker_type": "PATIENT"
+              }
+            ],
+            "split_by_sentence": true
+          }
+        }
+      },
+      "audio_chunk": {
+        "summary": "A chunk of an audio track from the encounter.",
+        "description": "Chunk (little portion) of a single audio track from the encounter. Maximum allowed duration is 1 second, recommended is 100ms.",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "AUDIO_CHUNK"
+              ]
+            },
+            "payload": {
+              "type": "string",
+              "description": "Raw audio chunk in base64 string.",
+              "example": "ZXhhbXBsZQ=="
+            },
+            "stream_id": {
+              "type": "string",
+              "description": "Identifier of one of the streams you defined in `streams` in the configuration.",
+              "example": "doctor_stream"
+            },
+            "seq_id": {
+              "type": "integer",
+              "description": "A unique identifier for this audio chunk within its stream, expected to be sequential (n+1) from one audio chunk to the next.\nFirst value (i.e. for the first audio chunk of a stream) can start at any arbitrary value.\nThis field is required if you enabled the audio chunk acknowledgement protocol in the configuration.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/next/guides/best-practices/transcription-network-resilience)."
+            }
+          },
+          "required": [
+            "type",
+            "payload",
+            "stream_id"
+          ]
+        }
+      },
+      "end": {
+        "summary": "End the streaming.",
+        "description": "Signal the end of streaming and ask the Nabla Core API to finish what is still in progress (e.g. gives a final state to the latest transcript item).",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "END"
+              ]
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "example": {
+            "type": "END"
+          }
+        }
+      },
+      "transcript_item": {
+        "summary": "A transcript item.",
+        "description": "A portion of the transcript being generated. Typically, the currently being spoken sentence transcribed from the last transmitted audio chunks. This might be an incomplete sentence since we keep transcribing as audio chunks are received. You should patch the previously received transcript item with the same id until `is_final` is true.",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "TRANSCRIPT_ITEM"
+              ]
+            },
+            "id": {
+              "description": "ID of the object you're receiving. It will be re-used as you receive more refined versions of this object, until you get the final version (the one for which `is_final` is `true`).",
+              "type": "string",
+              "format": "uuid",
+              "example": "98FCE1EF-DBCA-41EF-8BC7-4D1621AC07C6"
+            },
+            "text": {
+              "type": "string",
+              "description": "The transcribed text.",
+              "example": "Also, I’m allergic to peanuts."
+            },
+            "speaker_type": {
+              "description": "Who said the text in this transcript item. If no diarization, then this is simply inferred from the speaker type of the audio stream from which this sentence got transcribed.",
+              "type": "string",
+              "enum": [
+                "DOCTOR",
+                "PATIENT",
+                "UNSPECIFIED"
+              ],
+              "example": "DOCTOR"
+            },
+            "locale": {
+              "type": "string",
+              "enum": [
+                "ENGLISH_US",
+                "ENGLISH_UK",
+                "SPANISH_ES",
+                "SPANISH_MX",
+                "FRENCH_FR",
+                "ARABIC_EG",
+                "ARABIC_LB",
+                "ARABIC_MA",
+                "ARABIC_SA",
+                "ARMENIAN_AM",
+                "BENGALI_IN",
+                "CANTONESE_CN",
+                "CROATIAN_HR",
+                "FILIPINO_PH",
+                "GERMAN_DE",
+                "GREEK_GR",
+                "GUJARATI_IN",
+                "HEBREW_IL",
+                "HINDI_IN",
+                "ITALIAN_IT",
+                "JAPANESE_JP",
+                "KHMER_KH",
+                "KOREAN_KR",
+                "MANDARIN_CN",
+                "PERSIAN_IR",
+                "POLISH_PL",
+                "PORTUGUESE_PT",
+                "PUNJABI_IN",
+                "RUSSIAN_RU",
+                "SERBIAN_RS",
+                "TAMIL_IN",
+                "TELUGU_IN",
+                "THAI_TH",
+                "URDU_IN",
+                "VIETNAMESE_VN"
+              ],
+              "example": "ENGLISH_US",
+              "description": "Locale for this transcript item, detected by the speech-to-text engine from the list of locales in the input."
+            },
+            "start_offset_ms": {
+              "type": "integer",
+              "description": "The initial point of the audio segment that this transcript entry represents, measured in milliseconds from the start of the audio stream.",
+              "example": 65100
+            },
+            "end_offset_ms": {
+              "type": "integer",
+              "description": "The concluding point of the audio segment that this transcript entry represents, measured in milliseconds from the start of the audio stream.\n\nIn other words: this basically equals `start_time_ms` plus the duration of the audio segment that this transcript entry represents (regardless of how it was chunked).",
+              "example": 69300
+            },
+            "is_final": {
+              "type": "boolean",
+              "description": "Indicates if this is the final version of the transcript item."
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "text",
+            "speaker_type",
+            "locale",
+            "start_offset_ms",
+            "end_offset_ms",
+            "is_final"
+          ]
+        }
+      },
+      "audio_chunk_ack": {
+        "summary": "Acknowledgement for audio chunks up to the specified sequential id.",
+        "description": "When enabled in the configuration, server will regularly send audio chunks acknowledgement to signal receipt and imminent transcription of audio.\n\nClients should consider acknowledged audio as processed and delete it from their buffer.\n\nMoreover, audio acknowledgement is intended to set the pace for streaming speed: Clients should refrain from sending new audio chunks until acknowledgement is received for previous ones. Server will accept up to 10 seconds of not-yet-acknowledged audio: clients going further will face an \"audio chunks buffer overflow\" error.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/next/guides/best-practices/transcription-network-resilience).",
+        "payload": {
+          "type": "object",
+          "description": "Acknowledgement of audio receipt by the server up to the audio chunk with the sequential id `ack_id`.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/next/guides/best-practices/transcription-network-resilience).",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "AUDIO_CHUNK_ACK"
+              ]
+            },
+            "stream_id": {
+              "type": "string",
+              "description": "ID of the stream to which the ack-ed chunk belongs."
+            },
+            "ack_id": {
+              "type": "integer",
+              "description": "The sequential id of the audio chunk up to which this acknowledgment applies."
+            }
+          },
+          "example": {
+            "type": "AUDIO_CHUNK_ACK",
+            "stream_id": "patient_stream",
+            "ack_id": 42
+          },
+          "required": [
+            "type",
+            "ack_id",
+            "stream_id"
+          ]
+        }
+      },
+      "error_message": {
+        "summary": "An error message.",
+        "description": "An error message sent right before closing the websocket due to a fatal error. It explains shortly what went wrong.",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "ERROR_MESSAGE"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "description": "A human-readable explanation of the error, often including contextual details to help understand what went wrong."
+            },
+            "code": {
+              "type": "integer",
+              "description": "A numeric identifier for the error. This may either be a standard HTTP status code (e.g. 400, 401) or a more specific application-level code (typically >1000). Some errors —like an audio buffer overflow due to client misuse— have dedicated codes, while others —like malformed JSON— use broader and generic codes.\n\n**Tip**: You should use this field as the primary reference for implementing error handling logic."
+            },
+            "name": {
+              "type": "string",
+              "description": "An internal enum-style name associated with the error code. While it may help with debugging, it’s mainly for reference—always rely on the numeric code for programmatic handling."
+            },
+            "trace_id": {
+              "type": "string",
+              "description": "A unique identifier for the failed API request. This is especially useful when reaching out to Nabla support, as it allows us to trace the exact request in our systems."
+            }
+          },
+          "required": [
+            "type",
+            "message",
+            "code",
+            "name"
+          ],
+          "example": [
+            {
+              "type": "ERROR_MESSAGE",
+              "message": "Unable to parse JSON at path $.speech_locales",
+              "code": 400,
+              "name": "BAD_REQUEST",
+              "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+            },
+            {
+              "type": "ERROR_MESSAGE",
+              "message": "Received a huge amount of audio in a very short window time.",
+              "code": 83016,
+              "name": "AUDIO_CHUNKS_BUFFER_OVERFLOW",
+              "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+            }
+          ]
+        }
+      }
+    },
+    "schemas": {
+      "transcribe_config": {
+        "type": "object",
+        "description": "First message to configure transcription (audio format, locale, etc).",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "CONFIG"
+            ]
+          },
+          "streams": {
+            "type": "array",
+            "description": "Describe the audio streams you intend to stream as input of the Transcribe API. Typically, if you have separate doctor/patient audio tracks (or do diarization yourself) you will configure two streams for transcription. Remember that a stream will expect audio to flow continuously, otherwise a timeout error will be thrown.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Give an identifier to this stream.",
+                  "example": "doctor_stream"
+                },
+                "speaker_type": {
+                  "description": "Who is going to speak in this audio stream.",
+                  "type": "string",
+                  "enum": [
+                    "DOCTOR",
+                    "PATIENT",
+                    "UNSPECIFIED"
+                  ],
+                  "example": "DOCTOR"
+                }
+              },
+              "required": [
+                "id",
+                "speaker_type"
+              ]
+            }
+          },
+          "encoding": {
+            "type": "string",
+            "description": "Encoding of the streamed audio.",
+            "enum": [
+              "PCM_S16LE"
+            ],
+            "example": "PCM_S16LE"
+          },
+          "sample_rate": {
+            "type": "integer",
+            "description": "Sample rate of submitted streaming audio, in hertz.",
+            "minimum": 8000,
+            "maximum": 192000,
+            "example": 16000
+          },
+          "speech_locales": {
+            "description": "An array of up to two locales for transcription. The speech-to-text engine automatically detects the spoken locale from this list. Each `transcript_item` received in the websocket will then specify the detected locale, enabling accurate transcription of **bilingual encounters**.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ENGLISH_US",
+                "ENGLISH_UK",
+                "SPANISH_ES",
+                "SPANISH_MX",
+                "FRENCH_FR",
+                "ARABIC_EG",
+                "ARABIC_LB",
+                "ARABIC_MA",
+                "ARABIC_SA",
+                "ARMENIAN_AM",
+                "BENGALI_IN",
+                "CANTONESE_CN",
+                "CROATIAN_HR",
+                "FILIPINO_PH",
+                "GERMAN_DE",
+                "GREEK_GR",
+                "GUJARATI_IN",
+                "HEBREW_IL",
+                "HINDI_IN",
+                "ITALIAN_IT",
+                "JAPANESE_JP",
+                "KHMER_KH",
+                "KOREAN_KR",
+                "MANDARIN_CN",
+                "PERSIAN_IR",
+                "POLISH_PL",
+                "PORTUGUESE_PT",
+                "PUNJABI_IN",
+                "RUSSIAN_RU",
+                "SERBIAN_RS",
+                "TAMIL_IN",
+                "TELUGU_IN",
+                "THAI_TH",
+                "URDU_IN",
+                "VIETNAMESE_VN"
+              ],
+              "example": "ENGLISH_US"
+            },
+            "minItems": 1,
+            "maxItems": 2,
+            "uniqueItems": true
+          },
+          "split_by_sentence": {
+            "type": "boolean",
+            "default": false,
+            "description": "Indicates whether to segment transcription results at sentence boundaries. Default is false, meaning that a single transcript item may encompass multiple sentences, provided they are not delineated by pauses (silence) in the audio."
+          },
+          "enable_audio_chunk_ack": {
+            "type": "boolean",
+            "default": false,
+            "description": "If enabled, audio chunks should contain a `seq_id`, and the server will periodically send acknowledgements up to the specified `seq_id`.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/next/guides/best-practices/transcription-network-resilience)."
+          },
+          "specialty": {
+            "type": "string",
+            "description": "The medical specialty of the provider.",
+            "nullable": true,
+            "enum": [
+              "ADDICTION_MEDICINE",
+              "PAIN_MEDICINE",
+              "ALLERGY_AND_IMMUNOLOGY",
+              "ANESTHESIOLOGY",
+              "ONCOLOGY",
+              "CARDIOLOGY",
+              "SURGERY",
+              "DERMATOLOGY",
+              "DIABETOLOGY",
+              "ENDOCRINOLOGY",
+              "GENETICS",
+              "GERIATRICS",
+              "GYNECOLOGY",
+              "HEMATOLOGY",
+              "HEPATOLOGY",
+              "GASTROENTEROLOGY",
+              "SPORTS_MEDICINE",
+              "OCCUPATIONAL_MEDICINE",
+              "GENERAL_MEDICINE",
+              "FORENSIC_MEDICINE",
+              "PHYSICAL_MEDICINE_AND_REHABILITATION",
+              "NEPHROLOGY",
+              "NEUROLOGY",
+              "NUTRITION",
+              "DIETETICS",
+              "OPHTHALMOLOGY",
+              "ENT",
+              "PEDIATRICS",
+              "PULMONOLOGY",
+              "PSYCHIATRY",
+              "RHEUMATOLOGY",
+              "RADIOLOGY",
+              "IMMUNOLOGY",
+              "INFECTIOUS_DISEASE",
+              "SEXUAL_MEDICINE",
+              "TOXICOLOGY",
+              "UROLOGY",
+              "MIDWIFE",
+              "EMERGENCY_MEDICINE",
+              "NURSE",
+              "PSYCHOLOGY",
+              "PSYCHOTHERAPY",
+              "INTERNAL_MEDICINE",
+              "FAMILY_MEDICINE",
+              "DENTIST",
+              "VETERINARIAN",
+              "PHYSIOTHERAPY",
+              "CHIROPRACTIC",
+              "OSTEOPATHIC_MEDICINE",
+              "ORTHOPEDICS",
+              "OTHER",
+              "LACTATION_CONSULTANT",
+              "PODIATRY",
+              "GENERAL_PRACTICE",
+              "HOSPITAL_MEDICINE",
+              "BEHAVIORAL_HEALTH",
+              "MENTAL_HEALTH",
+              "SUBSTANCE_USE_DISORDER",
+              "VASCULAR_MEDICINE",
+              "LIFESTYLE_MEDICINE",
+              "PREVENTIVE_MEDICINE",
+              "PUBLIC_HEALTH",
+              "ADOLESCENT_MEDICINE",
+              "WOUND_CARE",
+              "NEUROSURGERY",
+              "PLASTIC_SURGERY",
+              "PALLIATIVE_CARE",
+              "TRANSPLANT_MEDICINE",
+              "OBESITY_MEDICINE",
+              "CASE_MANAGEMENT",
+              "CARE_MANAGEMENT",
+              "CARE_COORDINATION",
+              "SOCIAL_WORK",
+              "PATHOLOGY",
+              "RADIATION_ONCOLOGY",
+              "SLEEP_MEDICINE",
+              "AUDIOLOGY",
+              "REPRODUCTIVE_ENDOCRINOLOGY",
+              "PHARMACIST",
+              "OCCUPATIONAL_THERAPY",
+              "SPEECH_LANGUAGE_PATHOLOGY"
+            ],
+            "example": "GENERAL_PRACTICE"
+          }
+        },
+        "required": [
+          "type",
+          "streams",
+          "encoding",
+          "sample_rate",
+          "speech_locales"
+        ],
+        "example": {
+          "type": "CONFIG",
+          "encoding": "PCM_S16LE",
+          "sample_rate": 16000,
+          "speech_locales": [
+            "ENGLISH_US",
+            "SPANISH_ES"
+          ],
+          "streams": [
+            {
+              "id": "DOCTOR_STREAM",
+              "speaker_type": "DOCTOR"
+            },
+            {
+              "id": "PATIENT_STREAM",
+              "speaker_type": "PATIENT"
+            }
+          ],
+          "split_by_sentence": true
+        }
+      },
+      "audio_chunk": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "AUDIO_CHUNK"
+            ]
+          },
+          "payload": {
+            "type": "string",
+            "description": "Raw audio chunk in base64 string.",
+            "example": "ZXhhbXBsZQ=="
+          },
+          "stream_id": {
+            "type": "string",
+            "description": "Identifier of one of the streams you defined in `streams` in the configuration.",
+            "example": "doctor_stream"
+          },
+          "seq_id": {
+            "type": "integer",
+            "description": "A unique identifier for this audio chunk within its stream, expected to be sequential (n+1) from one audio chunk to the next.\nFirst value (i.e. for the first audio chunk of a stream) can start at any arbitrary value.\nThis field is required if you enabled the audio chunk acknowledgement protocol in the configuration.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/next/guides/best-practices/transcription-network-resilience)."
+          }
+        },
+        "required": [
+          "type",
+          "payload",
+          "stream_id"
+        ]
+      },
+      "end": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "END"
+            ]
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "example": {
+          "type": "END"
+        }
+      },
+      "transcript_item": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "TRANSCRIPT_ITEM"
+            ]
+          },
+          "id": {
+            "description": "ID of the object you're receiving. It will be re-used as you receive more refined versions of this object, until you get the final version (the one for which `is_final` is `true`).",
+            "type": "string",
+            "format": "uuid",
+            "example": "98FCE1EF-DBCA-41EF-8BC7-4D1621AC07C6"
+          },
+          "text": {
+            "type": "string",
+            "description": "The transcribed text.",
+            "example": "Also, I’m allergic to peanuts."
+          },
+          "speaker_type": {
+            "description": "Who said the text in this transcript item. If no diarization, then this is simply inferred from the speaker type of the audio stream from which this sentence got transcribed.",
+            "type": "string",
+            "enum": [
+              "DOCTOR",
+              "PATIENT",
+              "UNSPECIFIED"
+            ],
+            "example": "DOCTOR"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "ENGLISH_US",
+              "ENGLISH_UK",
+              "SPANISH_ES",
+              "SPANISH_MX",
+              "FRENCH_FR",
+              "ARABIC_EG",
+              "ARABIC_LB",
+              "ARABIC_MA",
+              "ARABIC_SA",
+              "ARMENIAN_AM",
+              "BENGALI_IN",
+              "CANTONESE_CN",
+              "CROATIAN_HR",
+              "FILIPINO_PH",
+              "GERMAN_DE",
+              "GREEK_GR",
+              "GUJARATI_IN",
+              "HEBREW_IL",
+              "HINDI_IN",
+              "ITALIAN_IT",
+              "JAPANESE_JP",
+              "KHMER_KH",
+              "KOREAN_KR",
+              "MANDARIN_CN",
+              "PERSIAN_IR",
+              "POLISH_PL",
+              "PORTUGUESE_PT",
+              "PUNJABI_IN",
+              "RUSSIAN_RU",
+              "SERBIAN_RS",
+              "TAMIL_IN",
+              "TELUGU_IN",
+              "THAI_TH",
+              "URDU_IN",
+              "VIETNAMESE_VN"
+            ],
+            "example": "ENGLISH_US",
+            "description": "Locale for this transcript item, detected by the speech-to-text engine from the list of locales in the input."
+          },
+          "start_offset_ms": {
+            "type": "integer",
+            "description": "The initial point of the audio segment that this transcript entry represents, measured in milliseconds from the start of the audio stream.",
+            "example": 65100
+          },
+          "end_offset_ms": {
+            "type": "integer",
+            "description": "The concluding point of the audio segment that this transcript entry represents, measured in milliseconds from the start of the audio stream.\n\nIn other words: this basically equals `start_time_ms` plus the duration of the audio segment that this transcript entry represents (regardless of how it was chunked).",
+            "example": 69300
+          },
+          "is_final": {
+            "type": "boolean",
+            "description": "Indicates if this is the final version of the transcript item."
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "text",
+          "speaker_type",
+          "locale",
+          "start_offset_ms",
+          "end_offset_ms",
+          "is_final"
+        ]
+      },
+      "audio_chunk_ack": {
+        "type": "object",
+        "description": "Acknowledgement of audio receipt by the server up to the audio chunk with the sequential id `ack_id`.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/next/guides/best-practices/transcription-network-resilience).",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "AUDIO_CHUNK_ACK"
+            ]
+          },
+          "stream_id": {
+            "type": "string",
+            "description": "ID of the stream to which the ack-ed chunk belongs."
+          },
+          "ack_id": {
+            "type": "integer",
+            "description": "The sequential id of the audio chunk up to which this acknowledgment applies."
+          }
+        },
+        "example": {
+          "type": "AUDIO_CHUNK_ACK",
+          "stream_id": "patient_stream",
+          "ack_id": 42
+        },
+        "required": [
+          "type",
+          "ack_id",
+          "stream_id"
+        ]
+      },
+      "error_message": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "ERROR_MESSAGE"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "A human-readable explanation of the error, often including contextual details to help understand what went wrong."
+          },
+          "code": {
+            "type": "integer",
+            "description": "A numeric identifier for the error. This may either be a standard HTTP status code (e.g. 400, 401) or a more specific application-level code (typically >1000). Some errors —like an audio buffer overflow due to client misuse— have dedicated codes, while others —like malformed JSON— use broader and generic codes.\n\n**Tip**: You should use this field as the primary reference for implementing error handling logic."
+          },
+          "name": {
+            "type": "string",
+            "description": "An internal enum-style name associated with the error code. While it may help with debugging, it’s mainly for reference—always rely on the numeric code for programmatic handling."
+          },
+          "trace_id": {
+            "type": "string",
+            "description": "A unique identifier for the failed API request. This is especially useful when reaching out to Nabla support, as it allows us to trace the exact request in our systems."
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "code",
+          "name"
+        ],
+        "example": [
+          {
+            "type": "ERROR_MESSAGE",
+            "message": "Unable to parse JSON at path $.speech_locales",
+            "code": 400,
+            "name": "BAD_REQUEST",
+            "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+          },
+          {
+            "type": "ERROR_MESSAGE",
+            "message": "Received a huge amount of audio in a very short window time.",
+            "code": 83016,
+            "name": "AUDIO_CHUNKS_BUFFER_OVERFLOW",
+            "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -444,7 +444,7 @@ channels:
         - Core API: finishes processing audio and sends any remaining dictated texts.
         - Core API: closes the websocket.
     bindings:
-      wss:
+      ws:
         headers:
           type: object
           description: >-
