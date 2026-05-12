@@ -121,7 +121,8 @@
                     "pages": [
                       "POST /transcribe",
                       "POST /transcribe-async",
-                      "GET /transcribe-async/{id}"
+                      "GET /transcribe-async/{id}",
+                      "core-api/api-reference/server/transcribe-ws"
                     ]
                   },
                   {
@@ -130,13 +131,7 @@
                       "POST /dictate",
                       "POST /dictate-async",
                       "GET /dictate-async/{id}",
-                      {
-                        "group": "WebSocket /dictate-ws",
-                        "asyncapi": {
-                          "source": "/core-api/asyncapi/dictate-ws.json",
-                          "directory": "api-reference/server/dictate-ws"
-                        }
-                      },
+                      "core-api/api-reference/server/dictate-ws",
                       "core-api/reference/dictation-commands"
                     ]
                   },
@@ -194,7 +189,8 @@
                     "pages": [
                       "POST /transcribe",
                       "POST /transcribe-async",
-                      "GET /transcribe-async/{id}"
+                      "GET /transcribe-async/{id}",
+                      "core-api/api-reference/user/transcribe-ws"
                     ]
                   },
                   {
@@ -203,13 +199,7 @@
                       "POST /dictate",
                       "POST /dictate-async",
                       "GET /dictate-async/{id}",
-                      {
-                        "group": "WebSocket /dictate-ws",
-                        "asyncapi": {
-                          "source": "/core-api/asyncapi/dictate-ws.json",
-                          "directory": "api-reference/user/dictate-ws"
-                        }
-                      },
+                      "core-api/api-reference/user/dictate-ws",
                       "core-api/reference/dictation-commands"
                     ]
                   },
