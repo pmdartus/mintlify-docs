@@ -80,7 +80,6 @@
                 "pages": [
                   "core-api/api-versioning/strategy",
                   "core-api/api-versioning/targeting-a-version",
-                  "core-api/api-versioning/changelog",
                   "core-api/api-versioning/migrating-pre-2024-10-01"
                 ]
               },
@@ -93,6 +92,10 @@
                 ]
               }
             ]
+          },
+          {
+            "tab": "Changelog",
+            "pages": ["core-api/changelog"]
           }
         ]
       },
