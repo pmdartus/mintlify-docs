@@ -17,7 +17,7 @@ The Core API uses **date-based versioning** (e.g., `2026-04-24`). Every backward
 ## Recommended workflow
 
 1. **Pin your organization** to a known version when you first integrate. This stops surprise upgrades.
-2. **Watch the [Changelog](/core-api/api-versioning/changelog)** for new versions. Each entry calls out breaking vs additive changes.
+2. **Watch the [Changelog](/core-api/changelog)** for new versions. Each entry calls out breaking vs additive changes.
 3. **When you decide to upgrade**, use the header override (`X-Nabla-Api-Version: 2026-04-24`) on a subset of traffic first — staging, then 1% of production, then full rollout.
 4. **Once all clients run on the new version**, change the pinned version in the API Admin Console to match. The override remains supported, but you can drop it from request paths that no longer need it.
 5. **Drop overrides** in code only after the pinned version matches; this keeps the diff small if you need to roll back.
@@ -32,7 +32,7 @@ When a version is deprecated, Nabla announces it in the changelog with a sunset 
   <Card title="Target a specific version" icon="bullseye" href="/core-api/api-versioning/targeting-a-version">
     Set `X-Nabla-Api-Version` per request, or pin organization-wide.
   </Card>
-  <Card title="Changelog" icon="clock-rotate-left" href="/core-api/api-versioning/changelog">
+  <Card title="Changelog" icon="clock-rotate-left" href="/core-api/changelog">
     Every version, every change.
   </Card>
 </Columns>
