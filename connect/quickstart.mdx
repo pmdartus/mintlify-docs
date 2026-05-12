@@ -1,0 +1,361 @@
+---
+title: "Quickstart"
+description: "Launch your first Nabla Connect encounter end-to-end: token, encounter, callback."
+icon: "bolt"
+---
+
+This quickstart walks you through a complete Nabla Connect round trip. By the end you'll have:
+
+1. Minted a **server access token** with the OAuth 2.0 client credentials flow.
+2. Created a Nabla encounter for a test patient with `POST /encounters` and received a one-time `encounter_url`.
+3. Stood up a catch-all callback endpoint that verifies HMAC signatures and acknowledges a `NOTE_EXPORT` event.
+
+It should take under an hour. You can stop after step 2 if you only need to test the launch flow.
+
+## Prerequisites
+
+- A Nabla Connect organization. Contact [connect@nabla.com](mailto:connect@nabla.com) if you don't have one yet.
+- An **OAuth client** created in the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect), with either a JWKS URL or a static RSA public key. Copy its UUID. See [Authentication](/connect/authentication) for the full setup.
+- A **signature secret** copied from the Admin (you'll need it for step 3). It's generated when you configure the callback URL.
+- Node 18+ (or any HTTP client of your choice — examples are shown in cURL, Node, and Python).
+- For step 3 only: a publicly reachable HTTPS URL pointing at your local machine. [ngrok](https://ngrok.com) works well.
+
+<Note>
+This quickstart uses the **us** region. Replace `us.api.nabla.com` with `eu.api.nabla.com` if your organization is in EU.
+</Note>
+
+## 1. Get a server access token
+
+Build a JWT client assertion signed with your OAuth client's private key, then exchange it at `POST /oauth/token`.
+
+<Tabs>
+<Tab title="cURL">
+
+```bash
+# Build the JWT in your language of choice, then:
+curl -X POST https://us.api.nabla.com/v1/connect/server/oauth/token \
+  -H "content-type: application/json" \
+  -d '{
+    "grant_type": "client_credentials",
+    "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+    "client_assertion": "<YOUR_JWT_HERE>"
+  }'
+```
+
+</Tab>
+<Tab title="Node">
+
+```js
+import { SignJWT, importPKCS8 } from "jose";
+import fs from "node:fs/promises";
+
+const clientId = process.env.NABLA_CONNECT_CLIENT_ID;
+const privateKey = await importPKCS8(
+  await fs.readFile("./private_key.pem", "utf8"),
+  "RS256"
+);
+
+const tokenUrl = "https://us.api.nabla.com/v1/connect/server/oauth/token";
+
+const assertion = await new SignJWT({})
+  .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+  .setIssuer(clientId)
+  .setSubject(clientId)
+  .setAudience(tokenUrl)
+  .setIssuedAt()
+  .setExpirationTime("5m")
+  .sign(privateKey);
+
+const res = await fetch(tokenUrl, {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    grant_type: "client_credentials",
+    client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+    client_assertion: assertion,
+  }),
+});
+
+const { access_token } = await res.json();
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+import os
+import time
+import jwt  # PyJWT
+import requests
+
+client_id = os.environ["NABLA_CONNECT_CLIENT_ID"]
+with open("private_key.pem", "rb") as f:
+    private_key = f.read()
+
+token_url = "https://us.api.nabla.com/v1/connect/server/oauth/token"
+
+now = int(time.time())
+assertion = jwt.encode(
+    {"iss": client_id, "sub": client_id, "aud": token_url, "iat": now, "exp": now + 300},
+    private_key,
+    algorithm="RS256",
+)
+
+resp = requests.post(
+    token_url,
+    json={
+        "grant_type": "client_credentials",
+        "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+        "client_assertion": assertion,
+    },
+).json()
+
+access_token = resp["access_token"]
+```
+
+</Tab>
+</Tabs>
+
+The response includes `access_token` (valid for ~1 hour) and `expires_in`. Cache and reuse it across requests — don't mint a new one per call.
+
+## 2. Create an encounter
+
+Call `POST /encounters` with a representative patient/provider/encounter triplet. The response is a one-time `encounter_url` your frontend opens (iframe or new tab).
+
+<Tabs>
+<Tab title="cURL">
+
+```bash
+curl -X POST https://us.api.nabla.com/v1/connect/server/encounters \
+  -H "authorization: Bearer $ACCESS_TOKEN" \
+  -H "x-nabla-api-version: 2026-04-24" \
+  -H "content-type: application/json" \
+  -d '{
+    "provider_email": "dr.smith@example-clinic.com",
+    "external_provider_id": "prov-001",
+    "external_patient_id": "pat-42",
+    "external_encounter_id": "enc-2026-05-12-001",
+    "structured_context": {
+      "patient_demographics": {
+        "name": "Jane Doe",
+        "birth_date": "1985-04-21",
+        "gender": "FEMALE",
+        "pronouns": "SHE_HER"
+      }
+    },
+    "unstructured_context": "Follow-up for hypertension; on lisinopril 10mg daily."
+  }'
+```
+
+</Tab>
+<Tab title="Node">
+
+```js
+const res = await fetch("https://us.api.nabla.com/v1/connect/server/encounters", {
+  method: "POST",
+  headers: {
+    authorization: `Bearer ${access_token}`,
+    "x-nabla-api-version": "2026-04-24",
+    "content-type": "application/json",
+  },
+  body: JSON.stringify({
+    provider_email: "dr.smith@example-clinic.com",
+    external_provider_id: "prov-001",
+    external_patient_id: "pat-42",
+    external_encounter_id: "enc-2026-05-12-001",
+    structured_context: {
+      patient_demographics: {
+        name: "Jane Doe",
+        birth_date: "1985-04-21",
+        gender: "FEMALE",
+        pronouns: "SHE_HER",
+      },
+    },
+    unstructured_context: "Follow-up for hypertension; on lisinopril 10mg daily.",
+  }),
+});
+
+const { encounter_url } = await res.json();
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+resp = requests.post(
+    "https://us.api.nabla.com/v1/connect/server/encounters",
+    headers={
+        "authorization": f"Bearer {access_token}",
+        "x-nabla-api-version": "2026-04-24",
+        "content-type": "application/json",
+    },
+    json={
+        "provider_email": "dr.smith@example-clinic.com",
+        "external_provider_id": "prov-001",
+        "external_patient_id": "pat-42",
+        "external_encounter_id": "enc-2026-05-12-001",
+        "structured_context": {
+            "patient_demographics": {
+                "name": "Jane Doe",
+                "birth_date": "1985-04-21",
+                "gender": "FEMALE",
+                "pronouns": "SHE_HER",
+            },
+        },
+        "unstructured_context": "Follow-up for hypertension; on lisinopril 10mg daily.",
+    },
+).json()
+
+encounter_url = resp["encounter_url"]
+```
+
+</Tab>
+</Tabs>
+
+<Warning>
+The `encounter_url` is **one-time use** and expires in **10 minutes**. Don't store it. If the provider abandons the launch and comes back later, call [`POST /encounters/url`](/connect/reference/server-api/refresh-encounter-url) to get a fresh URL for the same `external_encounter_id`.
+</Warning>
+
+Open `encounter_url` in a browser. The Nabla app loads on the encounter, pre-populated with your patient context. The provider can now record, generate a note, and click **Export note**.
+
+## 3. Receive and verify a callback
+
+When the provider clicks **Export note**, Nabla signs and `POST`s a `NOTE_EXPORT` payload to the URL you configured in the Admin. Set up a minimal handler that verifies the HMAC signature and acknowledges the event.
+
+<Tabs>
+<Tab title="cURL">
+
+```bash
+# Once your endpoint is running and registered in the Admin,
+# trigger an export by clicking "Export note" in the Nabla app.
+# Inspect the request your endpoint received:
+#   - headers: x-nabla-connect-timestamp, x-nabla-connect-signature
+#   - body: { "request_uuid": "...", "type": "NOTE_EXPORT", "data": {...} }
+# Your handler must respond 200 with { "request_uuid": "..." } within a few seconds.
+```
+
+</Tab>
+<Tab title="Node">
+
+```js
+import crypto from "node:crypto";
+import express from "express";
+
+const app = express();
+const SECRET = process.env.NABLA_CONNECT_SIGNATURE_SECRET;
+const seen = new Set(); // use a durable store in production
+
+app.post(
+  "/nabla-callbacks",
+  express.json({
+    verify(req, _res, buf) {
+      const ts = req.headers["x-nabla-connect-timestamp"];
+      const sigs = (req.headers["x-nabla-connect-signature"] || "").split(",");
+
+      if (!ts || Date.now() - Date.parse(ts) > 60_000) {
+        throw new Error("Timestamp too old");
+      }
+
+      const computed = crypto
+        .createHmac("sha256", SECRET)
+        .update(ts + buf.toString())
+        .digest("hex");
+
+      const match = sigs.some(
+        (s) =>
+          s.trim().length === computed.length &&
+          crypto.timingSafeEqual(Buffer.from(s.trim()), Buffer.from(computed))
+      );
+      if (!match) throw new Error("Bad signature");
+    },
+  }),
+  (req, res) => {
+    const { request_uuid, type, data } = req.body;
+    if (seen.has(request_uuid)) return res.json({ request_uuid });
+    seen.add(request_uuid);
+
+    if (type === "NOTE_EXPORT") {
+      // TODO: enqueue an async job to write `data.note.sections` into your EHR
+    } else if (type === "PATIENT_INSTRUCTIONS_EXPORT") {
+      // TODO: handle patient instructions
+    } else {
+      return res.status(400).end();
+    }
+
+    res.json({ request_uuid });
+  }
+);
+
+app.listen(3000);
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+import hmac, hashlib, os
+from datetime import datetime, timezone
+from flask import Flask, request, abort, jsonify
+
+app = Flask(__name__)
+SECRET = os.environ["NABLA_CONNECT_SIGNATURE_SECRET"].encode()
+seen = set()  # use a durable store in production
+
+@app.post("/nabla-callbacks")
+def callback():
+    ts = request.headers.get("x-nabla-connect-timestamp", "")
+    sigs = request.headers.get("x-nabla-connect-signature", "").split(",")
+    raw = request.get_data()
+
+    try:
+        sent_at = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    except ValueError:
+        abort(401)
+    if (datetime.now(timezone.utc) - sent_at).total_seconds() > 60:
+        abort(401)
+
+    computed = hmac.new(SECRET, ts.encode() + raw, hashlib.sha256).hexdigest()
+    if not any(hmac.compare_digest(s.strip(), computed) for s in sigs):
+        abort(401)
+
+    payload = request.get_json()
+    request_uuid = payload["request_uuid"]
+    if request_uuid in seen:
+        return jsonify(request_uuid=request_uuid)
+    seen.add(request_uuid)
+
+    if payload["type"] == "NOTE_EXPORT":
+        pass  # TODO: enqueue write-back of payload["data"]["note"]["sections"]
+    elif payload["type"] == "PATIENT_INSTRUCTIONS_EXPORT":
+        pass  # TODO: handle patient instructions
+    else:
+        abort(400)
+
+    return jsonify(request_uuid=request_uuid)
+```
+
+</Tab>
+</Tabs>
+
+Expose your local server (e.g., `ngrok http 3000`), then paste the public URL into the **Callback URL** field in the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect). Click **Export note** in the encounter you launched in step 2 — your handler should receive the `NOTE_EXPORT` event and respond `200`.
+
+<Tip>
+Always respond within a few seconds. Nabla waits for your `200` before showing the success state to the provider. See [Callback latency](/connect/best-practices/callback-latency) for the recommended pattern (verify → enqueue → respond, then process async).
+</Tip>
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Launch an encounter" icon="rocket" href="/connect/guides/launch-an-encounter">
+    The full launch flow with iframe embedding and URL refresh.
+  </Card>
+  <Card title="Handle callbacks" icon="webhook" href="/connect/guides/handle-callbacks">
+    Production-grade HMAC verification, idempotency, and replay protection.
+  </Card>
+  <Card title="Export notes" icon="file-export" href="/connect/guides/export-notes">
+    Map note sections, visit diagnoses, and patient instructions into your EHR.
+  </Card>
+  <Card title="API reference" icon="code" href="/connect/reference/server-api/create-encounter">
+    Endpoint and callback payload schemas.
+  </Card>
+</Columns>

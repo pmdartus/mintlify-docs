@@ -1,0 +1,68 @@
+---
+title: "Callback latency"
+description: "Keep your callback handler fast so providers see success, not an error state, in the Nabla app."
+icon: "gauge-high"
+---
+
+When a provider clicks **Export note**, Nabla waits for your `200` response before showing the success state in the app. If your handler is slow or fails, the provider sees an error in real time — mid-visit, with the patient in front of them. Callback latency is therefore part of the user experience, not just a backend metric.
+
+## The constraint
+
+Nabla **synchronously awaits** your callback response before confirming the export to the provider. Concretely:
+
+- Respond `200` quickly → the provider sees a green success state and moves on.
+- Respond slowly (multi-second handlers) → the spinner lingers, the provider gets uneasy.
+- Respond non-`200` or time out → the provider sees an error toast, and Nabla may retry, which compounds the problem.
+
+There is no published hard timeout you can game — treat it as a soft SLO. **Aim to respond within a couple of seconds**, and design as though anything beyond that is too slow.
+
+## The pattern: receive, verify, enqueue, respond
+
+The fastest handler does as little as possible on the request thread. Specifically:
+
+1. **Receive** the HTTP request.
+2. **Verify** the HMAC signature and the timestamp window.
+3. **Enqueue** the envelope into a durable queue or job table — this is the only meaningful write on the hot path.
+4. **Respond** `200 { "request_uuid": "<...>" }`.
+5. A separate **background worker** picks the job up, parses the note, calls into the EHR, updates audit logs, and so on.
+
+```text
+   Nabla  ─POST─►  HTTP handler  ─enqueue─►  Queue / job table
+                       │                          │
+                       └────── 200 OK ◄───────────┘
+                                                  │
+                                                  ▼
+                                          Background worker
+                                          (EHR write-back,
+                                           note parsing, etc.)
+```
+
+Once the envelope is durably enqueued, retrying the side effect is your worker's problem — independent of Nabla's retry policy. Combined with idempotency on `request_uuid`, this gives you a system that's robust both to your own worker crashes and to Nabla's retries.
+
+## What not to do in the handler
+
+These are the patterns that consistently blow the latency budget:
+
+- **Synchronous EHR write-backs.** Your EHR's API is the slowest, flakiest thing in the chain. Never call it inline from a callback handler.
+- **Long-running DB transactions.** Holding locks while you parse a note or call out is a recipe for cascading slowdowns.
+- **Chained HTTP calls.** Anything that touches a third-party (logging service, analytics, downstream system) belongs in the worker, not on the request thread.
+- **Heavy parsing on the hot path.** Persist the raw envelope first; parse it asynchronously when you actually need the fields.
+
+A useful mental check: if the handler can't run reliably in under a second when the rest of your infrastructure is healthy, it's doing too much.
+
+## Pair this with idempotency
+
+Fast handlers and idempotent handlers solve different problems but reinforce each other. Slow handlers make Nabla more likely to retry; retries amplify the cost of non-idempotent side effects. Get both right and the system degrades gracefully under load.
+
+For the full handler structure, see [Handle callbacks](/connect/guides/handle-callbacks).
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Handle callbacks" icon="webhook" href="/connect/guides/handle-callbacks">
+    The end-to-end handler pattern, including HMAC verification and async dispatch.
+  </Card>
+  <Card title="Idempotency" icon="rotate-right" href="/connect/best-practices/idempotency">
+    Make retries safe so a slow handler doesn't double-apply side effects.
+  </Card>
+</Columns>

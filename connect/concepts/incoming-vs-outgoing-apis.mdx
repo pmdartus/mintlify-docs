@@ -1,0 +1,46 @@
+---
+title: "Incoming vs outgoing APIs"
+description: "The two directions of traffic in a Nabla Connect integration, and why they have different rules."
+icon: "arrows-left-right"
+---
+
+A Nabla Connect integration is built around two independent surfaces: the **Server API** that your backend calls into, and **Callbacks** that Nabla calls into your backend. They run on separate transports, use separate authentication, and have separate lifecycles — so it's worth holding them as two distinct things in your head from day one.
+
+- **Server API (EHR → Nabla)** — your backend initiates. Used to launch encounters and provision users.
+- **Callbacks (Nabla → EHR)** — Nabla initiates. Used to deliver notes, patient instructions, and other exported content back to your EHR.
+
+## At a glance
+
+|  | Server API (incoming) | Callbacks (outgoing) |
+|---|---|---|
+| Direction | EHR → Nabla | Nabla → EHR |
+| Who initiates | Your backend | Nabla |
+| Transport | HTTPS request to `https://<region>.api.nabla.com/v1/connect/server/...` | HTTPS `POST` to your configured callback URL |
+| Auth | OAuth 2.0 client credentials (JWT bearer assertion) | HMAC-SHA256 signature on each request |
+| Failure handling | No Nabla-side retry — handle errors and retries in your client | Slow or failed responses surface an error to the provider in real time |
+| Examples | `POST /encounters`, `POST /encounters/url`, `POST /users` | `NOTE_EXPORT`, `PATIENT_INSTRUCTIONS_EXPORT` |
+
+The two surfaces are independent — rotating an OAuth client key has no effect on callback signing, and changing your callback URL has no effect on the Server API. Treat them as separate concerns.
+
+## One catch-all callback endpoint
+
+Unlike some webhook systems, Nabla Connect doesn't expect a different URL per event type. You expose **a single endpoint** in your backend and configure it once in the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect). Every callback — `NOTE_EXPORT`, `PATIENT_INSTRUCTIONS_EXPORT`, and any future type — lands on that same URL. Branch on the envelope's `type` field inside your handler.
+
+This keeps configuration simple and means new callback types ship without an admin-side change on your end (only a code change).
+
+## Where to learn more
+
+- For the end-to-end picture of how the two directions interleave during an encounter, see [Flow overview](/connect/concepts/flow-overview).
+- For the OAuth setup on the Server API side, see [Authentication](/connect/authentication).
+- For HMAC verification and handler structure on the callback side, see [Handle callbacks](/connect/guides/handle-callbacks).
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Launch an encounter" icon="rocket" href="/connect/guides/launch-an-encounter">
+    Walk through your first Server API call end-to-end.
+  </Card>
+  <Card title="Handle callbacks" icon="webhook" href="/connect/guides/handle-callbacks">
+    Verify HMAC signatures and route incoming callbacks by type.
+  </Card>
+</Columns>

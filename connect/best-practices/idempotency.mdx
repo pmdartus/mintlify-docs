@@ -1,0 +1,77 @@
+---
+title: "Idempotency"
+description: "Handle Nabla's callback retries safely with a dedup key and timestamp replay protection."
+icon: "rotate-right"
+---
+
+Nabla delivers callbacks **at least once**. If your endpoint returns a 5xx, times out, or is unreachable due to a transient network blip, Nabla may retry — which means the same logical event can land at your handler more than once. A correct integration treats this as the default, not the exception.
+
+There are two distinct concerns wrapped up here:
+
+- **Idempotency** — your handler must produce the same end-state whether it sees a callback once or three times.
+- **Replay protection** — your handler must reject hostile resends of an old payload, even if the signature is valid.
+
+They're solved with different mechanisms. Don't conflate them.
+
+## Idempotency: dedupe on `request_uuid`
+
+Every callback envelope includes a unique `request_uuid`. Use it as your dedup key:
+
+1. When a callback arrives and the signature verifies, look up the `request_uuid` in a durable store.
+2. If you've already processed it, respond `200 { "request_uuid": "<...>" }` immediately — **do not re-apply** the side effect (note write-back, EHR update, audit log, etc.).
+3. If you haven't seen it, process it, persist `request_uuid` to the store atomically with the side effect, and respond `200`.
+
+The store needs to survive process restarts and be visible across all instances of your handler. In production that means Redis with a sensible TTL (days to weeks is plenty — Nabla won't retry weeks later), a dedicated row in your primary database, or your existing job queue's built-in dedup feature.
+
+```js
+// Demo only — a Set on a single process won't survive restarts
+// or scale across instances. Use Redis or a DB row in production.
+const seen = new Set();
+
+app.post("/nabla/callbacks", async (req, res) => {
+  // ... HMAC verification + timestamp check happens first ...
+
+  const { request_uuid } = req.body;
+
+  if (seen.has(request_uuid)) {
+    return res.status(200).json({ request_uuid });
+  }
+
+  await handleCallback(req.body);
+  seen.add(request_uuid);
+
+  res.status(200).json({ request_uuid });
+});
+```
+
+The "persist before responding" ordering matters: if you respond `200` first and crash before persisting, the next retry will look fresh and you'll double-apply.
+
+## Replay protection: reject old timestamps
+
+Idempotency handles **well-intentioned** retries. Replay protection handles **hostile** ones — an attacker who captured a valid signed payload and is resending it later.
+
+Every callback includes `x-nabla-connect-timestamp`. Reject any request where that timestamp is **older than 60 seconds**. Even if the HMAC signature still verifies (it will — the body and timestamp haven't been touched), the request is too old to be a legitimate retry from Nabla.
+
+Importantly, this check runs **before** the dedup lookup. A replayed payload should never reach your dedup store at all.
+
+## Putting it together
+
+A well-formed handler runs four guards in order:
+
+1. **Verify HMAC** — reject `401` on mismatch.
+2. **Check timestamp** — reject if older than 60 seconds.
+3. **Dedup on `request_uuid`** — if already processed, respond `200` with the echo and stop.
+4. **Process and persist** — apply the side effect, store `request_uuid`, respond `200`.
+
+For the full handler walkthrough including signature verification, see [Handle callbacks](/connect/guides/handle-callbacks). For the envelope shape and the list of callback types, see [Callbacks reference](/connect/reference/callbacks/overview).
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Handle callbacks" icon="webhook" href="/connect/guides/handle-callbacks">
+    The full HMAC + dedup handler pattern, end-to-end.
+  </Card>
+  <Card title="Callback latency" icon="gauge-high" href="/connect/best-practices/callback-latency">
+    Keep your handler fast so providers don't see error states.
+  </Card>
+</Columns>

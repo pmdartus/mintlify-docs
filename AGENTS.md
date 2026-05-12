@@ -50,5 +50,4 @@ When referring to specific endpoints, prefer the format `` `POST /generate-note`
 ## Content boundaries
 
 - Don't document healthcare compliance (HIPAA, SOC 2, BAA, data residency) here — that lives on the marketing/legal site.
-- Don't document Nabla Connect beyond the existing `connect/overview.mdx` placeholder until product readiness is announced.
 - Don't link to OpenAPI reference pages until they exist on this site. Use inline endpoint code spans (e.g., `` `POST /transcribe-ws` ``) until then.

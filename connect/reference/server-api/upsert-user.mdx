@@ -1,0 +1,246 @@
+---
+title: "POST /users"
+description: "Create or update a Nabla Connect provider user, optionally setting specialty and speech locales."
+---
+
+Create or update a provider user without opening an encounter. Use this endpoint when you want a provider's specialty and dictation locales set **before** the first encounter is launched. For lazy provisioning at launch time, see [`POST /encounters`](/connect/reference/server-api/create-encounter).
+
+<Note>
+Available from API version `2026-03-23`. Send the `X-Nabla-Api-Version` header to pin it — see [Targeting a specific version](/connect/api-versioning/targeting-a-version).
+</Note>
+
+## Endpoint
+
+```
+POST https://<region>.api.nabla.com/v1/connect/server/users
+```
+
+`<region>` is `us` or `eu` — match the region your organization was provisioned in.
+
+## Authentication
+
+Send a server access token from the OAuth client credentials flow as a Bearer token. See [Authentication](/connect/authentication).
+
+## Headers
+
+| Header | Value |
+|---|---|
+| `Authorization` | `Bearer <server access token>` |
+| `X-Nabla-Api-Version` | `2026-03-23` (or later) |
+| `Content-Type` | `application/json` |
+
+## Request body
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `provider_email` | string | yes | Provider email from your EHR. Must match the email on file when the user already exists. |
+| `external_provider_id` | string | yes | Stable external provider identifier from your EHR. Maximum 256 characters. |
+| `settings` | object | no | When present, sets specialty and speech locales. Omit to leave the current values untouched (or to fall back to defaults for a brand-new user). |
+
+### `settings` object
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `specialty` | object \| null | no | Provider specialty. Set to `null` to clear. |
+| `specialty.kind` | enum | yes (if `specialty` is set) | One of the [specialty kinds](#specialty-kinds). |
+| `specialty.other_specialty_name` | string \| null | no | Free-form specialty name. Only used when `specialty.kind` is `OTHER`. |
+| `speech_locale` | enum | yes (if `settings` is set) | Primary dictation locale. One of the [speech locales](#speech-locales). |
+| `secondary_speech_locale` | enum \| null | no | Optional secondary dictation locale for multilingual providers. One of the [speech locales](#speech-locales). |
+
+<Expandable title="Specialty kinds">
+
+- `ADDICTION_MEDICINE`
+- `ADOLESCENT_MEDICINE`
+- `PAIN_MEDICINE`
+- `ALLERGY_AND_IMMUNOLOGY`
+- `ANESTHESIOLOGY`
+- `OBESITY_MEDICINE`
+- `BEHAVIORAL_HEALTH`
+- `ONCOLOGY`
+- `CARDIOLOGY`
+- `CHIROPRACTIC`
+- `DENTIST`
+- `DERMATOLOGY`
+- `DIABETOLOGY`
+- `DIETETICS`
+- `EMERGENCY_MEDICINE`
+- `ENDOCRINOLOGY`
+- `FAMILY_MEDICINE`
+- `FORENSIC_MEDICINE`
+- `GASTROENTEROLOGY`
+- `GENERAL_MEDICINE`
+- `GENERAL_PRACTICE`
+- `GENETICS`
+- `GERIATRICS`
+- `GYNECOLOGY`
+- `HEMATOLOGY`
+- `HEPATOLOGY`
+- `HOSPITAL_MEDICINE`
+- `IMMUNOLOGY`
+- `INFECTIOUS_DISEASE`
+- `INTERNAL_MEDICINE`
+- `LACTATION_CONSULTANT`
+- `LIFESTYLE_MEDICINE`
+- `RADIOLOGY`
+- `MENTAL_HEALTH`
+- `MIDWIFE`
+- `NEPHROLOGY`
+- `NEUROLOGY`
+- `NEUROSURGERY`
+- `NURSE`
+- `NUTRITION`
+- `OCCUPATIONAL_MEDICINE`
+- `OPHTHALMOLOGY`
+- `ENT`
+- `ORTHOPEDICS`
+- `OSTEOPATHIC_MEDICINE`
+- `OTHER`
+- `PALLIATIVE_CARE`
+- `PEDIATRICS`
+- `PHYSICAL_MEDICINE_AND_REHABILITATION`
+- `PHYSIOTHERAPY`
+- `PLASTIC_SURGERY`
+- `PULMONOLOGY`
+- `PODIATRY`
+- `PREVENTIVE_MEDICINE`
+- `PSYCHIATRY`
+- `PSYCHOLOGY`
+- `PSYCHOTHERAPY`
+- `PUBLIC_HEALTH`
+- `RHEUMATOLOGY`
+- `SEXUAL_MEDICINE`
+- `SPORTS_MEDICINE`
+- `SUBSTANCE_USE_DISORDER`
+- `SURGERY`
+- `TOXICOLOGY`
+- `TRANSPLANT_MEDICINE`
+- `UROLOGY`
+- `VASCULAR_MEDICINE`
+- `VETERINARIAN`
+- `WOUND_CARE`
+- `CASE_MANAGEMENT`
+- `CARE_MANAGEMENT`
+- `CARE_COORDINATION`
+- `SOCIAL_WORK`
+- `PATHOLOGY`
+- `RADIATION_ONCOLOGY`
+- `SLEEP_MEDICINE`
+- `AUDIOLOGY`
+- `REPRODUCTIVE_ENDOCRINOLOGY`
+- `PHARMACIST`
+- `OCCUPATIONAL_THERAPY`
+
+</Expandable>
+
+<Expandable title="Speech locales">
+
+- `ENGLISH_US`
+- `ENGLISH_UK`
+- `SPANISH_ES`
+- `SPANISH_MX`
+- `FRENCH_FR`
+- `ARABIC_EG`
+- `ARABIC_LB`
+- `ARABIC_MA`
+- `ARABIC_SA`
+- `ARMENIAN_AM`
+- `BENGALI_IN`
+- `CANTONESE_CN`
+- `CROATIAN_HR`
+- `FILIPINO_PH`
+- `GERMAN_DE`
+- `GREEK_GR`
+- `GUJARATI_IN`
+- `HEBREW_IL`
+- `HINDI_IN`
+- `ITALIAN_IT`
+- `JAPANESE_JP`
+- `KHMER_KH`
+- `KOREAN_KR`
+- `MANDARIN_CN`
+- `PERSIAN_IR`
+- `POLISH_PL`
+- `PORTUGUESE_PT`
+- `PUNJABI_IN`
+- `RUSSIAN_RU`
+- `SERBIAN_RS`
+- `TAMIL_IN`
+- `TELUGU_IN`
+- `THAI_TH`
+- `URDU_IN`
+- `VIETNAMESE_VN`
+- `HAITIAN_HT`
+
+</Expandable>
+
+### Example request
+
+```json
+{
+  "provider_email": "dr.smith@example-clinic.com",
+  "external_provider_id": "prov_8421",
+  "settings": {
+    "specialty": {
+      "kind": "FAMILY_MEDICINE",
+      "other_specialty_name": null
+    },
+    "speech_locale": "ENGLISH_US",
+    "secondary_speech_locale": "SPANISH_MX"
+  }
+}
+```
+
+## Response
+
+`200 OK` returns the stored user. `settings` is `null` for brand-new users when you didn't send a `settings` object.
+
+| Field | Type | Description |
+|---|---|---|
+| `provider_email` | string | Email stored for this provider. |
+| `external_provider_id` | string | The `external_provider_id` you sent. |
+| `settings` | object \| null | Current specialty and speech locales, or `null` if none have been set yet. |
+| `settings.specialty` | object \| null | Current specialty, or `null` if unset. |
+| `settings.specialty.kind` | enum | One of the [specialty kinds](#specialty-kinds). |
+| `settings.specialty.other_specialty_name` | string \| null | Free-form specialty name when `kind` is `OTHER`. |
+| `settings.speech_locale` | enum | One of the [speech locales](#speech-locales). |
+| `settings.secondary_speech_locale` | enum \| null | Optional secondary dictation locale. |
+| `created_at` | string | ISO-8601 timestamp of when the Nabla user was first created. |
+
+### Example response
+
+```json
+{
+  "provider_email": "dr.smith@example-clinic.com",
+  "external_provider_id": "prov_8421",
+  "settings": {
+    "specialty": {
+      "kind": "FAMILY_MEDICINE",
+      "other_specialty_name": null
+    },
+    "speech_locale": "ENGLISH_US",
+    "secondary_speech_locale": "SPANISH_MX"
+  },
+  "created_at": "2026-05-12T08:42:17Z"
+}
+```
+
+## Behavior
+
+- **Lookup, then merge.** Nabla resolves your organization from the OAuth client used to mint the access token, then looks up an existing user by `external_provider_id`. If found, it returns that user and merges in any `settings` you provided. If not found, it creates the account, links the EHR practitioner, and returns the new user.
+- **`settings` omission preserves values.** When you leave `settings` out of the request, the current specialty and locales are left untouched. For a brand-new user, defaults apply until you send `settings` or the provider completes in-app onboarding.
+- **Idempotent.** Replaying the same payload is safe — re-calling with the same `external_provider_id` returns the same user with `settings` merged.
+
+### `409 Conflict`
+
+The request fails with `409 Conflict` when `external_provider_id` and `provider_email` would point at two different existing users — for example, the `external_provider_id` is already linked to a different email on file. Treat this as a wiring bug, not a retryable error: check that `external_provider_id` is stable per provider and that `provider_email` matches the one on file. See [Provision users](/connect/guides/provision-users#handling-409-conflict).
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Provision users guide" icon="user-plus" href="/connect/guides/provision-users">
+    Narrative walkthrough with `cURL`, Node, and Python examples.
+  </Card>
+  <Card title="POST /encounters reference" icon="code" href="/connect/reference/server-api/create-encounter">
+    Launch an encounter — lazily provisions the user when `POST /users` wasn't called first.
+  </Card>
+</Columns>

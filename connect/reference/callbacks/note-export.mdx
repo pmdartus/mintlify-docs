@@ -1,0 +1,137 @@
+---
+title: "NOTE_EXPORT"
+description: "Payload reference for the NOTE_EXPORT callback — sections, visit diagnoses, and the optional transcript."
+icon: "code"
+---
+
+Triggered when the provider clicks **Export note** in the Nabla app. Delivered to the single callback endpoint you configured in the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect). For the shared envelope, headers, and response protocol, see [Callback envelope & response](/connect/reference/callbacks/overview).
+
+## Payload
+
+```json
+{
+  "request_uuid": "4f1a8e16-2c0e-4e63-9c0e-7ac6f6e7c1f0",
+  "type": "NOTE_EXPORT",
+  "data": {
+    "external_patient_id": "pat_55102",
+    "external_encounter_id": "enc_2026_05_12_001",
+    "external_provider_id": "prov_8421",
+    "note": {
+      "sections": [
+        {
+          "title": "Chief complaint",
+          "content": "Annual follow-up for type 2 diabetes.",
+          "category": "CHIEF_COMPLAINT"
+        },
+        {
+          "title": "Assessment",
+          "content": "Type 2 diabetes, stable on metformin.",
+          "category": "ASSESSMENT_AND_PLAN"
+        },
+        {
+          "title": "Plan",
+          "content": "Continue current regimen. Recheck A1C in 3 months.",
+          "category": "ASSESSMENT_AND_PLAN"
+        }
+      ]
+    },
+    "visit_diagnoses": [
+      {
+        "system": "http://hl7.org/fhir/sid/icd-10-cm",
+        "code": "E11.9",
+        "display": "Type 2 diabetes mellitus without complications",
+        "is_hcc": false,
+        "is_mcc": false
+      }
+    ]
+  }
+}
+```
+
+## Fields
+
+### `data`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `external_patient_id` | string | Yes | The patient identifier your backend passed when creating the encounter. |
+| `external_encounter_id` | string | Yes | The encounter identifier your backend passed when creating the encounter. |
+| `external_provider_id` | string | Yes | The provider identifier your backend passed when creating the encounter. |
+| `note` | object | Yes | The exported note, as an ordered list of `sections`. |
+| `visit_diagnoses` | array | No | ICD-10 diagnoses the provider added or accepted during the encounter. Omitted when there are none. Added in `2026-04-24`. |
+| `transcript` | object | No | The raw encounter transcript. Only present when transcript export is enabled for your organization. See [Transcript opt-in](#transcript-opt-in). |
+
+### `note.sections[*]`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `title` | string | Yes | Human-readable section heading as displayed in the Nabla app. |
+| `content` | string | Yes | The section body. May contain line breaks and lightweight markup as authored in the note. |
+| `category` | string \| null | Yes | One of the predefined section categories (below), or `null` if the section doesn't fit any of them. |
+
+### `visit_diagnoses[*]`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `system` | string | Yes | URI of the coding system. Currently always the ICD-10-CM URI. |
+| `code` | string | Yes | The ICD-10-CM code. |
+| `display` | string | Yes | Human-readable label for the code. |
+| `is_hcc` | boolean | Yes | `true` if the code is a Hierarchical Condition Category (HCC) used in Medicare risk adjustment. |
+| `is_mcc` | boolean | Yes | `true` if the code is a Major Complication or Comorbidity (MCC) used in DRG grouping. |
+
+## Section categories
+
+`note.sections[*].category` is one of the values below, or `null`.
+
+| Value | Description |
+|---|---|
+| `CHIEF_COMPLAINT` | The primary reason for the visit. |
+| `HISTORY_OF_PRESENT_ILLNESS` | Narrative of the current problem's evolution. |
+| `PAST_HISTORY` | Past medical, surgical, family, and social history. |
+| `CURRENT_MEDICATIONS` | Medications the patient is currently taking. |
+| `VITALS` | Vital signs measured during the visit. |
+| `IMMUNIZATIONS` | Vaccinations administered or reviewed. |
+| `ASSESSMENT_AND_PLAN` | Clinical assessment and the plan of care. |
+| `EXAMINATION` | Physical examination findings. |
+| `RESULTS` | Lab, imaging, or other diagnostic results. |
+| `PRESCRIPTIONS` | New or renewed prescriptions issued at the visit. |
+| `APPOINTMENTS` | Follow-up appointments or referrals scheduled. |
+
+<Info>
+**Multiple sections per category.** Several sections in the same note can share the same `category` (for example, a `GENERIC_SOAP` template returns separate "Assessment" and "Plan" sections both tagged `ASSESSMENT_AND_PLAN`). Append them to the same target field in your EHR rather than overwriting.
+
+**`category: null`.** Means the section doesn't map to any predefined category — typically a custom or free-form section the provider added. Don't drop it; persist it as free text under its `title`.
+</Info>
+
+## Transcript opt-in
+
+When transcript export is enabled for your organization in the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect), every `NOTE_EXPORT` payload carries an additional `transcript` block:
+
+```json
+"transcript": {
+  "items": [ ... ]
+}
+```
+
+`transcript.items` is an array of structured transcript entries. The internal shape of each item is not part of the public callback contract and may evolve — treat each item as opaque structured data and persist it as-is if you need it.
+
+Transcript opt-in was added in `2026-02-13`. See the [Changelog](/connect/changelog) for the full version history.
+
+## Version notes
+
+- **`2026-04-24`** — `visit_diagnoses` (with `is_hcc` and `is_mcc` risk flags) added.
+- **`2026-02-13`** — Optional `transcript` block added behind an org-level opt-in.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Export notes guide" icon="file-export" href="/connect/guides/export-notes">
+    How to map sections, diagnoses, and the transcript into your EHR.
+  </Card>
+  <Card title="PATIENT_INSTRUCTIONS_EXPORT" icon="code" href="/connect/reference/callbacks/patient-instructions-export">
+    The sibling callback that delivers patient-facing instructions.
+  </Card>
+  <Card title="Callback envelope & response" icon="code" href="/connect/reference/callbacks/overview">
+    Shared headers, HMAC, and response protocol.
+  </Card>
+</Columns>

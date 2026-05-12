@@ -1,0 +1,144 @@
+---
+title: "POST /encounters"
+description: "Create a Nabla encounter from your EHR and receive a one-time launch URL."
+icon: "code"
+---
+
+Create an encounter and return a one-time URL your frontend navigates to. Call this from your backend when the provider clicks the Nabla button on your EHR's encounter screen.
+
+On each call, Nabla will:
+
+1. Match the user corresponding to your provider, provisioning them lazily if needed.
+2. Create the encounter (or look it up if `external_encounter_id` is already known).
+3. Return a one-time `encounter_url` your frontend should navigate to.
+
+<Note>
+`POST /encounter` (singular) is a **deprecated alias** with identical behavior. New integrations should call `POST /encounters`.
+</Note>
+
+## Endpoint
+
+```
+POST https://<region>.api.nabla.com/v1/connect/server/encounters
+```
+
+`<region>` is `us` or `eu` — use the region your organization was provisioned in.
+
+## Authentication
+
+Authenticated with a **server access token** obtained from the OAuth 2.0 client credentials flow at `POST /oauth/token`. See [Authentication](/connect/authentication).
+
+## Headers
+
+| Header | Required | Description |
+|---|---|---|
+| `Authorization` | yes | `Bearer <access_token>` from the OAuth client credentials flow. |
+| `X-Nabla-Api-Version` | recommended | Pins the API version (e.g., `2026-04-24`). See [Targeting a specific version](/connect/api-versioning/targeting-a-version). |
+| `Content-Type` | yes | `application/json` |
+
+## Request body
+
+The schema below describes the current version (`2026-02-13` baseline, with the `visit_diagnoses` addition from `2026-04-24`).
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `provider_email` | string | yes | Provider email from your EHR. Used to lazily provision the Nabla user the first time this `external_provider_id` is seen. |
+| `external_provider_id` | string | yes | Stable provider identifier from your EHR. |
+| `external_patient_id` | string | yes | Stable patient identifier from your EHR. |
+| `external_encounter_id` | string | yes | Stable encounter identifier from your EHR. Re-using the same id returns a URL for the same encounter. |
+| `structured_context` | object | yes | Structured context used to ground note generation. See [Structured context](#structured-context) below. |
+| `unstructured_context` | string (≤ 700 chars) | no | Free-text context (e.g., medical history) that grounds note generation. |
+
+### Structured context
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `structured_context.patient_demographics` | object | yes | The patient's demographic profile. |
+| `structured_context.patient_demographics.name` | string | yes | Patient full name. |
+| `structured_context.patient_demographics.birth_date` | string | yes | Patient birth date (`YYYY-MM-DD`). |
+| `structured_context.patient_demographics.gender` | string | yes | Patient gender. |
+| `structured_context.patient_demographics.pronouns` | string \| null | no | Preferred pronouns (e.g., `she/her`). |
+| `structured_context.visit_diagnoses` | array of [Coding](#visit-diagnoses) | no | Optional list of ICD-10-CM diagnosis codings for the visit. Added in `2026-04-24`. |
+
+### Visit diagnoses
+
+Each entry in `structured_context.visit_diagnoses` is a coding with the following shape:
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `system` | string | yes | The coding system URI. **Only the ICD-10-CM URI** (`http://hl7.org/fhir/sid/icd-10-cm`) is accepted for persistence. |
+| `code` | string | yes | The diagnosis code (e.g., `E11.9`). |
+| `display` | string | yes | Human-readable label for the code. |
+
+<Info>
+Visit diagnoses persisted here are read by note generation when generating the encounter's note, and are echoed back on the `NOTE_EXPORT` callback with risk flags (`is_hcc`, `is_mcc`) when available.
+</Info>
+
+### Example request body
+
+```json
+{
+  "provider_email": "dr.smith@example-clinic.com",
+  "external_provider_id": "prov_8421",
+  "external_patient_id": "pat_55102",
+  "external_encounter_id": "enc_2026_05_12_001",
+  "structured_context": {
+    "patient_demographics": {
+      "name": "Jane Doe",
+      "birth_date": "1982-07-14",
+      "gender": "female",
+      "pronouns": "she/her"
+    },
+    "visit_diagnoses": [
+      {
+        "system": "http://hl7.org/fhir/sid/icd-10-cm",
+        "code": "E11.9",
+        "display": "Type 2 diabetes mellitus without complications"
+      }
+    ]
+  },
+  "unstructured_context": "Annual follow-up for type 2 diabetes. Patient reports improved adherence to metformin."
+}
+```
+
+## Response
+
+```json
+{ "encounter_url": "https://app.nabla.com/connect/launch/<one-time-token>" }
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `encounter_url` | string | One-time URL the frontend navigates to. Logs the provider in automatically and opens the app on this encounter. |
+
+## Behavior notes
+
+<Warning>
+`encounter_url` is **one-time use** and expires **10 minutes** after creation. Don't store it, don't cache it, and don't pass it through long-lived queues. If the provider closes the tab or you need a fresh URL for the same encounter, call [`POST /encounters/url`](/connect/reference/server-api/refresh-encounter-url) with the same `external_provider_id` and `external_encounter_id`.
+</Warning>
+
+- **Lazy user provisioning** — If no Nabla user matches `external_provider_id`, Nabla provisions one using `provider_email`. If a user already exists for that `external_provider_id` and the `provider_email` doesn't match, the request fails. To preconfigure provider settings (specialty, dictation locales) before the first encounter, call [`POST /users`](/connect/reference/server-api/upsert-user) first.
+- **Same `external_encounter_id`** — Passing an id that already exists returns a fresh one-time URL for the existing encounter. The previous URL (if any) is invalidated.
+- **Recreating a deleted encounter** — As of `2026-02-13`, recreating a deleted encounter with the same `external_encounter_id` creates a brand-new encounter; the original transcript and note are not recovered.
+
+## Versioning
+
+Pin the request version with the `X-Nabla-Api-Version` header (e.g., `2026-04-24`). See:
+
+- [Targeting a specific version](/connect/api-versioning/targeting-a-version) — how the header works.
+- [Changelog](/connect/changelog) — what's new in each dated version.
+
+<Note>
+**Migrating from the pre-2026-02-13 schema?** The `encounter_data` object has been replaced by `structured_context`. See [Migrating pre-2026-02-13](/connect/api-versioning/migrating-pre-2026-02-13) for the field-by-field mapping.
+</Note>
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="POST /encounters/url" icon="rotate" href="/connect/reference/server-api/refresh-encounter-url">
+    Generate a fresh one-time URL for an existing encounter.
+  </Card>
+  <Card title="POST /users" icon="user-plus" href="/connect/reference/server-api/upsert-user">
+    Upsert a provider user with specialty and dictation locales before launch.
+  </Card>
+</Columns>

@@ -1,0 +1,68 @@
+---
+title: "Flow overview"
+description: "How a Nabla Connect encounter moves from your EHR to Nabla and back."
+icon: "diagram-project"
+---
+
+A Nabla Connect integration involves two halves: a **launch flow** (your EHR opens an encounter on Nabla) and an **export flow** (Nabla sends the resulting note back to your EHR). This page explains how they fit together at the user level and at the API level.
+
+## High-level diagram
+
+![Nabla Connect end-to-end flow](/images/connect/flow-high-level.png)
+
+## What the provider sees
+
+1. **Click** the Nabla button in your EHR's encounter screen.
+2. **Nabla opens** — as an iframe or in an external browser tab, depending on your integration — on the encounter that's just been auto-created on Nabla's side.
+3. **Classic Nabla flow** — the provider records the visit, generates a note, and reviews or edits it using Nabla tools. The note generation is grounded by the context your EHR passed in.
+4. **Export** — the provider clicks **Export note** (which replaces Nabla's default **Copy note** button), and the note plus visit diagnoses are sent back to your EHR.
+
+![Nabla encounter screen with Export note button](/images/connect/encounter-screen.png)
+
+## What your servers do
+
+The flow above maps onto a handful of API calls:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant EHR as Your EHR
+    participant Backend as Your backend
+    participant Nabla
+    participant Provider
+
+    Provider->>EHR: Click Nabla button
+    EHR->>Backend: Open encounter on Nabla
+    Backend->>Nabla: POST /oauth/token (JWT client assertion)
+    Nabla-->>Backend: access_token
+    Backend->>Nabla: POST /encounters<br/>(provider, patient, encounter IDs, context)
+    Nabla-->>Backend: { encounter_url }
+    Backend-->>EHR: encounter_url
+    EHR->>Nabla: Navigate to encounter_url (iframe or tab)
+    Note over Provider,Nabla: Provider records & reviews note
+    Provider->>Nabla: Click Export note
+    Nabla->>Backend: POST callback NOTE_EXPORT<br/>(HMAC signed)
+    Backend-->>Nabla: 200 { request_uuid }
+```
+
+The `encounter_url` returned by Nabla is one-time use and expires after **10 minutes** — see [Launch an encounter](/connect/guides/launch-an-encounter) for how to refresh it without losing the encounter.
+
+## Two API directions
+
+The rest of the documentation is organised around these two directions.
+
+- **Server API (EHR → Nabla)** — endpoints your backend calls. Authentication is OAuth 2.0 with a JWT client assertion. See the full surface in [API reference → Server API](/connect/reference/server-api/create-encounter).
+- **Callbacks (Nabla → EHR)** — requests Nabla sends to your single configured webhook URL. Each request is signed with HMAC-SHA256. See [API reference → Callbacks](/connect/reference/callbacks/overview).
+
+If you're unsure which side a feature belongs to, the [Incoming vs outgoing APIs](/connect/concepts/incoming-vs-outgoing-apis) page lays out the split with examples.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Incoming vs outgoing APIs" icon="arrows-left-right" href="/connect/concepts/incoming-vs-outgoing-apis">
+    A short mental model for the two directions of traffic.
+  </Card>
+  <Card title="Launch an encounter" icon="rocket" href="/connect/guides/launch-an-encounter">
+    Walk through the `POST /encounters` call end-to-end.
+  </Card>
+</Columns>

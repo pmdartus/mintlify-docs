@@ -1,0 +1,31 @@
+---
+title: "Changelog"
+description: "New features, improvements, and breaking changes to Nabla Connect, organized by dated version."
+icon: "clock-rotate-left"
+rss: true
+---
+
+Updates to Nabla Connect — including new fields, new endpoints, or changes to callback payloads — are released under a new dated version to ensure stability and predictability.
+These changes won't affect your integration unless you explicitly opt into the newer version (see [Targeting a specific version](/connect/api-versioning/targeting-a-version)).
+
+That said, some updates — internal AI model improvements, bug fixes, or strictly non-breaking changes that don't affect the schema or observable behavior — may be rolled out across all live versions.
+
+Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entries tagged **Breaking change** in the filter panel change the wire format or observable behavior — read those carefully before rolling forward. For the recommended upgrade workflow, see [Versioning strategy](/connect/api-versioning/strategy).
+
+<Update label="2026-04-24" description="User provisioning, plural endpoint paths, and visit diagnoses." tags={["New Release", "Improvements"]}>
+  - **New endpoint**: `POST /users` — upsert a provider user by `external_provider_id` and `provider_email`, with optional settings for `specialty` and dictation locales (`speech_locale`, `secondary_speech_locale`). Useful when you want those fields set **before** the first encounter is launched.
+    - Returns `409 Conflict` if `external_provider_id` and `provider_email` point at two different existing users.
+  - **New plural paths**: `POST /encounters` and `POST /encounters/url` are now the documented primary routes. `POST /encounter` and `POST /encounter/url` remain supported as deprecated aliases with identical behavior.
+  - **Visit diagnoses on encounter create/update**: optional `structured_context.visit_diagnoses` field accepts a list of `{ system, code, display }` codings. Only the ICD-10-CM system URI is accepted for persistence.
+  - **Visit diagnoses on `NOTE_EXPORT` callback**: optional `visit_diagnoses` array now returned when ICD-10 suggestions are available; each item includes `code`, `display`, `is_hcc`, and `is_mcc` risk flags.
+  - **Note generation**: when present, the note generator now reads the visit diagnoses persisted from Connect structured context.
+</Update>
+
+<Update label="2026-02-13" description="Structured context, URL refresh endpoint, and optional transcript on export." tags={["Breaking change", "New Release"]}>
+  - **Breaking change**: in `POST /encounter`, the `encounter_data` request body field has been replaced with `structured_context`. The new shape enables adding more structured properties to the context in future versions. See [Migrating pre-2026-02-13](/connect/api-versioning/migrating-pre-2026-02-13) for the field-by-field mapping.
+  - **New endpoint**: `POST /encounter/url` — generate a fresh one-time URL for an existing encounter without re-sending context. The previous URL is invalidated.
+  - **New field**: `unstructured_context` on `POST /encounter` — up to 700 characters of free-text context (e.g. medical history) that grounds note generation.
+  - **Optional transcript on `NOTE_EXPORT`**: opt in from the Admin page and the encounter transcript is included in the callback alongside the structured note.
+  - **Bug fix**: recreating a deleted encounter via `POST /encounter` with the same `external_encounter_id` now creates a fresh encounter — the original transcript and note are no longer recovered.
+  - **Embedded webapp**: the "New encounter" action and the encounter history are hidden in the Nabla embedded webapp to match the EHR-driven flow.
+</Update>
