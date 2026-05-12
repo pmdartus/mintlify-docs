@@ -108,5 +108,11 @@
       "github": "https://github.com/nabla",
       "linkedin": "https://linkedin.com/company/nablahq"
     }
+  },
+  "seo": {
+    "metatags": {
+      "robots": "noindex, nofollow"
+    },
+    "indexing": "navigable"
   }
 }
