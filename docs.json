@@ -216,6 +216,14 @@
       "linkedin": "https://linkedin.com/company/nablahq"
     }
   },
+  "api": {
+    "mdx": {
+      "server": "https://us.api.nabla.com",
+      "auth": {
+        "method": "bearer"
+      }
+    }
+  },
   "seo": {
     "metatags": {
       "robots": "noindex, nofollow"

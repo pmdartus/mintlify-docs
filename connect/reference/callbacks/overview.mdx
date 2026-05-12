@@ -1,7 +1,7 @@
 ---
 title: "Callback envelope & response"
 description: "The shared envelope, HMAC headers, and HTTP response protocol for every Nabla Connect callback."
-icon: "code"
+icon: "envelope-open-text"
 ---
 
 Nabla Connect delivers every server-to-server callback (note exports, patient instructions exports, and future event types) to a **single endpoint** that you configure in the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect). All callbacks share the envelope, headers, and response protocol described here. The per-type payload shapes are documented on their own pages — see [`NOTE_EXPORT`](/connect/reference/callbacks/note-export) and [`PATIENT_INSTRUCTIONS_EXPORT`](/connect/reference/callbacks/patient-instructions-export).
@@ -12,22 +12,17 @@ For the narrative version with end-to-end verification snippets, see [Handle cal
 
 You register **one** HTTPS URL in the Admin. Nabla `POST`s every callback to that URL. Your handler dispatches on the envelope `type` field. Adding support for a new callback type later doesn't require registering a new endpoint — only updating your dispatcher.
 
-## Authentication headers
+## Request headers
 
-Every request includes two headers:
+<ResponseField name="x-nabla-connect-timestamp" type="string (ISO-8601)" required>
+  Timestamp of when Nabla generated the request. Reject (`401`) if older than 60 seconds — replay protection.
+</ResponseField>
 
-| Header | Value |
-|---|---|
-| `x-nabla-connect-timestamp` | ISO 8601 timestamp of when Nabla generated the request. |
-| `x-nabla-connect-signature` | One or more HMAC-SHA256 hex signatures of `timestamp + raw_body`, comma-separated. |
+<ResponseField name="x-nabla-connect-signature" type="string" required>
+  One or more HMAC-SHA256 hex signatures of `timestamp + raw_body`, comma-separated. Multiple signatures may appear during a key-rotation window — accept if **any** of them matches.
+</ResponseField>
 
-The signature is computed as:
-
-```
-HMAC-SHA256(signature_secret, timestamp + raw_request_body)
-```
-
-`signature_secret` is retrieved from the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect). Multiple signatures may appear during a key-rotation window — accept the request if **any** of them matches your computed value.
+The signature is computed as `HMAC-SHA256(signature_secret, timestamp + raw_request_body)`. `signature_secret` is retrieved from the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect).
 
 ## Verification recipe
 
@@ -35,32 +30,38 @@ On every incoming request, your endpoint must:
 
 1. Read the **raw** request body before JSON parsing. The HMAC covers the exact bytes Nabla sent.
 2. Extract `x-nabla-connect-timestamp` and `x-nabla-connect-signature`.
-3. Reject (HTTP `401`) if the timestamp is missing or older than **60 seconds** — replay protection.
+3. Reject (`401`) if the timestamp is missing or older than **60 seconds**.
 4. Compute `HMAC-SHA256(signature_secret, timestamp + raw_body)` as a hex string.
-5. Split the `x-nabla-connect-signature` header on `,` and compare your computed value against each received signature using a **constant-time** compare (`crypto.timingSafeEqual` in Node, `hmac.compare_digest` in Python). Reject with `401` if none match.
+5. Split the `x-nabla-connect-signature` header on `,` and compare against each received signature using a **constant-time** compare (`crypto.timingSafeEqual` in Node, `hmac.compare_digest` in Python). Reject with `401` if none match.
 6. Check that `request_uuid` hasn't already been processed. If it has, respond `200` with the same body — Nabla may retry. See [Idempotency](/connect/best-practices/idempotency).
 
 <Warning>
 Never compare HMAC signatures with `==` or `===`. Naïve string comparison leaks timing information that lets an attacker forge a valid signature byte-by-byte. Use the platform's constant-time compare.
 </Warning>
 
-## Envelope shape
+## Envelope
 
 All callbacks use the same base envelope. The `type` field determines the rest of the payload.
 
-```json
+<ResponseField name="request_uuid" type="string" required>
+  Unique identifier for this callback delivery. Use it as your idempotency key and echo it back on the `200` response.
+</ResponseField>
+
+<ResponseField name="type" type="string" required>
+  The callback type. Dispatch on this to parse `data`. Treat unknown values as `400`. Currently one of `NOTE_EXPORT` or `PATIENT_INSTRUCTIONS_EXPORT`.
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  Payload whose shape depends on `type`. See the per-type pages.
+</ResponseField>
+
+```json Example envelope
 {
-  "request_uuid": "string",
-  "type": "NOTE_EXPORT | PATIENT_INSTRUCTIONS_EXPORT | ...",
+  "request_uuid": "4f1a8e16-2c0e-4e63-9c0e-7ac6f6e7c1f0",
+  "type": "NOTE_EXPORT",
   "data": { /* type-specific */ }
 }
 ```
-
-| Field | Type | Description |
-|---|---|---|
-| `request_uuid` | string | Unique identifier for this callback delivery. Use it as your idempotency key and echo it back on the `200` response. |
-| `type` | string | The callback type. Dispatch on this to parse `data`. Treat unknown values as `400`. |
-| `data` | object | Payload whose shape depends on `type`. See the per-type pages. |
 
 ## Response protocol
 
@@ -95,10 +96,10 @@ Nabla awaits your response before showing a success message to the provider in t
   <Card title="Handle callbacks" icon="webhook" href="/connect/guides/handle-callbacks">
     End-to-end guide with cURL, Node, and Python verification snippets.
   </Card>
-  <Card title="NOTE_EXPORT payload" icon="code" href="/connect/reference/callbacks/note-export">
+  <Card title="NOTE_EXPORT payload" icon="file-export" href="/connect/reference/callbacks/note-export">
     Full payload, section categories, visit diagnoses, and optional transcript.
   </Card>
-  <Card title="PATIENT_INSTRUCTIONS_EXPORT payload" icon="code" href="/connect/reference/callbacks/patient-instructions-export">
+  <Card title="PATIENT_INSTRUCTIONS_EXPORT payload" icon="user-doctor" href="/connect/reference/callbacks/patient-instructions-export">
     Full payload for the patient-instructions callback.
   </Card>
 </Columns>

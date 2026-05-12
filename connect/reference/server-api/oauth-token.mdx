@@ -1,7 +1,8 @@
 ---
-title: "POST /oauth/token"
+title: "Create server access token"
 description: "Exchange a signed JWT client assertion for a Connect Server API access token."
-icon: "key"
+api: "POST /v1/connect/server/oauth/token"
+authMethod: "none"
 ---
 
 Exchange a signed JWT client assertion for a short-lived server access token. This is the bootstrap endpoint of the OAuth 2.0 client credentials flow used by every other Connect Server API call.
@@ -10,96 +11,31 @@ Exchange a signed JWT client assertion for a short-lived server access token. Th
 This page documents the endpoint contract only. For the full OAuth client setup — creating the client, configuring a JWKS URL or static public key, and constructing the JWT client assertion — see [Authentication](/connect/authentication).
 </Note>
 
-## Endpoint
+The token URL **must** match the `aud` claim in your JWT client assertion exactly. The playground above defaults to the `us` region; switch the server URL to `https://eu.api.nabla.com` if your organization was provisioned in EU.
 
-```
-POST https://<region>.api.nabla.com/v1/connect/server/oauth/token
-```
+## Body
 
-`<region>` is `us` or `eu` — use the region your organization was provisioned in. The token URL you use here **must** match the `aud` claim in your JWT client assertion exactly.
+<ParamField body="grant_type" type="string" required default="client_credentials">
+  Must be `client_credentials`.
+</ParamField>
 
-## Authentication
+<ParamField body="client_assertion_type" type="string" required default="urn:ietf:params:oauth:client-assertion-type:jwt-bearer">
+  Must be `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`.
+</ParamField>
 
-This is the bootstrap endpoint, so **no `Authorization` header** is required. Authentication is carried entirely by the signed `client_assertion` in the request body.
-
-## Headers
-
-| Header | Required | Description |
-|---|---|---|
-| `Content-Type` | yes | `application/json` |
-
-## Request body
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `grant_type` | string | yes | Must be `client_credentials`. |
-| `client_assertion_type` | string | yes | Must be `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`. |
-| `client_assertion` | string | yes | The signed JWT client assertion. See [Authentication — Construct a JWT client assertion](/connect/authentication#2-construct-a-jwt-client-assertion) for the required claims. |
-
-### Example request
-
-<Tabs>
-<Tab title="cURL">
-
-```bash
-curl -X POST https://us.api.nabla.com/v1/connect/server/oauth/token \
-  -H "content-type: application/json" \
-  -d '{
-    "grant_type": "client_credentials",
-    "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-    "client_assertion": "<YOUR_JWT_HERE>"
-  }'
-```
-
-</Tab>
-<Tab title="Node">
-
-```js
-const res = await fetch("https://us.api.nabla.com/v1/connect/server/oauth/token", {
-  method: "POST",
-  headers: { "content-type": "application/json" },
-  body: JSON.stringify({
-    grant_type: "client_credentials",
-    client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-    client_assertion: assertion,
-  }),
-});
-const { access_token, expires_in } = await res.json();
-```
-
-</Tab>
-<Tab title="Python">
-
-```python
-resp = requests.post(
-    "https://us.api.nabla.com/v1/connect/server/oauth/token",
-    json={
-        "grant_type": "client_credentials",
-        "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-        "client_assertion": assertion,
-    },
-).json()
-
-access_token = resp["access_token"]
-expires_in = resp["expires_in"]
-```
-
-</Tab>
-</Tabs>
+<ParamField body="client_assertion" type="string" required>
+  The signed JWT client assertion. See [Construct a JWT client assertion](/connect/authentication#2-construct-a-jwt-client-assertion) for the required claims and signing.
+</ParamField>
 
 ## Response
 
-```json
-{
-  "access_token": "<JWT_ACCESS_TOKEN>",
-  "expires_in": 3600
-}
-```
+<ResponseField name="access_token" type="string" required>
+  The server access token. Pass it as `Authorization: Bearer <access_token>` on every other Connect Server API request.
+</ResponseField>
 
-| Field | Type | Description |
-|---|---|---|
-| `access_token` | string | The server access token. Pass it as `Authorization: Bearer <access_token>` on every other Connect Server API request. |
-| `expires_in` | integer (seconds) | Token TTL. Typically `3600` (one hour) but may change without notice — always trust `expires_in` over a hard-coded value. |
+<ResponseField name="expires_in" type="integer" required>
+  Token TTL in seconds. Typically `3600` (one hour) but may change without notice — always trust `expires_in` over a hard-coded value.
+</ResponseField>
 
 <Tip>
 Cache the token and reuse it across requests; mint a new one only when it nears expiry. Repeating the exchange on every call is unnecessary and rate-limited.
@@ -118,13 +54,61 @@ Errors follow the OAuth 2.0 error response format: a JSON body with an `error` c
 
 For the full troubleshooting matrix, see [Authentication — Troubleshooting](/connect/authentication#troubleshooting).
 
-## Next steps
+<RequestExample>
 
-<Columns cols={2}>
-  <Card title="Authentication" icon="key" href="/connect/authentication">
-    The end-to-end setup: OAuth client, JWT assertion, and token lifecycle.
-  </Card>
-  <Card title="POST /encounters" icon="code" href="/connect/reference/server-api/create-encounter">
-    Use the access token to launch an encounter.
-  </Card>
-</Columns>
+```bash cURL
+curl -X POST https://us.api.nabla.com/v1/connect/server/oauth/token \
+  -H "content-type: application/json" \
+  -d '{
+    "grant_type": "client_credentials",
+    "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+    "client_assertion": "<YOUR_JWT_HERE>"
+  }'
+```
+
+```js Node
+const res = await fetch("https://us.api.nabla.com/v1/connect/server/oauth/token", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    grant_type: "client_credentials",
+    client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+    client_assertion: assertion,
+  }),
+});
+const { access_token, expires_in } = await res.json();
+```
+
+```python Python
+resp = requests.post(
+    "https://us.api.nabla.com/v1/connect/server/oauth/token",
+    json={
+        "grant_type": "client_credentials",
+        "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+        "client_assertion": assertion,
+    },
+).json()
+
+access_token = resp["access_token"]
+expires_in = resp["expires_in"]
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "access_token": "<JWT_ACCESS_TOKEN>",
+  "expires_in": 3600
+}
+```
+
+```json 401
+{
+  "error": "invalid_client",
+  "error_description": "JWT signature verification failed"
+}
+```
+
+</ResponseExample>

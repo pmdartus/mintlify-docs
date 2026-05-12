@@ -1,7 +1,7 @@
 ---
-title: "POST /encounters/url"
+title: "Refresh encounter URL"
 description: "Generate a fresh one-time launch URL for an existing Nabla encounter."
-icon: "code"
+api: "POST /v1/connect/server/encounters/url"
 ---
 
 Generate a fresh one-time URL for an encounter that has already been created. Use this when the provider closed the Nabla tab, the previous URL expired, or you need to re-open the same encounter without re-sending its context.
@@ -12,48 +12,37 @@ Nabla matches the user corresponding to your provider and the encounter, then re
 `POST /encounter/url` (singular) is a **deprecated alias** with identical behavior. New integrations should call `POST /encounters/url`.
 </Note>
 
-## Endpoint
-
-```
-POST https://<region>.api.nabla.com/v1/connect/server/encounters/url
-```
-
-`<region>` is `us` or `eu` — use the region your organization was provisioned in.
-
-## Authentication
-
-Authenticated with a **server access token** obtained from the OAuth 2.0 client credentials flow at `POST /oauth/token`. See [Authentication](/connect/authentication).
-
 ## Headers
 
-| Header | Required | Description |
-|---|---|---|
-| `Authorization` | yes | `Bearer <access_token>` from the OAuth client credentials flow. |
-| `X-Nabla-Api-Version` | recommended | Pins the API version (e.g., `2026-04-24`). See [Targeting a specific version](/connect/api-versioning/targeting-a-version). |
-| `Content-Type` | yes | `application/json` |
+<ParamField header="X-Nabla-Api-Version" type="string" placeholder="2026-04-24">
+  Pins the API version. See [Targeting a specific version](/connect/api-versioning/targeting-a-version).
+</ParamField>
 
-## Request body
+## Body
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `external_provider_id` | string | yes | Stable provider identifier from your EHR. Must match the provider who owns the encounter. |
-| `external_encounter_id` | string | yes | Stable encounter identifier from your EHR. Must reference an existing encounter created via [`POST /encounters`](/connect/reference/server-api/create-encounter). |
+<ParamField body="external_provider_id" type="string" required>
+  Stable provider identifier from your EHR. Must match the provider who owns the encounter.
+</ParamField>
 
-### Example request body
+<ParamField body="external_encounter_id" type="string" required>
+  Stable encounter identifier from your EHR. Must reference an existing encounter created via [`POST /encounters`](/connect/reference/server-api/create-encounter).
+</ParamField>
 
-```json
-{
-  "external_provider_id": "prov_8421",
-  "external_encounter_id": "enc_2026_05_12_001"
-}
-```
+## Response
 
-### Example request
+<ResponseField name="encounter_url" type="string" required>
+  One-time URL the frontend navigates to. Logs the provider in automatically and opens the app on this encounter.
+</ResponseField>
 
-<Tabs>
-<Tab title="cURL">
+## Behavior
 
-```bash
+<Warning>
+`encounter_url` is **one-time use** and expires **10 minutes** after creation. Don't store it, don't cache it, and don't pass it through long-lived queues. Mint a new one on demand each time you need to navigate the provider back into the encounter.
+</Warning>
+
+<RequestExample>
+
+```bash cURL
 curl -X POST https://us.api.nabla.com/v1/connect/server/encounters/url \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "X-Nabla-Api-Version: 2026-04-24" \
@@ -64,10 +53,7 @@ curl -X POST https://us.api.nabla.com/v1/connect/server/encounters/url \
   }'
 ```
 
-</Tab>
-<Tab title="Node">
-
-```js
+```js Node
 const res = await fetch(
   "https://us.api.nabla.com/v1/connect/server/encounters/url",
   {
@@ -87,10 +73,7 @@ const res = await fetch(
 const { encounter_url } = await res.json();
 ```
 
-</Tab>
-<Tab title="Python">
-
-```python
+```python Python
 import requests
 
 resp = requests.post(
@@ -109,32 +92,14 @@ resp = requests.post(
 encounter_url = resp["encounter_url"]
 ```
 
-</Tab>
-</Tabs>
+</RequestExample>
 
-## Response
+<ResponseExample>
 
-```json
-{ "encounter_url": "https://app.nabla.com/connect/launch/<one-time-token>" }
+```json 200
+{
+  "encounter_url": "https://app.nabla.com/connect/launch/<one-time-token>"
+}
 ```
 
-| Field | Type | Description |
-|---|---|---|
-| `encounter_url` | string | One-time URL the frontend navigates to. Logs the provider in automatically and opens the app on this encounter. |
-
-## Behavior notes
-
-<Warning>
-`encounter_url` is **one-time use** and expires **10 minutes** after creation. Don't store it, don't cache it, and don't pass it through long-lived queues. Mint a new one on demand each time you need to navigate the provider back into the encounter.
-</Warning>
-
-## Next steps
-
-<Columns cols={2}>
-  <Card title="POST /encounters" icon="code" href="/connect/reference/server-api/create-encounter">
-    Create the encounter (and get its first launch URL) from your EHR.
-  </Card>
-  <Card title="Launch an encounter" icon="rocket" href="/connect/guides/launch-an-encounter">
-    End-to-end guide for wiring a Nabla button into your EHR.
-  </Card>
-</Columns>
+</ResponseExample>
