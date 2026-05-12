@@ -94,6 +94,187 @@
             ]
           },
           {
+            "tab": "API Reference",
+            "groups": [
+              {
+                "group": "Server API",
+                "openapi": {
+                  "source": "/core-api/openapi/server.json",
+                  "directory": "api-reference/server"
+                },
+                "pages": [
+                  "POST /oauth/token",
+                  {
+                    "group": "Manage users",
+                    "pages": [
+                      "POST /users",
+                      "PATCH /users/{user_id}",
+                      "POST /jwt/authenticate/{user_id}",
+                      "POST /users/{user_id}/deactivate",
+                      "POST /users/{user_id}/activate",
+                      "GET /users",
+                      "GET /users/{user_id}",
+                      "GET /users/find_by_external_id/{external_id}"
+                    ]
+                  },
+                  {
+                    "group": "Transcribe",
+                    "pages": [
+                      "POST /transcribe",
+                      "POST /transcribe-async",
+                      "GET /transcribe-async/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Dictate",
+                    "pages": [
+                      "POST /dictate",
+                      "POST /dictate-async",
+                      "GET /dictate-async/{id}",
+                      "core-api/reference/dictation-commands"
+                    ]
+                  },
+                  {
+                    "group": "Generate note",
+                    "pages": [
+                      "POST /generate-note",
+                      "POST /generate-note-async",
+                      "GET /generate-note-async/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Generate normalized data",
+                    "pages": ["POST /generate-normalized-data"]
+                  },
+                  {
+                    "group": "Generate patient instructions",
+                    "pages": ["POST /generate-patient-instructions"]
+                  },
+                  {
+                    "group": "Edit note with instructions",
+                    "pages": ["POST /edit-note-with-instructions"]
+                  },
+                  {
+                    "group": "Report feedback",
+                    "pages": ["POST /reports"]
+                  }
+                ]
+              },
+              {
+                "group": "User API",
+                "openapi": {
+                  "source": "/core-api/openapi/user.json",
+                  "directory": "api-reference/user"
+                },
+                "pages": [
+                  {
+                    "group": "Authenticate",
+                    "pages": [
+                      "POST /jwt/refresh",
+                      "POST /jwt/logout"
+                    ]
+                  },
+                  {
+                    "group": "User settings",
+                    "pages": [
+                      "GET /note-settings",
+                      "PATCH /note-settings",
+                      "GET /note-settings/note-sections-customization/{note_template}",
+                      "PATCH /note-settings/note-sections-customization/{note_template}"
+                    ]
+                  },
+                  {
+                    "group": "Transcribe",
+                    "pages": [
+                      "POST /transcribe",
+                      "POST /transcribe-async",
+                      "GET /transcribe-async/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Dictate",
+                    "pages": [
+                      "POST /dictate",
+                      "POST /dictate-async",
+                      "GET /dictate-async/{id}",
+                      "core-api/reference/dictation-commands"
+                    ]
+                  },
+                  {
+                    "group": "Text replacements",
+                    "pages": [
+                      "GET /text-replacements",
+                      "GET /text-replacements/{id}",
+                      "POST /text-replacements",
+                      "PATCH /text-replacements/{id}",
+                      "DELETE /text-replacements/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Generate note",
+                    "pages": [
+                      "POST /generate-note",
+                      "POST /generate-note-async",
+                      "GET /generate-note-async/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Dot phrases",
+                    "pages": [
+                      "GET /dot-phrases",
+                      "GET /dot-phrases/{id}",
+                      "POST /dot-phrases",
+                      "PATCH /dot-phrases/{id}",
+                      "DELETE /dot-phrases/{id}",
+                      {
+                        "group": "Bulk operations",
+                        "pages": [
+                          "POST /dot-phrases/bulk-create",
+                          "POST /dot-phrases/bulk-update",
+                          "POST /dot-phrases/bulk-delete"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "Custom dictionary",
+                    "pages": [
+                      "GET /custom-dictionary-expressions",
+                      "GET /custom-dictionary-expressions/{id}",
+                      "POST /custom-dictionary-expressions",
+                      "PATCH /custom-dictionary-expressions/{id}",
+                      "DELETE /custom-dictionary-expressions/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Generate normalized data",
+                    "pages": ["POST /generate-normalized-data"]
+                  },
+                  {
+                    "group": "Generate patient instructions",
+                    "pages": ["POST /generate-patient-instructions"]
+                  },
+                  {
+                    "group": "Edit note with instructions",
+                    "pages": ["POST /edit-note-with-instructions"]
+                  },
+                  {
+                    "group": "Report feedback",
+                    "pages": ["POST /reports"]
+                  }
+                ]
+              },
+              {
+                "group": "Receive webhook events",
+                "openapi": {
+                  "source": "/core-api/openapi/webhook.json",
+                  "directory": "api-reference/webhook"
+                },
+                "pages": ["POST /webhook"]
+              }
+            ]
+          },
+          {
             "tab": "Changelog",
             "pages": ["core-api/changelog"]
           }
