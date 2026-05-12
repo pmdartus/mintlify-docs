@@ -1,0 +1,107 @@
+---
+title: "Targeting a specific version"
+description: "Pin Nabla Connect organization-wide or override the version per request."
+icon: "bullseye"
+---
+
+If you haven't already, read [Versioning strategy](/connect/api-versioning/strategy) for the recommended workflow. This page covers the mechanics — how to pin your organization and how to override per request.
+
+## Why target a specific version
+
+- **Predictability**: every call uses the wire format and behavior of one specific date.
+- **Incremental migration**: when a new version ships, you can opt a subset of traffic in without changing your organization-wide pin.
+- **Reproducibility**: requests embedded in tests or recorded payloads keep behaving the same way over time.
+
+## Base URL
+
+All Connect Server API calls go to:
+
+```
+https://<region>.api.nabla.com/v1/connect/server
+```
+
+`<region>` is `us` or `eu` — use the region your organization was provisioned in.
+
+## Default: the pinned version
+
+All requests use your organization's **pinned version** by default. It starts at the most recent version available at the time your organization was created. Check or change it in the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect). You can pin to any existing version.
+
+The current version is `2026-04-24`. For the complete list, see the [Changelog](/connect/changelog).
+
+## Override per request
+
+You can override the pinned version on individual requests in two ways. Pick **header** for normal HTTP traffic and **query parameter** when setting custom headers isn't possible.
+
+### Via header
+
+<Tabs>
+<Tab title="cURL">
+
+```bash
+curl https://us.api.nabla.com/v1/connect/server/encounters \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -H "X-Nabla-Api-Version: 2026-04-24" \
+  -H "content-type: application/json" \
+  -d '{ ... }'
+```
+
+</Tab>
+<Tab title="Node">
+
+```js
+await fetch("https://us.api.nabla.com/v1/connect/server/encounters", {
+  method: "POST",
+  headers: {
+    authorization: `Bearer ${access_token}`,
+    "content-type": "application/json",
+    "X-Nabla-Api-Version": "2026-04-24",
+  },
+  body: JSON.stringify({ ... }),
+});
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+requests.post(
+    "https://us.api.nabla.com/v1/connect/server/encounters",
+    headers={
+        "authorization": f"Bearer {access_token}",
+        "X-Nabla-Api-Version": "2026-04-24",
+    },
+    json={...},
+)
+```
+
+</Tab>
+</Tabs>
+
+### Via query parameter
+
+```bash
+curl "https://us.api.nabla.com/v1/connect/server/encounters?nabla-api-version=2026-04-24" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -H "content-type: application/json" \
+  -d '{ ... }'
+```
+
+## Header or query — pick one
+
+If both are present, **the header wins**. In practice, pick one strategy per integration:
+
+- Use the **header** in backend code — it's the most explicit and easiest to grep for.
+- Use the **query parameter** only when setting custom headers isn't an option.
+
+If neither is sent, Nabla applies your organization's pinned version.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Versioning strategy" icon="code-branch" href="/connect/api-versioning/strategy">
+    The recommended pin-and-override workflow.
+  </Card>
+  <Card title="Migrating pre-2026-02-13" icon="arrow-up-right-from-square" href="/connect/api-versioning/migrating-pre-2026-02-13">
+    Move off `encounter_data` to `structured_context`.
+  </Card>
+</Columns>

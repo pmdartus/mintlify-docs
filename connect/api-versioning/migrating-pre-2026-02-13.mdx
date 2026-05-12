@@ -1,0 +1,104 @@
+---
+title: "Migrating from API versions prior to 2026-02-13"
+description: "Move off the legacy encounter_data shape to structured_context.patient_demographics."
+icon: "arrow-up-right-from-square"
+---
+
+The Nabla Connect version `2026-02-13` restructures the encounter context payload. The flat `encounter_data` object is replaced by a `structured_context` object that nests patient demographics and leaves room for future structured fields (e.g., `visit_diagnoses`, added in `2026-04-24`). A free-text `unstructured_context` field is introduced alongside it.
+
+This guide shows what changed, the field-by-field mapping, and how to opt in.
+
+## What changed at `2026-02-13`
+
+- `encounter_data` is **removed** from the `POST /encounter` (and `POST /encounters`) request body.
+- `structured_context.patient_demographics` takes its place, with renamed sub-fields.
+- A new optional `unstructured_context` field accepts up to **700 characters** of free-text context (e.g., medical history, prior visit notes) that grounds note generation.
+
+The change unlocks adding more structured properties to the context over time without further breaking changes. Visit diagnoses, added under `structured_context.visit_diagnoses` in `2026-04-24`, are the first beneficiary.
+
+## Before and after
+
+<CodeGroup>
+
+```json Before (pre-2026-02-13)
+{
+  "provider_email": "dr.smith@example-clinic.com",
+  "external_provider_id": "prov_8421",
+  "external_patient_id": "pat_55102",
+  "external_encounter_id": "enc_2026_05_12_001",
+  "encounter_data": {
+    "patient_name": "Jane Doe",
+    "patient_dob": "1982-07-14",
+    "patient_gender": "female",
+    "patient_pronouns": "she/her"
+  }
+}
+```
+
+```json After (2026-02-13 and later)
+{
+  "provider_email": "dr.smith@example-clinic.com",
+  "external_provider_id": "prov_8421",
+  "external_patient_id": "pat_55102",
+  "external_encounter_id": "enc_2026_05_12_001",
+  "structured_context": {
+    "patient_demographics": {
+      "name": "Jane Doe",
+      "birth_date": "1982-07-14",
+      "gender": "female",
+      "pronouns": "she/her"
+    }
+  },
+  "unstructured_context": "Annual follow-up for type 2 diabetes. Patient reports improved adherence to metformin."
+}
+```
+
+</CodeGroup>
+
+## Field mapping
+
+| Old field | New field | Notes |
+|---|---|---|
+| `encounter_data.patient_name` | `structured_context.patient_demographics.name` | Same semantics. |
+| `encounter_data.patient_dob` | `structured_context.patient_demographics.birth_date` | Same `YYYY-MM-DD` format. |
+| `encounter_data.patient_gender` | `structured_context.patient_demographics.gender` | Same enum values. |
+| `encounter_data.patient_pronouns` | `structured_context.patient_demographics.pronouns` | Still nullable. |
+| _n/a_ | `unstructured_context` | **New**. Optional, up to 700 characters. |
+
+The top-level identifiers (`provider_email`, `external_provider_id`, `external_patient_id`, `external_encounter_id`) are unchanged.
+
+## How to opt in
+
+1. **Update your request builder** to emit `structured_context.patient_demographics` instead of `encounter_data`. Optionally add `unstructured_context` for free-text context.
+2. **Send the version header** on `POST /encounter` and `POST /encounters` calls:
+
+   ```bash
+   curl https://us.api.nabla.com/v1/connect/server/encounters \
+     -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+     -H "X-Nabla-Api-Version: 2026-02-13" \
+     -H "content-type: application/json" \
+     -d '{ ... new shape ... }'
+   ```
+
+   Or use any later version (e.g., `2026-04-24`) once you're ready to use `visit_diagnoses` and the plural `POST /encounters` path.
+3. **Roll out gradually** — see [Versioning strategy](/connect/api-versioning/strategy) for the staging-then-production pattern.
+4. **Update your organization's pinned version** in the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect) once all callers are on the new shape, then drop the per-request header.
+
+## Compatibility note
+
+<Warning>
+The legacy `encounter_data` field is **rejected** on version `2026-02-13` and later. When you set the header (or pin your organization to that version), you must send the new `structured_context` shape — mixing the two will fail validation. Likewise, sending `structured_context` against a pre-`2026-02-13` version is rejected.
+</Warning>
+
+This means migration is per-request atomic: a single call is either fully on the old shape or fully on the new shape, decided by the version header.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="POST /encounters" icon="code" href="/connect/reference/server-api/create-encounter">
+    The full request/response contract for the new shape.
+  </Card>
+  <Card title="Changelog" icon="clock-rotate-left" href="/connect/changelog">
+    The full entry for `2026-02-13` and everything since.
+  </Card>
+</Columns>

@@ -1,0 +1,55 @@
+---
+title: "Key rotation"
+description: "Rotate the OAuth signing key behind your Connect integration without downtime."
+icon: "rotate"
+---
+
+The private key that signs your JWT client assertions is the most sensitive credential in a Nabla Connect integration. Rotate it regularly — both to limit the blast radius of a leak you don't know about and to keep your security review trail clean. The mechanics depend on which key option you chose when you created the OAuth client.
+
+## Why rotate
+
+- **Containment.** If a key is exfiltrated and you don't know it, rotation eventually invalidates the leaked copy.
+- **Compliance.** Most security programmes require a documented rotation cadence for long-lived signing material.
+- **Confidence after staff changes.** Rotate after offboarding anyone with access to the private key, even if you have no specific suspicion.
+
+## JWKS rotation (recommended)
+
+If your OAuth client is configured with a **JWKS URL**, rotation is a hot swap with no Nabla-side change and no code change in your assertion-signing logic:
+
+1. Generate a new key pair in your key-management system.
+2. Publish the new public key alongside the existing one at your JWKS endpoint, with a fresh `kid`.
+3. Update your signing code to set the JWT header's `kid` to the new key's identifier and sign with the new private key.
+4. Nabla fetches the JWKS on demand and validates assertions against whichever published key matches the `kid` in the header — old and new both work during the overlap window.
+5. After a propagation period (give it a few minutes at minimum to account for caches), remove the old public key from the JWKS.
+
+No downtime, no admin-page changes, and no coordination with Nabla. This is why JWKS is the preferred setup.
+
+<Tip>
+If you don't already have a JWKS, services like _AWS Cognito_, _Google Identity Platform_, and _Auth0_ can host one for you.
+</Tip>
+
+## Static-key rotation
+
+If your OAuth client uses a **static public key**, the key is bound to the OAuth client record itself — there's no way to change it in place. Rotation therefore looks like a small migration:
+
+1. In the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect), create a **new** OAuth client and upload the new public key. Note the new client's UUID.
+2. Update your signing code to use the new client UUID for `iss` / `sub` and to sign with the new private key.
+3. Run the old and new clients **in parallel** for a migration window — both will be accepted by Nabla. This lets you roll forward gradually, and gives you a clean rollback path if anything breaks.
+4. Once you're confident nothing is still signing with the old key, delete the old OAuth client from the admin page.
+
+The hot-spot in this flow is step 2 — make sure your config rollout actually flips every environment (especially scheduled workers) before you delete the old client.
+
+## Cadence
+
+There's no single right answer, and Nabla doesn't enforce a maximum lifetime. Rotate **regularly** as part of your security hygiene, and always rotate immediately if you suspect compromise. With JWKS, "regularly" can be a cron-driven monthly or quarterly event with effectively zero operational cost — there's not much excuse to leave a key in place for years.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Authentication" icon="key" href="/connect/authentication">
+    The full OAuth client setup, including JWKS vs static key trade-offs.
+  </Card>
+  <Card title="Idempotency" icon="rotate-right" href="/connect/best-practices/idempotency">
+    Make your callback handler safe under retries and at-least-once delivery.
+  </Card>
+</Columns>

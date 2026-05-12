@@ -1,0 +1,74 @@
+---
+title: "PATIENT_INSTRUCTIONS_EXPORT"
+description: "Payload reference for the PATIENT_INSTRUCTIONS_EXPORT callback."
+icon: "user-doctor"
+---
+
+Triggered when the provider clicks **Export patient instructions** in the Nabla app. Delivered to the single callback endpoint you configured in the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect). For the shared envelope, headers, and response protocol, see [Callback envelope & response](/connect/reference/callbacks/overview).
+
+## Payload
+
+<ResponseField name="request_uuid" type="string" required>
+  Unique identifier for this callback delivery. Echo it back on the `200` response.
+</ResponseField>
+
+<ResponseField name="type" type="string" required>
+  Always `"PATIENT_INSTRUCTIONS_EXPORT"` on this callback.
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  Export payload.
+
+  <Expandable title="data">
+    <ResponseField name="external_patient_id" type="string" required>
+      The patient identifier your backend passed when creating the encounter.
+    </ResponseField>
+    <ResponseField name="external_encounter_id" type="string" required>
+      The encounter identifier your backend passed when creating the encounter.
+    </ResponseField>
+    <ResponseField name="external_provider_id" type="string" required>
+      The provider identifier your backend passed when creating the encounter.
+    </ResponseField>
+
+    <ResponseField name="patient_instructions" type="object" required>
+      Patient-facing instructions generated from the visit.
+
+      <Expandable title="patient_instructions">
+        <ResponseField name="instructions" type="string" required>
+          Patient-friendly instructions text. Already formatted for readability — write to your EHR's after-visit summary field without post-processing.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example payload
+
+```json
+{
+  "request_uuid": "9b2d4f70-1c3e-4d2a-bc8f-2c0a91b76a3d",
+  "type": "PATIENT_INSTRUCTIONS_EXPORT",
+  "data": {
+    "external_patient_id": "pat_55102",
+    "external_encounter_id": "enc_2026_05_12_001",
+    "external_provider_id": "prov_8421",
+    "patient_instructions": {
+      "instructions": "Take metformin 500mg twice daily with meals. Recheck A1C in 3 months. Call the clinic if you experience symptoms of low blood sugar."
+    }
+  }
+}
+```
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Export notes guide" icon="file-export" href="/connect/guides/export-notes">
+    Map exported notes and patient instructions into your EHR.
+  </Card>
+  <Card title="NOTE_EXPORT" icon="file-export" href="/connect/reference/callbacks/note-export">
+    The sibling callback that delivers the structured clinical note.
+  </Card>
+  <Card title="Callback envelope & response" icon="envelope-open-text" href="/connect/reference/callbacks/overview">
+    Shared headers, HMAC, and response protocol.
+  </Card>
+</Columns>

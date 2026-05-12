@@ -1,0 +1,139 @@
+---
+title: "Export notes"
+description: "Consume NOTE_EXPORT and PATIENT_INSTRUCTIONS_EXPORT callbacks and map them into your EHR."
+icon: "file-export"
+---
+
+**What you'll build.** Two handlers on top of your callback endpoint that turn the structured note and patient-instructions payloads into rows, fields, or documents in your EHR.
+
+**Prerequisites.**
+
+- A working callback endpoint that verifies HMAC signatures and acknowledges with `200 { request_uuid }` — see [Handle callbacks](/connect/guides/handle-callbacks).
+- A view of how your EHR stores notes (sections vs. one blob), diagnoses, and patient instructions.
+
+## The two export callbacks
+
+Nabla Connect sends a callback when the provider clicks one of two buttons in the Nabla app.
+
+| Button in Nabla app | Callback `type` | Reference |
+|---|---|---|
+| **Export note** | `NOTE_EXPORT` | [`NOTE_EXPORT` payload](/connect/reference/callbacks/note-export) |
+| **Export patient instructions** | `PATIENT_INSTRUCTIONS_EXPORT` | [`PATIENT_INSTRUCTIONS_EXPORT` payload](/connect/reference/callbacks/patient-instructions-export) |
+
+Both callbacks share the same envelope (`request_uuid`, `type`, `data`) and use the same single endpoint you configured in the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect). Dispatch on `type`.
+
+Every payload carries the three external identifiers your backend used when launching the encounter:
+
+- `external_patient_id`
+- `external_encounter_id`
+- `external_provider_id`
+
+Use them to look up the matching patient, encounter, and provider in your system and avoid recomputing matches.
+
+## Map `NOTE_EXPORT` into your EHR
+
+The exported note arrives as an ordered array of **sections**. Each section has free-form `title` and `content` strings and a `category` enum that you can use to route the content into specific EHR fields.
+
+```json
+{
+  "request_uuid": "4f1a...",
+  "type": "NOTE_EXPORT",
+  "data": {
+    "external_patient_id": "pat_55102",
+    "external_encounter_id": "enc_2026_05_12_001",
+    "external_provider_id": "prov_8421",
+    "note": {
+      "sections": [
+        { "title": "Chief complaint", "content": "...", "category": "CHIEF_COMPLAINT" },
+        { "title": "Assessment", "content": "...", "category": "ASSESSMENT_AND_PLAN" },
+        { "title": "Plan", "content": "...", "category": "ASSESSMENT_AND_PLAN" },
+        { "title": "Patient education", "content": "...", "category": null }
+      ]
+    }
+  }
+}
+```
+
+### Routing rules
+
+- **Category-aware EHRs.** Read `sections[*].category` and map each value to the matching EHR field. The full list of category values is on the [`NOTE_EXPORT` reference](/connect/reference/callbacks/note-export#section-categories).
+- **Free-text EHRs.** Concatenate `title` + `content` in order — the sections array is already in the order Nabla displayed to the provider.
+- **Multiple sections per category.** Several sections can share the same `category`. For example, a `GENERIC_SOAP` template has separate "Assessment" and "Plan" sections that both return `"category": "ASSESSMENT_AND_PLAN"`. Append them to the same target field rather than overwriting.
+- **`category: null`.** The section didn't fit any of the predefined categories. Don't drop it — fall back to writing it as free text under its `title`.
+
+## Read `visit_diagnoses` when present
+
+If the provider added or accepted ICD-10 suggestions during the encounter, the `NOTE_EXPORT` payload includes a `visit_diagnoses` array:
+
+```json
+"visit_diagnoses": [
+  {
+    "system": "http://hl7.org/fhir/sid/icd-10-cm",
+    "code": "E11.9",
+    "display": "Type 2 diabetes mellitus without complications",
+    "is_hcc": false,
+    "is_mcc": false
+  }
+]
+```
+
+- `system` is the URI of the coding system (currently always ICD-10-CM).
+- `code` and `display` are the standard ICD-10-CM code and label.
+- `is_hcc` flags HCC (Hierarchical Condition Category) codes used in Medicare risk adjustment.
+- `is_mcc` flags MCC (Major Complication or Comorbidity) codes used in DRG grouping.
+
+Persist these alongside the note. Many EHRs have a dedicated **Encounter diagnoses** or **Problem list** area; the risk flags are useful for downstream billing and coding workflows. `visit_diagnoses` was added in `2026-04-24` — see the [Changelog](/connect/changelog).
+
+## Opt in to receiving the transcript
+
+If you want the raw conversation transcript alongside the note, enable the transcript option from the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect). Once enabled, every `NOTE_EXPORT` callback for your organization carries an additional `transcript` block:
+
+```json
+"transcript": {
+  "items": [ ... ]
+}
+```
+
+The shape of each item is not part of the public callback contract — treat it as opaque structured data and persist it as-is if you need it. Transcript opt-in was added in `2026-02-13`.
+
+<Info>
+The transcript can be sizeable for long encounters. Make sure your endpoint's request size limits and downstream storage accommodate it before enabling the option.
+</Info>
+
+## Map `PATIENT_INSTRUCTIONS_EXPORT`
+
+The patient-instructions payload is much smaller — a single `instructions` string under `patient_instructions`:
+
+```json
+{
+  "request_uuid": "9b2d...",
+  "type": "PATIENT_INSTRUCTIONS_EXPORT",
+  "data": {
+    "external_patient_id": "pat_55102",
+    "external_encounter_id": "enc_2026_05_12_001",
+    "external_provider_id": "prov_8421",
+    "patient_instructions": {
+      "instructions": "Take metformin 500mg twice daily with meals..."
+    }
+  }
+}
+```
+
+Write `instructions` to the patient-facing summary field in your EHR (e.g., "After-visit summary", "Patient discharge instructions"). It's already formatted for patient readability — don't post-process it.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="NOTE_EXPORT reference" icon="code" href="/connect/reference/callbacks/note-export">
+    Full payload schema, section categories, and version notes.
+  </Card>
+  <Card title="PATIENT_INSTRUCTIONS_EXPORT reference" icon="code" href="/connect/reference/callbacks/patient-instructions-export">
+    Full payload schema for the patient-instructions callback.
+  </Card>
+  <Card title="Handle callbacks" icon="webhook" href="/connect/guides/handle-callbacks">
+    HMAC verification, idempotency, and the ack response.
+  </Card>
+  <Card title="Idempotency" icon="rotate-right" href="/connect/best-practices/idempotency">
+    Deduplicate on `request_uuid` so retries don't double-write.
+  </Card>
+</Columns>

@@ -1,0 +1,228 @@
+---
+title: "Create encounter"
+description: "Create a Nabla encounter from your EHR and receive a one-time launch URL."
+api: "POST /v1/connect/server/encounters"
+---
+
+Create an encounter and return a one-time URL your frontend navigates to. Call this from your backend when the provider clicks the Nabla button on your EHR's encounter screen.
+
+On each call, Nabla will:
+
+1. Match the user corresponding to your provider, provisioning them lazily if needed.
+2. Create the encounter (or look it up if `external_encounter_id` is already known).
+3. Return a one-time `encounter_url` your frontend should navigate to.
+
+<Note>
+`POST /encounter` (singular) is a **deprecated alias** with identical behavior. New integrations should call `POST /encounters`.
+</Note>
+
+## Headers
+
+<ParamField header="X-Nabla-Api-Version" type="string" placeholder="2026-04-24">
+  Pins the API version. See [Targeting a specific version](/connect/api-versioning/targeting-a-version).
+</ParamField>
+
+## Body
+
+The schema below describes the current version (`2026-02-13` baseline, with the `visit_diagnoses` addition from `2026-04-24`).
+
+<ParamField body="provider_email" type="string" required>
+  Provider email from your EHR. Used to lazily provision the Nabla user the first time this `external_provider_id` is seen.
+</ParamField>
+
+<ParamField body="external_provider_id" type="string" required>
+  Stable provider identifier from your EHR.
+</ParamField>
+
+<ParamField body="external_patient_id" type="string" required>
+  Stable patient identifier from your EHR.
+</ParamField>
+
+<ParamField body="external_encounter_id" type="string" required>
+  Stable encounter identifier from your EHR. Re-using the same id returns a URL for the same encounter.
+</ParamField>
+
+<ParamField body="structured_context" type="object" required>
+  Structured context used to ground note generation.
+
+  <Expandable title="structured_context">
+    <ParamField body="patient_demographics" type="object" required>
+      The patient's demographic profile.
+
+      <Expandable title="patient_demographics">
+        <ParamField body="name" type="string" required>
+          Patient full name.
+        </ParamField>
+        <ParamField body="birth_date" type="string" required>
+          Patient birth date in `YYYY-MM-DD` format.
+        </ParamField>
+        <ParamField body="gender" type="string" required>
+          Patient gender.
+        </ParamField>
+        <ParamField body="pronouns" type="string | null">
+          Preferred pronouns (e.g., `she/her`).
+        </ParamField>
+      </Expandable>
+    </ParamField>
+
+    <ParamField body="visit_diagnoses" type="array of Coding">
+      Optional list of ICD-10-CM diagnosis codings for the visit. Added in `2026-04-24`.
+
+      <Expandable title="Coding">
+        <ParamField body="system" type="string" required>
+          The coding system URI. **Only the ICD-10-CM URI** (`http://hl7.org/fhir/sid/icd-10-cm`) is accepted for persistence.
+        </ParamField>
+        <ParamField body="code" type="string" required>
+          The diagnosis code (e.g., `E11.9`).
+        </ParamField>
+        <ParamField body="display" type="string" required>
+          Human-readable label for the code.
+        </ParamField>
+      </Expandable>
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="unstructured_context" type="string">
+  Free-text context that grounds note generation (e.g., medical history). Maximum 700 characters.
+</ParamField>
+
+<Info>
+Visit diagnoses persisted here are read by note generation when generating the encounter's note, and are echoed back on the `NOTE_EXPORT` callback with risk flags (`is_hcc`, `is_mcc`) when available.
+</Info>
+
+## Response
+
+<ResponseField name="encounter_url" type="string" required>
+  One-time URL the frontend navigates to. Logs the provider in automatically and opens the app on this encounter.
+</ResponseField>
+
+## Behavior
+
+<Warning>
+`encounter_url` is **one-time use** and expires **10 minutes** after creation. Don't store it, don't cache it, and don't pass it through long-lived queues. If the provider closes the tab or you need a fresh URL for the same encounter, call [`POST /encounters/url`](/connect/reference/server-api/refresh-encounter-url) with the same `external_provider_id` and `external_encounter_id`.
+</Warning>
+
+- **Lazy user provisioning** — If no Nabla user matches `external_provider_id`, Nabla provisions one using `provider_email`. If a user already exists for that `external_provider_id` and the `provider_email` doesn't match, the request fails. To preconfigure provider settings (specialty, dictation locales) before the first encounter, call [`POST /users`](/connect/reference/server-api/upsert-user) first.
+- **Same `external_encounter_id`** — Passing an id that already exists returns a fresh one-time URL for the existing encounter. The previous URL (if any) is invalidated.
+- **Recreating a deleted encounter** — As of `2026-02-13`, recreating a deleted encounter with the same `external_encounter_id` creates a brand-new encounter; the original transcript and note are not recovered.
+
+<Note>
+**Migrating from the pre-2026-02-13 schema?** The `encounter_data` object has been replaced by `structured_context`. See [Migrating pre-2026-02-13](/connect/api-versioning/migrating-pre-2026-02-13) for the field-by-field mapping.
+</Note>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://us.api.nabla.com/v1/connect/server/encounters \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "X-Nabla-Api-Version: 2026-04-24" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider_email": "dr.smith@example-clinic.com",
+    "external_provider_id": "prov_8421",
+    "external_patient_id": "pat_55102",
+    "external_encounter_id": "enc_2026_05_12_001",
+    "structured_context": {
+      "patient_demographics": {
+        "name": "Jane Doe",
+        "birth_date": "1982-07-14",
+        "gender": "female",
+        "pronouns": "she/her"
+      },
+      "visit_diagnoses": [
+        {
+          "system": "http://hl7.org/fhir/sid/icd-10-cm",
+          "code": "E11.9",
+          "display": "Type 2 diabetes mellitus without complications"
+        }
+      ]
+    },
+    "unstructured_context": "Annual follow-up for type 2 diabetes. Patient reports improved adherence to metformin."
+  }'
+```
+
+```js Node
+const res = await fetch("https://us.api.nabla.com/v1/connect/server/encounters", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${access_token}`,
+    "X-Nabla-Api-Version": "2026-04-24",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    provider_email: "dr.smith@example-clinic.com",
+    external_provider_id: "prov_8421",
+    external_patient_id: "pat_55102",
+    external_encounter_id: "enc_2026_05_12_001",
+    structured_context: {
+      patient_demographics: {
+        name: "Jane Doe",
+        birth_date: "1982-07-14",
+        gender: "female",
+        pronouns: "she/her",
+      },
+      visit_diagnoses: [
+        {
+          system: "http://hl7.org/fhir/sid/icd-10-cm",
+          code: "E11.9",
+          display: "Type 2 diabetes mellitus without complications",
+        },
+      ],
+    },
+    unstructured_context:
+      "Annual follow-up for type 2 diabetes. Patient reports improved adherence to metformin.",
+  }),
+});
+
+const { encounter_url } = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.post(
+    "https://us.api.nabla.com/v1/connect/server/encounters",
+    headers={
+        "Authorization": f"Bearer {access_token}",
+        "X-Nabla-Api-Version": "2026-04-24",
+        "Content-Type": "application/json",
+    },
+    json={
+        "provider_email": "dr.smith@example-clinic.com",
+        "external_provider_id": "prov_8421",
+        "external_patient_id": "pat_55102",
+        "external_encounter_id": "enc_2026_05_12_001",
+        "structured_context": {
+            "patient_demographics": {
+                "name": "Jane Doe",
+                "birth_date": "1982-07-14",
+                "gender": "female",
+                "pronouns": "she/her",
+            },
+            "visit_diagnoses": [
+                {
+                    "system": "http://hl7.org/fhir/sid/icd-10-cm",
+                    "code": "E11.9",
+                    "display": "Type 2 diabetes mellitus without complications",
+                }
+            ],
+        },
+        "unstructured_context": "Annual follow-up for type 2 diabetes. Patient reports improved adherence to metformin.",
+    },
+).json()
+
+encounter_url = resp["encounter_url"]
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "encounter_url": "https://app.nabla.com/connect/launch/<one-time-token>"
+}
+```
+
+</ResponseExample>

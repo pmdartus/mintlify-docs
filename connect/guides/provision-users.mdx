@@ -1,0 +1,151 @@
+---
+title: "Provision users"
+description: "Pre-configure a provider's specialty and dictation locales before their first Nabla encounter."
+icon: "user-plus"
+---
+
+**What you'll build.** A backend call that creates or updates a Nabla Connect provider user — setting specialty and speech locales — so the very first encounter you launch for them is already configured.
+
+**Prerequisites.**
+
+- An OAuth client created in the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect).
+- A server access token. See [Authentication](/connect/authentication).
+
+## When to call `POST /users`
+
+You don't have to. `POST /encounters` lazily provisions a user the first time it sees an `external_provider_id` (see [Launch an encounter](/connect/guides/launch-an-encounter)) — perfectly fine if you're happy to let providers pick specialty and dictation locales during in-app onboarding.
+
+Call `POST /users` when you want those fields set **before** the first encounter is launched, so the very first transcription and note already use the right specialty and speech locales. Typical triggers:
+
+- A provider is created or updated in your EHR's admin and you mirror that change to Nabla.
+- You're seeding existing providers as part of rolling out the Connect integration.
+- Your EHR already stores specialty and preferred dictation language, and you'd like the provider to skip Nabla's in-app onboarding for those fields.
+
+| Goal | Endpoint |
+|---|---|
+| Set specialty / speech locales **before** the first encounter | `POST /users` (this guide) |
+| Provision on first use, accept defaults until in-app onboarding | `POST /encounters` ([Launch an encounter](/connect/guides/launch-an-encounter)) |
+
+## 1. Mint a server access token
+
+Reuse the token you cached from the OAuth client credentials flow. See [Authentication](/connect/authentication) if you don't have one yet.
+
+## 2. Call `POST /users`
+
+Send the provider's email, your stable `external_provider_id`, and the `settings` you want pre-configured. The example below sets a primary specialty and a primary speech locale.
+
+<Tabs>
+<Tab title="cURL">
+
+```bash
+curl -X POST https://us.api.nabla.com/v1/connect/server/users \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "X-Nabla-Api-Version: 2026-03-23" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider_email": "dr.smith@example-clinic.com",
+    "external_provider_id": "prov_8421",
+    "settings": {
+      "specialty": { "kind": "FAMILY_MEDICINE", "other_specialty_name": null },
+      "speech_locale": "ENGLISH_US",
+      "secondary_speech_locale": "SPANISH_MX"
+    }
+  }'
+```
+
+</Tab>
+<Tab title="Node">
+
+```js
+const res = await fetch("https://us.api.nabla.com/v1/connect/server/users", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${access_token}`,
+    "X-Nabla-Api-Version": "2026-03-23",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    provider_email: "dr.smith@example-clinic.com",
+    external_provider_id: "prov_8421",
+    settings: {
+      specialty: { kind: "FAMILY_MEDICINE", other_specialty_name: null },
+      speech_locale: "ENGLISH_US",
+      secondary_speech_locale: "SPANISH_MX",
+    },
+  }),
+});
+
+const user = await res.json();
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+import requests
+
+resp = requests.post(
+    "https://us.api.nabla.com/v1/connect/server/users",
+    headers={
+        "Authorization": f"Bearer {access_token}",
+        "X-Nabla-Api-Version": "2026-03-23",
+        "Content-Type": "application/json",
+    },
+    json={
+        "provider_email": "dr.smith@example-clinic.com",
+        "external_provider_id": "prov_8421",
+        "settings": {
+            "specialty": {"kind": "FAMILY_MEDICINE", "other_specialty_name": None},
+            "speech_locale": "ENGLISH_US",
+            "secondary_speech_locale": "SPANISH_MX",
+        },
+    },
+).json()
+```
+
+</Tab>
+</Tabs>
+
+The response echoes the stored `provider_email`, `external_provider_id`, the merged `settings`, and the user's `created_at`. For the full payload schema and the full lists of accepted specialty kinds and speech locales, see the [`POST /users` reference](/connect/reference/server-api/upsert-user).
+
+## Idempotency and merge semantics
+
+`POST /users` is safe to call repeatedly with the same `external_provider_id`:
+
+- If no user exists, Nabla creates one.
+- If a user already exists, Nabla returns it and **merges** in the `settings` you sent. Fields you omit are left untouched.
+- Omit `settings` entirely to make this a pure lookup or to keep the current specialty and locales as-is.
+
+This makes the endpoint a natural fit for "sync provider on every change" workflows: replay it as often as you like without worrying about clobbering values you didn't intend to touch.
+
+## Handling `409 Conflict`
+
+Nabla rejects a request with **`409 Conflict`** when the combination of `external_provider_id` and `provider_email` you sent would point at two different existing users — for example, an `external_provider_id` is already linked to user A's email, and you sent user B's email instead.
+
+Treat this as a **wiring bug, not a transient error**:
+
+- Don't retry. Repeating the same payload will keep failing.
+- Check that your EHR's `external_provider_id` is stable across the provider's lifetime — reusing one for a different person is the usual cause.
+- Confirm that the `provider_email` you sent matches the one previously stored for this `external_provider_id`. If the email genuinely changed, contact [connect@nabla.com](mailto:connect@nabla.com) to reconcile.
+
+<Info>
+The same 409 semantics apply on `POST /encounters` lazy provisioning. If you've already hit and fixed a mismatch there, the same fix applies here.
+</Info>
+
+## Pin the API version
+
+`POST /users` is available from version **`2026-03-23`**. Send the `X-Nabla-Api-Version` header on every request so future versions don't shift the response shape under your integration — see [Targeting a specific version](/connect/api-versioning/targeting-a-version).
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="POST /users reference" icon="code" href="/connect/reference/server-api/upsert-user">
+    Full payload schema, response shape, and the full specialty and locale enums.
+  </Card>
+  <Card title="Launch an encounter" icon="rocket" href="/connect/guides/launch-an-encounter">
+    Open Nabla for the provider you just provisioned — or rely on lazy provisioning.
+  </Card>
+  <Card title="Changelog" icon="clock-rotate-left" href="/connect/changelog">
+    Track when new specialty kinds and speech locales are added.
+  </Card>
+</Columns>

@@ -109,9 +109,72 @@
             "groups": [
               {
                 "group": "Get started",
-                "pages": ["connect/overview"]
+                "pages": [
+                  "connect/introduction",
+                  "connect/quickstart",
+                  "connect/authentication"
+                ]
+              },
+              {
+                "group": "Concepts",
+                "pages": [
+                  "connect/concepts/flow-overview",
+                  "connect/concepts/incoming-vs-outgoing-apis",
+                  "connect/concepts/iframe-embedding"
+                ]
+              },
+              {
+                "group": "Guides",
+                "pages": [
+                  "connect/guides/launch-an-encounter",
+                  "connect/guides/provision-users",
+                  "connect/guides/handle-callbacks",
+                  "connect/guides/export-notes"
+                ]
+              },
+              {
+                "group": "Production best practices",
+                "pages": [
+                  "connect/best-practices/key-rotation",
+                  "connect/best-practices/idempotency",
+                  "connect/best-practices/callback-latency"
+                ]
+              },
+              {
+                "group": "API versioning",
+                "pages": [
+                  "connect/api-versioning/strategy",
+                  "connect/api-versioning/targeting-a-version",
+                  "connect/api-versioning/migrating-pre-2026-02-13"
+                ]
               }
             ]
+          },
+          {
+            "tab": "API reference",
+            "groups": [
+              {
+                "group": "Server API",
+                "pages": [
+                  "connect/reference/server-api/oauth-token",
+                  "connect/reference/server-api/upsert-user",
+                  "connect/reference/server-api/create-encounter",
+                  "connect/reference/server-api/refresh-encounter-url"
+                ]
+              },
+              {
+                "group": "Callbacks",
+                "pages": [
+                  "connect/reference/callbacks/overview",
+                  "connect/reference/callbacks/note-export",
+                  "connect/reference/callbacks/patient-instructions-export"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "Changelog",
+            "pages": ["connect/changelog"]
           }
         ]
       }
@@ -151,6 +214,14 @@
       "x": "https://x.com/nabla_ai",
       "github": "https://github.com/nabla",
       "linkedin": "https://linkedin.com/company/nablahq"
+    }
+  },
+  "api": {
+    "mdx": {
+      "server": "https://us.api.nabla.com",
+      "auth": {
+        "method": "bearer"
+      }
     }
   },
   "seo": {

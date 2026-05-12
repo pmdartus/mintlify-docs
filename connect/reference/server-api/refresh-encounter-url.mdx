@@ -1,0 +1,105 @@
+---
+title: "Refresh encounter URL"
+description: "Generate a fresh one-time launch URL for an existing Nabla encounter."
+api: "POST /v1/connect/server/encounters/url"
+---
+
+Generate a fresh one-time URL for an encounter that has already been created. Use this when the provider closed the Nabla tab, the previous URL expired, or you need to re-open the same encounter without re-sending its context.
+
+Nabla matches the user corresponding to your provider and the encounter, then returns a one-time URL your frontend navigates to. Navigating to it logs the provider into Nabla automatically and opens the app on this encounter.
+
+<Note>
+`POST /encounter/url` (singular) is a **deprecated alias** with identical behavior. New integrations should call `POST /encounters/url`.
+</Note>
+
+## Headers
+
+<ParamField header="X-Nabla-Api-Version" type="string" placeholder="2026-04-24">
+  Pins the API version. See [Targeting a specific version](/connect/api-versioning/targeting-a-version).
+</ParamField>
+
+## Body
+
+<ParamField body="external_provider_id" type="string" required>
+  Stable provider identifier from your EHR. Must match the provider who owns the encounter.
+</ParamField>
+
+<ParamField body="external_encounter_id" type="string" required>
+  Stable encounter identifier from your EHR. Must reference an existing encounter created via [`POST /encounters`](/connect/reference/server-api/create-encounter).
+</ParamField>
+
+## Response
+
+<ResponseField name="encounter_url" type="string" required>
+  One-time URL the frontend navigates to. Logs the provider in automatically and opens the app on this encounter.
+</ResponseField>
+
+## Behavior
+
+<Warning>
+`encounter_url` is **one-time use** and expires **10 minutes** after creation. Don't store it, don't cache it, and don't pass it through long-lived queues. Mint a new one on demand each time you need to navigate the provider back into the encounter.
+</Warning>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://us.api.nabla.com/v1/connect/server/encounters/url \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "X-Nabla-Api-Version: 2026-04-24" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "external_provider_id": "prov_8421",
+    "external_encounter_id": "enc_2026_05_12_001"
+  }'
+```
+
+```js Node
+const res = await fetch(
+  "https://us.api.nabla.com/v1/connect/server/encounters/url",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${access_token}`,
+      "X-Nabla-Api-Version": "2026-04-24",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      external_provider_id: "prov_8421",
+      external_encounter_id: "enc_2026_05_12_001",
+    }),
+  },
+);
+
+const { encounter_url } = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.post(
+    "https://us.api.nabla.com/v1/connect/server/encounters/url",
+    headers={
+        "Authorization": f"Bearer {access_token}",
+        "X-Nabla-Api-Version": "2026-04-24",
+        "Content-Type": "application/json",
+    },
+    json={
+        "external_provider_id": "prov_8421",
+        "external_encounter_id": "enc_2026_05_12_001",
+    },
+).json()
+
+encounter_url = resp["encounter_url"]
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "encounter_url": "https://app.nabla.com/connect/launch/<one-time-token>"
+}
+```
+
+</ResponseExample>

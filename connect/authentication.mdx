@@ -1,0 +1,204 @@
+---
+title: "Authentication"
+description: "Authenticate Connect Server API calls with OAuth 2.0 client credentials and a JWT bearer assertion."
+icon: "key"
+---
+
+Nabla Connect is intended to be used by your backend systems. Authentication uses the **OAuth 2.0 client credentials flow with JWT-based client assertions** — the same shape as the Core API, on a Connect-specific base URL.
+
+<Info>
+Don't have an organization yet? Contact [connect@nabla.com](mailto:connect@nabla.com) to get set up.
+</Info>
+
+The base URL for the Connect Server API is:
+
+```
+https://<region>.api.nabla.com/v1/connect/server
+```
+
+`<region>` is `us` or `eu`. Use the same region your organization was provisioned in.
+
+## 1. Create an OAuth client
+
+An **OAuth client** is the entity that authenticates with Nabla Connect on behalf of your backend. Create one in the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect). When you do, provide one of:
+
+- **JWKS URL** _(recommended)_ — a hosted JSON Web Key Set that exposes one or more public keys. JWKS makes key rotation seamless: you publish new keys at the same URL without reconfiguring the OAuth client.
+  <Tip>
+  If you don't already have a JWKS, services like _AWS Cognito_, _Google Identity Platform_, and _Auth0_ can generate and expose your keys as JWKS automatically.
+  </Tip>
+- **Static public key** — a single X.509 (base64-encoded) RSA public key. Only RSA with SHA-256 (`RS256`) is accepted. Less flexible: rotating keys means creating a new OAuth client and migrating your signing code.
+
+  ```bash
+  # Generate the private key
+  openssl genpkey -algorithm RSA -out private_key.pem
+
+  # Extract the public key
+  openssl rsa -pubout -in private_key.pem -out public_key.pem
+  ```
+
+  Provide Nabla with the contents of `public_key.pem` (the block starting with `-----BEGIN PUBLIC KEY-----`).
+
+Once the OAuth client is created, copy its **UUID** — you'll embed it in every client assertion.
+
+<Tip>
+Rotate your keys regularly. With JWKS, just publish the new key at your endpoint; Nabla will pick it up automatically. With a static key, see [Key rotation](/connect/best-practices/key-rotation).
+</Tip>
+
+## 2. Construct a JWT client assertion
+
+The client assertion is a one-time JWT used to authenticate your request to `POST /oauth/token`. It must include:
+
+### In the JWT header
+
+- **`alg`** — must be `RS256`.
+- **`typ`** — must be `JWT`.
+- **`kid`** — required if your OAuth client uses a JWKS URL; identifies which public key to validate against.
+
+### In the JWT body
+
+- **`sub`** — the OAuth client's UUID.
+- **`iss`** — same as `sub` (the OAuth client's UUID).
+- **`aud`** — the full token URL, e.g., `https://us.api.nabla.com/v1/connect/server/oauth/token`.
+- **`exp`** — expiration time. Must not be in the past, and no further than 5 minutes in the future.
+- **`iat`** — optional. If included, must be within 5 minutes of `exp`.
+- **`jti`** — optional but highly recommended; prevents reuse of the same assertion.
+
+Use a well-maintained JWT library rather than rolling your own.
+
+<Tabs>
+<Tab title="cURL">
+
+```bash
+# Build the JWT in your language of choice, then:
+curl -X POST https://us.api.nabla.com/v1/connect/server/oauth/token \
+  -H "content-type: application/json" \
+  -d '{
+    "grant_type": "client_credentials",
+    "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+    "client_assertion": "<YOUR_JWT_HERE>"
+  }'
+```
+
+</Tab>
+<Tab title="Node">
+
+```js
+import { SignJWT, importPKCS8 } from "jose";
+import fs from "node:fs/promises";
+
+const clientId = process.env.NABLA_CONNECT_CLIENT_ID;
+const privateKey = await importPKCS8(
+  await fs.readFile("./private_key.pem", "utf8"),
+  "RS256"
+);
+
+const tokenUrl = "https://us.api.nabla.com/v1/connect/server/oauth/token";
+
+const assertion = await new SignJWT({})
+  .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+  .setIssuer(clientId)
+  .setSubject(clientId)
+  .setAudience(tokenUrl)
+  .setIssuedAt()
+  .setExpirationTime("5m")
+  .sign(privateKey);
+
+const res = await fetch(tokenUrl, {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    grant_type: "client_credentials",
+    client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+    client_assertion: assertion,
+  }),
+});
+
+const { access_token, expires_in } = await res.json();
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+import os
+import time
+import jwt  # PyJWT
+import requests
+
+client_id = os.environ["NABLA_CONNECT_CLIENT_ID"]
+with open("private_key.pem", "rb") as f:
+    private_key = f.read()
+
+token_url = "https://us.api.nabla.com/v1/connect/server/oauth/token"
+
+now = int(time.time())
+assertion = jwt.encode(
+    {"iss": client_id, "sub": client_id, "aud": token_url, "iat": now, "exp": now + 300},
+    private_key,
+    algorithm="RS256",
+)
+
+resp = requests.post(
+    token_url,
+    json={
+        "grant_type": "client_credentials",
+        "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+        "client_assertion": assertion,
+    },
+).json()
+
+access_token = resp["access_token"]
+```
+
+</Tab>
+</Tabs>
+
+For full claim semantics, see [RFC 7523](https://datatracker.ietf.org/doc/html/rfc7523).
+
+## 3. Request a server access token
+
+Exchange the JWT assertion for a server access token at `POST /oauth/token`:
+
+```yaml
+POST /oauth/token
+{
+  "grant_type": "client_credentials",
+  "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+  "client_assertion": "<your JWT here>"
+}
+```
+
+The response returns the access token and its TTL:
+
+```yaml
+{ "access_token": "<JWT_ACCESS_TOKEN>", "expires_in": 3600 }
+```
+
+The TTL is typically one hour but may change without notice — always trust `expires_in` over a hard-coded value. Cache the token and reuse it across requests; mint a new one when it approaches expiry.
+
+Use the token as a bearer on every subsequent Connect Server API call:
+
+```
+Authorization: Bearer <JWT_ACCESS_TOKEN>
+```
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `invalid_client` / 401 | `iss` or `sub` doesn't match the OAuth client UUID. | Recopy the UUID from the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect). |
+| `invalid_grant` / 400 | `aud` doesn't match the full token URL for your region. | Use the exact URL, e.g., `https://us.api.nabla.com/v1/connect/server/oauth/token`. |
+| `invalid_grant`, clock-skew message | `iat` or `exp` is outside the ±5-minute window. | Sync server clock (NTP) and set `exp` ~5 minutes ahead. |
+| `invalid_client`, key error | JWKS not reachable, or `kid` doesn't match any key in the JWKS. | Hit your JWKS URL directly to confirm it serves the public key with the right `kid`. |
+| Sporadic failures right after rotating keys | New JWKS hasn't propagated yet. | Wait ~1 minute and retry, or keep the old key live during the rotation window. |
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Quickstart" icon="bolt" href="/connect/quickstart">
+    Mint your first token and launch an encounter end-to-end.
+  </Card>
+  <Card title="Key rotation" icon="rotate" href="/connect/best-practices/key-rotation">
+    Rotate JWKS keys or migrate off a static key without downtime.
+  </Card>
+</Columns>

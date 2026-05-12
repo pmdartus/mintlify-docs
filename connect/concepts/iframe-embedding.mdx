@@ -1,0 +1,77 @@
+---
+title: "Iframe embedding"
+description: "Embed the Nabla app inside your EHR with the right permissions and CSP settings."
+icon: "window-restore"
+---
+
+When you launch a Nabla encounter, the `encounter_url` returned by `POST /encounters` can be opened in two ways: inside an **iframe** directly on your EHR's encounter screen, or in a separate **browser tab**. This page covers the iframe path — the permissions you must grant, the optional ones, and the host-side gotchas to watch for.
+
+## When to use an iframe
+
+Use an iframe when you want the provider to stay inside your EHR's chrome — same window, same navigation, same session. It feels native and avoids tab-switching during a visit.
+
+Use a separate browser tab when:
+
+- Your EHR runs in a strict CSP environment where embedding third-party origins is impractical.
+- Providers prefer a dedicated window they can drag to a second monitor.
+- You don't control the parent page's permission policy (for example, the EHR is itself embedded somewhere else).
+
+Both modes use the exact same `encounter_url`. The only thing that changes is how you open it.
+
+## Required permission: microphone
+
+Nabla records audio in the browser, which means the iframe **must** be allowed to access the microphone. Browsers require this to be declared explicitly on the parent `<iframe>` tag via the `allow` attribute:
+
+```html
+<iframe src="https://connect.nabla.com/..." allow="microphone;"></iframe>
+```
+
+Without `microphone`, the browser silently denies `getUserMedia` inside the iframe and recording will fail with no obvious error in the EHR's own logs.
+
+## Optional permission: loopback-network
+
+If your providers use **Nabla Echo** — the standalone audio-capture companion that streams microphone input from a device on the local network — the iframe also needs the `loopback-network` permission so the Nabla app can reach the device:
+
+```html
+<iframe
+  src="https://connect.nabla.com/..."
+  allow="microphone; loopback-network;"
+></iframe>
+```
+
+If you don't use Nabla Echo, you can skip this permission entirely.
+
+## CSP and CORS considerations
+
+Embedding Nabla means your EHR's [Content Security Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP) must allow the Nabla origin in `frame-src` (or the legacy `child-src`). The exact directive names and values depend on your CSP setup — strict EHR environments often need a small policy tweak before the iframe will render.
+
+<Tip>
+If you have a locked-down CSP and aren't sure which directives to relax, contact [connect@nabla.com](mailto:connect@nabla.com) — we can walk through your policy with you and identify the minimal change.
+</Tip>
+
+The Server API call to mint the `encounter_url` happens **server-to-server** from your backend, so there's no browser-side CORS surface to worry about for the launch itself. CORS only matters for the iframe's runtime traffic, which is handled by Nabla's own origin.
+
+## Putting it together
+
+A typical EHR encounter screen renders the iframe like this once your backend has obtained an `encounter_url`:
+
+```html
+<iframe
+  src="<encounter_url>"
+  allow="microphone;"
+  style="width: 100%; height: 100%; border: 0;"
+></iframe>
+```
+
+For the full server-side flow that produces `encounter_url`, see [Launch an encounter](/connect/guides/launch-an-encounter). For the broader list of what your EHR-side integration needs to ship, see the [Introduction's integration checklist](/connect/introduction).
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Launch an encounter" icon="rocket" href="/connect/guides/launch-an-encounter">
+    Mint an `encounter_url` and render it in your iframe.
+  </Card>
+  <Card title="Flow overview" icon="diagram-project" href="/connect/concepts/flow-overview">
+    See where the iframe sits in the end-to-end encounter flow.
+  </Card>
+</Columns>
