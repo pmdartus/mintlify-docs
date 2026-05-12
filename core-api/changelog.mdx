@@ -10,9 +10,9 @@ This means these changes won't affect your integration unless you explicitly opt
 
 That said, some updates — like internal AI model improvements, bug fixes, or strictly non-breaking changes that don't affect the schema or observable behavior — may be rolled out across all versions.
 
-Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entries that change the wire format or observable behavior are tagged **Breaking** in the right-side filter panel — read those carefully before rolling forward. For the recommended upgrade workflow, see [Versioning strategy](/core-api/api-versioning/strategy).
+Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entries that change the wire format or observable behavior are tagged **Breaking change** in the right-side filter panel — read those carefully before rolling forward. For the recommended upgrade workflow, see [Versioning strategy](/core-api/api-versioning/strategy).
 
-<Update label="2026-04-24" description="Optional provider specialty and encounter date for note generation." tags={["New"]}>
+<Update label="2026-04-24" description="Optional provider specialty and encounter date for note generation." tags={["New Release"]}>
   - Introduce an optional provider `specialty` field. This field lets you set a user's medical specialty. If set, it will for now have impact, but in the near future, this piece of information will be leveraged to improve the dictation, transcription, and note generation.
     - Added optional `specialty` field to user management endpoints on the **Server API** (`POST /users`, `PATCH /users/{id}`, `GET /users/{id}`, `GET /users`).
     - On the other **Server API**, the same `specialty` field is available on the request bodies for `/transcribe`, `/transcribe-async`, `/dictate`, `/dictate-async`, `/generate-note`, and `/generate-note-async`.
@@ -20,7 +20,7 @@ Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entr
   - Added optional `encounter_date` field to note generation endpoints (`/generate-note` and `/generate-note-async`) on both **User** and **Server** APIs. When provided, this date grounds relative temporal references (e.g., "last year") in the generated note. Defaults to today's date when omitted.
 </Update>
 
-<Update label="2026-03-16" description="Bulk Dot Phrase management and stricter patient instructions error handling." tags={["New", "Breaking"]}>
+<Update label="2026-03-16" description="Bulk Dot Phrase management and stricter patient instructions error handling." tags={["New Release", "Breaking change"]}>
   - Add new bulk Dot Phrase management endpoints to the **User API**, each supporting up to 100 items per request:
     - `POST /dot-phrases/bulk-create` — Create multiple Dot Phrases in a single request.
     - `POST /dot-phrases/bulk-update` — Update multiple Dot Phrases in a single request.
@@ -30,8 +30,8 @@ Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entr
     Previously, this endpoint would silently return a placeholder string (`[Insert your patient instructions here]`) when the note lacked actionable content. It now returns error code `83023` (`NOTE_HAS_NO_PATIENT_INSTRUCTIONS_INFORMATION`) with HTTP 400, allowing clients to handle this case explicitly (e.g., display their own placeholder).
 </Update>
 
-<Update label="2026-02-20" description="Diarization support, required locale/template, and JWT audience deprecations." tags={["Breaking", "New"]}>
-  - **Breaking**: JWT audience `us-central1` and `eu-west1` are now deprecated.
+<Update label="2026-02-20" description="Diarization support, required locale/template, and JWT audience deprecations." tags={["Breaking change", "New Release"]}>
+  - **Breaking change**: JWT audience `us-central1` and `eu-west1` are now deprecated.
     - If you are using the `us-central1` or `eu-west1` regions in the URL of your JWT audiences; use the generic `us` and `eu` instead.
   - **Diarization support.**
     - Diarization support for transcription WebSocket sessions (`/transcribe-ws`).
@@ -52,7 +52,7 @@ Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entr
       This field is an array of ICD-10 codes that are closely related to the primary coding and represent plausible alternative coding for the condition.
 </Update>
 
-<Update label="2025-11-14" description="Structured context for note generation and field renames." tags={["New", "Breaking", "Fix"]}>
+<Update label="2025-11-14" description="Structured context for note generation and field renames." tags={["New Release", "Breaking change", "Improvements"]}>
   - New optional fields in object `structured_context` for all note generation endpoints:
     - `patient_demographics`: Demographic information about the patient.
     - `draft_assessment_and_plan`: Starting text for generating the _Assessment & Plan_ section.
@@ -66,7 +66,7 @@ Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entr
   - Patched on January 7th: Fixed an issue where the `current_note` field was not taken into account during asynchronous note generation.
 </Update>
 
-<Update label="2025-08-05" description="Structured context for note generation, including active diagnoses coding." tags={["New"]}>
+<Update label="2025-08-05" description="Structured context for note generation, including active diagnoses coding." tags={["New Release"]}>
   - Add a new optional input field for all note generation endpoints:
     - `structured_context`: Structured context about the patient and the encounter, which will be taken into account when generating the note. Currently only includes:
       - `active_encounter_diagnoses_coding`: The ICD-10 coding for the patient's active encounter diagnoses.
@@ -74,18 +74,18 @@ Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entr
   - Added a new `active_encounter_diagnoses_coding` parameter to `/generate-normalized-data`. If related diagnoses are found in the input note, the call will return in priority the codes passed.
 </Update>
 
-<Update label="2025-07-24" description="Dictation text replacements, French per-section customization, and dictation context." tags={["New", "Improvement"]}>
+<Update label="2025-07-24" description="Dictation text replacements, French per-section customization, and dictation context." tags={["New Release", "Improvements"]}>
   - Remove `suggested_dot_phrases` from response of `/generate-note` in Server API as it has always been null (Dot Phrases are only applicable for User API).
   - Add new CRUD endpoints to manage **Dictation Text Replacements** for a user.
   - Extend support for per-section customization options to note generation in French. This change applies to all prior versions too.
   - Add new optional `text_field_context` property to dictation WS config to improve dictation quality by providing initial text context.
 </Update>
 
-<Update label="2025-05-21" description="HCC and MCC indicators on normalized FHIR conditions." tags={["New"]}>
+<Update label="2025-05-21" description="HCC and MCC indicators on normalized FHIR conditions." tags={["New Release"]}>
   - Add new boolean fields `is_hcc` and `is_mcc` to the FHIR condition objects returned by the `/generate-normalized-data` endpoint.
 </Update>
 
-<Update label="2025-05-07" description="New simpler and faster dictation WebSocket protocol." tags={["Breaking"]}>
+<Update label="2025-05-07" description="New simpler and faster dictation WebSocket protocol." tags={["Breaking change"]}>
   - Change the dictate WebSocket protocol.
     The WebSocket dictation protocol evolves to a faster and simpler model, where small units of text —such as individual words, short phrases, or punctuation marks— are sent once and don't require any further updates.
     Clients are expected to append each received unit in order, without inserting spaces or applying any formatting.
@@ -101,11 +101,11 @@ Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entr
   - Add new `code`, `name` and `trace_id` fields in WebSockets error frame JSON body. Also, the `message` field formatting changed (reminder: do not rely on this formatted string but only on the numeric `code`).
 </Update>
 
-<Update label="2025-05-05" description="Corresponding note problem in normalized conditions." tags={["New"]}>
+<Update label="2025-05-05" description="Corresponding note problem in normalized conditions." tags={["New Release"]}>
   - Add new `corresponding_note_problem` in the conditions returned by `/generate-normalized-data` endpoint. Use the `include_corresponding_note_problems` flag in the input body to enable this feature.
 </Update>
 
-<Update label="2025-04-03" description="Persistent user note settings and per-section customization." tags={["New", "Breaking"]}>
+<Update label="2025-04-03" description="Persistent user note settings and per-section customization." tags={["New Release", "Breaking change"]}>
   - Enforce a limit of 700 on the length of the custom instructions per section for note generation endpoints
   - Add new **User API endpoints** to allow users to configure and persist their note generation preferences:
     - `GET /note-settings` — Retrieve the user's preferred **locale** and **template**.
@@ -124,12 +124,12 @@ Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entr
     - The endpoint will now automatically apply the settings stored in the user's **per-section customization**, for the locale and note template provided as endpoint parameters.
 </Update>
 
-<Update label="2025-02-25" description="Bilingual transcription support (speech_locale → speech_locales)." tags={["New", "Breaking"]}>
+<Update label="2025-02-25" description="Bilingual transcription support (speech_locale → speech_locales)." tags={["New Release", "Breaking change"]}>
   - Bilingual support has been added to transcription endpoints and Websocket.
     - In request bodies and WS config frame, `speech_locale` property has been removed and replaced by new `speech_locales` property, an array that can contain one or two distinct speech locales.
 </Update>
 
-<Update label="2025-01-07" description="New dictation endpoints and required regional hosts." tags={["New", "Breaking"]}>
+<Update label="2025-01-07" description="New dictation endpoints and required regional hosts." tags={["New Release", "Breaking change"]}>
   - Add a new synchronous dictation from file upload endpoint (`POST /dictate`).
   - Add a new asynchronous dictation from file URL (`POST /dictate-async`), with the ability to either:
     - poll the result through a polling endpoint (`GET /dictate-async/{id}`);
@@ -138,16 +138,16 @@ Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entr
   - Require endpoints host to specify a region, i.e., either `us.api.nabla.com` or `eu.api.nabla.com`, the generic `api.nabla.com` is not supported anymore.
 </Update>
 
-<Update label="2024-12-23" description="Audio chunk acknowledgement protocol and required base paths." tags={["New", "Breaking"]}>
+<Update label="2024-12-23" description="Audio chunk acknowledgement protocol and required base paths." tags={["New Release", "Breaking change"]}>
   - Add a new [audio chunk acknowledgement protocol](/core-api/best-practices/transcription-network-resilience), this change applies to all prior versions too.
   - Require endpoints paths to start with either "/v1/core/server" or "/v1/core/user"; paths like "copilot-api/server," "copilot/server," "copilot-api/user" or "copilot/user" are not supported anymore.
 </Update>
 
-<Update label="2024-11-08" description="Consistent SCREAMING_SNAKE_CASE for Transcribe WebSocket frames." tags={["Breaking"]}>
+<Update label="2024-11-08" description="Consistent SCREAMING_SNAKE_CASE for Transcribe WebSocket frames." tags={["Breaking change"]}>
   - Fixed the case for server-to-client frames in Transcribe Websocket. It is now `SCREAMING_SNAKE_CASE` for all the frames, e.g. `transcript_item` becomes `TRANSCRIPT_ITEM`.
 </Update>
 
-<Update label="2024-10-01" description="New major API version with OAuth, webhooks, simpler transcription and note generation." tags={["Major release", "New", "Breaking"]}>
+<Update label="2024-10-01" description="New major API version with OAuth, webhooks, simpler transcription and note generation." tags={["New Release", "Breaking change"]}>
   - **New `2024-10-01` major API version. Check the [Migration guide](/core-api/api-versioning/migrating-pre-2024-10-01) for an exhaustive list of the changes.**
   - Add support for [OAuth Client authentication](/core-api/authentication) flow for server-to-server integrations.
   - Add support for [Webhooks](/core-api/webhooks/overview) with events sent upon completion of asynchronous tasks like asynchronous note generation.
@@ -162,7 +162,7 @@ Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entr
     `/digest`, `/digest_async`, `/listen`, `/listen-ws`, `/listen_async`, `/generate_normalized_data`, `/generate_patient_instructions`, `/dot_phrases` & `/dot_phrases/{id}`.
 </Update>
 
-<Update label="2024-04-22" description="Patient instructions, normalized data, dictation WebSocket, and Dot Phrases." tags={["New", "Breaking"]}>
+<Update label="2024-04-22" description="Patient instructions, normalized data, dictation WebSocket, and Dot Phrases." tags={["New Release", "Breaking change"]}>
   - Add a new endpoint `/generate_patient_instructions` to generate a patient-friendly summary from an encounter.
   - Add a new endpoint `/generate_normalized_data` to generate normalized data from a note, available on both the Server API and the User API.
   - Add a new WebSocket endpoint `/dictate` for transcribing medical dictation.
@@ -180,7 +180,7 @@ Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entr
     Upcoming appointments details are now included inside `instructions` starting for this version.
 </Update>
 
-<Update label="2024-02-27" description="User activation endpoints, problem-based splitting, and deprecated Spanish note generation." tags={["New", "Deprecated", "Breaking"]}>
+<Update label="2024-02-27" description="User activation endpoints, problem-based splitting, and deprecated Spanish note generation." tags={["New Release", "Breaking change"]}>
   - Add new endpoints: activate-user and deactivate user.
   - Add new endpoints to fetch a single user or all users using filters and pagination.
   - Add `split_by_problem` to digest and listen-from-file endpoints.
@@ -190,6 +190,6 @@ Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entr
   - Remove the note generation feature from Listen Websocket API (recommend using the dedicated endpoint).
 </Update>
 
-<Update label="2023-06-26" description="First public release of the Nabla Core API." tags={["Initial release"]}>
+<Update label="2023-06-26" description="First public release of the Nabla Core API." tags={["New Release"]}>
   First version of the API.
 </Update>
