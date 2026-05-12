@@ -1,0 +1,45 @@
+---
+title: "Rate limits & quotas"
+description: "How Nabla rate-limits requests and what to do when you hit a limit."
+icon: "gauge-high"
+---
+
+The Core API enforces per-organization rate limits. The exact thresholds depend on your plan and the endpoint — contact api@nabla.com for the values that apply to your organization. This page covers how limits surface and how clients should react.
+
+## How limits surface
+
+When you exceed a limit:
+
+- **HTTP endpoints** return status `429 Too Many Requests` with `code` `85000` (`ORGANIZATION_RATE_LIMITED`) in the JSON body.
+- **WebSocket endpoints** close with code `4429` (and an `ERROR` frame using the same `85000` code before the close).
+
+The response includes a `trace_id` you can include in support tickets.
+
+## How to react
+
+1. **Back off, then retry.** The retry pattern in [Error handling](/core-api/best-practices/error-handling) handles 429 automatically with exponential backoff and jitter. Use it everywhere.
+2. **Smooth your traffic.** Most spikes come from concurrent batch jobs or polling loops. Add a per-worker concurrency cap and a global token-bucket if you're processing async jobs in parallel.
+3. **Prefer webhooks over polling.** If you're polling `/generate-note-async/{id}` for many requests in parallel, switching to webhooks eliminates the polling traffic and is much friendlier to rate limits.
+4. **Consolidate before sending.** For Dot Phrase management, use the bulk endpoints (`/dot-phrases/bulk-create`, `bulk-update`, `bulk-delete`) — up to 100 items per request — rather than one call per item.
+5. **Ask early.** If your sustained traffic is approaching the limit, talk to your Nabla contact before you start dropping requests. Raising the quota is usually a config change on our side.
+
+## Concurrency and audio length
+
+Rate limits apply at the request level. Two other implicit limits worth knowing:
+
+- **Audio length per request**: `/transcribe` accepts ≤ 10 minutes, `/transcribe-async` ≤ 60 minutes. Going beyond returns `413 Payload Too Large`.
+- **Custom instruction length**: 700 characters per section on note generation requests. See [Section customization](/core-api/note-templates/customization).
+- **Bulk Dot Phrase**: 100 items per request.
+
+These are protocol-level caps, not rate limits — they don't move with your plan.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Error handling & retries" icon="circle-exclamation" href="/core-api/best-practices/error-handling">
+    The retry-with-backoff pattern that handles 429s automatically.
+  </Card>
+  <Card title="Async note generation" icon="clock" href="/core-api/best-practices/async-note-generation">
+    Move from polling to webhooks to reduce rate-limit pressure.
+  </Card>
+</Columns>

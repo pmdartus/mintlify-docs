@@ -5,11 +5,13 @@ icon: "clock-rotate-left"
 ---
 
 Updates to the Nabla Core API — including new features, fields, or endpoints — are released under a new-dated version to ensure stability and predictability.
-This means these changes won’t affect your integration unless you explicitly opt into the newer version (see [Targeting a specific version](/guides/api-versioning/usage)){/* TODO: link to ported spec */}.
+This means these changes won’t affect your integration unless you explicitly opt into the newer version (see [Targeting a specific version](/core-api/api-versioning/targeting-a-version)).
 
-That said, some updates — like internal AI models improvements, bug fixes, or strictly non-breaking changes that don’t affect the schema or observable behavior — may be rolled out across all versions.
+That said, some updates — like internal AI model improvements, bug fixes, or strictly non-breaking changes that don’t affect the schema or observable behavior — may be rolled out across all versions.
 
-Below is a list of all available Core API versions, along with their associated changes.
+Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entries that change the wire format or observable behavior are tagged **⚠️ BREAKING** so they're easy to find when planning an upgrade — read those carefully before rolling forward. For the recommended upgrade workflow, see [Versioning strategy](/core-api/api-versioning/strategy).
+
+Below is the full list of available Core API versions, along with their associated changes.
 
 ## 2026-04-24
 
@@ -19,19 +21,19 @@ Below is a list of all available Core API versions, along with their associated 
   - On the **User API**, transcription, dictation, and note generation use the authenticated user's profile specialty instead (no `specialty` field on those request bodies).
 - Added optional `encounter_date` field to note generation endpoints (`/generate-note` and `/generate-note-async`) on both **User** and **Server** APIs. When provided, this date grounds relative temporal references (e.g., "last year") in the generated note. Defaults to today's date when omitted.
 
-## 2026-03-16
+## 2026-03-16 — ⚠️ BREAKING
 
 - Add new bulk Dot Phrase management endpoints to the **User API**, each supporting up to 100 items per request:
-  - [`POST /dot-phrases/bulk-create`](/user/bulk-create-user-dot-phrases){/* TODO: link to ported spec */} — Create multiple Dot Phrases in a single request.
-  - [`POST /dot-phrases/bulk-update`](/user/bulk-update-user-dot-phrases) — Update multiple Dot Phrases in a single request.
-  - [`POST /dot-phrases/bulk-delete`](/user/bulk-delete-user-dot-phrases) — Delete multiple Dot Phrases in a single request.
+  - `POST /dot-phrases/bulk-create` — Create multiple Dot Phrases in a single request.
+  - `POST /dot-phrases/bulk-update` — Update multiple Dot Phrases in a single request.
+  - `POST /dot-phrases/bulk-delete` — Delete multiple Dot Phrases in a single request.
 - Added `created_at` and `updated_at` timestamp fields to the dot phrase API responses.
 - **`/generate-patient-instructions` now returns an error when no patient instructions can be generated.**
   Previously, this endpoint would silently return a placeholder string (`[Insert your patient instructions here]`) when the note lacked actionable content. It now returns error code `83023` (`NOTE_HAS_NO_PATIENT_INSTRUCTIONS_INFORMATION`) with HTTP 400, allowing clients to handle this case explicitly (e.g., display their own placeholder).
 
-## 2026-02-20
+## 2026-02-20 — ⚠️ BREAKING
 
-- Breaking change: JWT audience `us-central1` and `eu-west1` are now deprecated.
+- **⚠️ BREAKING**: JWT audience `us-central1` and `eu-west1` are now deprecated.
   - If you are using the `us-central1` or `eu-west1` regions in the URL of your JWT audiences; use the generic `us` and `eu` instead.
 - **Diarization support.**
 
@@ -55,7 +57,7 @@ Below is a list of all available Core API versions, along with their associated 
   - A new `alternative_coding` field has been added to `conditions`.
     This field is an array of ICD-10 codes that are closely related to the primary coding and represent plausible alternative coding for the condition.
 
-## 2025-11-14
+## 2025-11-14 — ⚠️ BREAKING (renames)
 
 - New optional fields in object `structured_context` for all note generation endpoints:
   - `patient_demographics`: Demographic information about the patient.
@@ -88,7 +90,7 @@ Below is a list of all available Core API versions, along with their associated 
 
 - Add new boolean fields `is_hcc` and `is_mcc` to the FHIR condition objects returned by the `/generate-normalized-data` endpoint.
 
-## 2025-05-07
+## 2025-05-07 — ⚠️ BREAKING (dictate WebSocket protocol)
 
 - Change the dictate WebSocket protocol.
   The WebSocket dictation protocol evolves to a faster and simpler model, where small units of text —such as individual words, short phrases, or punctuation marks— are sent once and don’t require any further updates.
@@ -112,54 +114,54 @@ Below is a list of all available Core API versions, along with their associated 
 
 - Enforce a limit of 700 on the length of the custom instructions per section for note generation endpoints
 - Add new **User API endpoints** to allow users to configure and persist their note generation preferences:
-  - [`GET /note-settings`](/user/get-note-settings){/* TODO: link to ported spec */} — Retrieve the user’s preferred **locale** and **template**.
+  - `GET /note-settings` — Retrieve the user’s preferred **locale** and **template**.
     Default values: `note_locale = ENGLISH_US`, `note_template = GENERIC_MULTIPLE_SECTIONS`.
-  - [`PATCH /note-settings`](/user/update-note-settings) — Update the user’s preferred **locale** and **template**.
-  - [`GET /note-settings/note-sections-customization/:note_template`](/user/get-note-sections-customization) — Retrieve the default **per-section customization** options for a specific template.
-  - [`PATCH /note-settings/note-sections-customization/:note_template`](/user/update-note-sections-customization) — Update the default **per-section customization** options for a specific template.
-- Change in User API [`/generate-note`](/user/generate-note) and [`/generate-note-async`](/next/user/generate-note-async) endpoints:
+  - `PATCH /note-settings` — Update the user’s preferred **locale** and **template**.
+  - `GET /note-settings/note-sections-customization/:note_template` — Retrieve the default **per-section customization** options for a specific template.
+  - `PATCH /note-settings/note-sections-customization/:note_template` — Update the default **per-section customization** options for a specific template.
+- Change in User API `/generate-note` and `/generate-note-async` endpoints:
   - The following fields have been **removed** from the request body:
     - `note_locale`
     - `note_template`
     - `note_sections_customization`
   - These endpoints will now automatically apply the settings stored in the user’s **note settings** and **per-section customization**.
-- Change in User API [`/edit-note-with-instructions`](/user/edit-note-with-instructions) endpoint:
+- Change in User API `/edit-note-with-instructions` endpoint:
   - The optional field `note_sections_customization` has been **removed**.
   - The endpoint will now automatically apply the settings stored in the user’s **per-section customization**, for the locale and note template provided as endpoint parameters.
 
-## 2025-02-25
+## 2025-02-25 — ⚠️ BREAKING (`speech_locale` → `speech_locales`)
 
 - Bilingual support has been added to transcription endpoints and Websocket.
   - In request bodies and WS config frame, `speech_locale` property has been removed and replaced by new `speech_locales` property, an array that can contain one or two distinct speech locales.
 
-## 2025-01-07
+## 2025-01-07 — ⚠️ BREAKING (region required in host)
 
-- Add a new [synchronous dictation from file upload endpoint](/server/dictate){/* TODO: link to ported spec */}.
-- Add a new [asynchronous dictation from file URL](/server/dictate-async), with the ability to either:
-  - poll the result through a [polling endpoint](/server/get-dictation-async);
+- Add a new synchronous dictation from file upload endpoint (`POST /dictate`).
+- Add a new asynchronous dictation from file URL (`POST /dictate-async`), with the ability to either:
+  - poll the result through a polling endpoint (`GET /dictate-async/{id}`);
   - or receive it via a webhook event.
     - Note: If you already have a webhook integration set up, make sure you go to the [Developer Console](https://pro.nabla.com/developers/webhooks) and extend its set of enabled event types to include dictation-related ones.
 - Require endpoints host to specify a region, i.e., either `us.api.nabla.com` or `eu.api.nabla.com`, the generic `api.nabla.com` is not supported anymore.
 
-## 2024-12-23
+## 2024-12-23 — ⚠️ BREAKING (endpoint path prefix)
 
-- Add a new [audio chunk acknowledgement protocol](/guides/best-practices/transcription-network-resilience){/* TODO: link to ported spec */}, this change applies to all prior versions too.
+- Add a new [audio chunk acknowledgement protocol](/core-api/best-practices/transcription-network-resilience), this change applies to all prior versions too.
 - Require endpoints paths to start with either "/v1/core/server" or "/v1/core/user"; paths like "copilot-api/server," "copilot/server," "copilot-api/user" or "copilot/user" are not supported anymore.
 
-## 2024-11-08
+## 2024-11-08 — ⚠️ BREAKING (Transcribe WebSocket frame casing)
 
 - Fixed the case for server-to-client frames in Transcribe Websocket. It is now `SCREAMING_SNAKE_CASE` for all the frames, e.g. `transcript_item` becomes `TRANSCRIPT_ITEM`.
 
-## 2024-10-01
+## 2024-10-01 — ⚠️ BREAKING (major version)
 
-- **New `2024-10-01` major API version. Check the [Migration guide](/guides/api-versioning/migrating-from-prior-to-2024-10-01){/* TODO: link to ported spec */} for an exhaustive list of the changes.**
-- Add support for [OAuth Client authentication](/guides/authentication) flow for server-to-server integrations.
-- Add support for [Webhooks](/webhook/api-receive-webhook) with events sent upon completion of asynchronous tasks like asynchronous note generation.
-- Add a new [transcription websocket](/server/transcribe-ws) with a simpler frames schema, and **support for 35 languages**.
-- Add a new [note generation endpoint](/server/generate-note) with **[per-section customization capabilities](/next/guides/note-templates/note-customization)**.
-- Add a new [asynchronous note generation endpoint](/server/generate-note-async) with the ability to poll the result through a [polling endpoint](/next/server/get-generate-note-async).
-- Add a new [transcription from file upload endpoint](/server/transcribe) with a simpler body schema.
-- Add a new [transcription from file upload endpoint](/server/transcribe-async) with the ability to poll the result through a [polling endpoint](/next/server/get-transcribe-async).
+- **New `2024-10-01` major API version. Check the [Migration guide](/core-api/api-versioning/migrating-pre-2024-10-01) for an exhaustive list of the changes.**
+- Add support for [OAuth Client authentication](/core-api/authentication) flow for server-to-server integrations.
+- Add support for [Webhooks](/core-api/webhooks/overview) with events sent upon completion of asynchronous tasks like asynchronous note generation.
+- Add a new transcription WebSocket (`/transcribe-ws`) with a simpler frames schema, and **support for 35 languages**.
+- Add a new note generation endpoint (`POST /generate-note`) with **[per-section customization capabilities](/core-api/note-templates/customization)**.
+- Add a new asynchronous note generation endpoint (`POST /generate-note-async`) with the ability to poll the result through a polling endpoint (`GET /generate-note-async/{id}`).
+- Add a new transcription from file upload endpoint (`POST /transcribe`) with a simpler body schema.
+- Add a new asynchronous transcription endpoint (`POST /transcribe-async`) with the ability to poll the result through a polling endpoint (`GET /transcribe-async/{id}`).
 - Change endpoints paths to start with either `/v1/core/server` or `/v1/core/user`.
 - Change endpoints host to support for direct URL to a specific geographical region, e.g. `us.api.nabla.com/*` instead of just `api.nabla.com/*`.
 - Remove or renamed endpoints (still supported on older versions for backward compatibility):
@@ -173,7 +175,7 @@ Below is a list of all available Core API versions, along with their associated 
 - Add a new endpoint `/users/find_by_external_id/:external_id` to fetch a user with a unique external ID from another system.
 - Add new endpoints to manage **Dot Phrases** for a user.
 - When set on a user, suggest matching Dot Phrases alongside the generated note in the 'digest' endpoint.
-- Add four new [templates](/guides/note-templates/note-templates-sections){/* TODO: link to ported spec */}: `GENERAL_MEDICINE_WCC`, `SOAP_WCC`, `GENERAL_MEDICINE_EMERGENCY`, `SOAP_EMERGENCY`.
+- Add four new [templates](/core-api/note-templates/sections): `GENERAL_MEDICINE_WCC`, `SOAP_WCC`, `GENERAL_MEDICINE_EMERGENCY`, `SOAP_EMERGENCY`.
 - Add a `title` property in the note generated by server digest, server digest async, user digest, and user digest async endpoints. The title is a short description of the note content.
 - Add a `patient_context` property in `digest` and `digest_async` requests body.
 - Add a `PATCH /users/:id` endpoint.

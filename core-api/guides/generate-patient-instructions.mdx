@@ -1,0 +1,74 @@
+---
+title: "Generate patient instructions"
+description: "Produce a post-visit summary written for the patient or a caregiver."
+icon: "user-doctor"
+---
+
+**What you'll build.** A `POST /generate-patient-instructions` call that turns a generated note into a plain-language summary suitable for handing to the patient.
+
+**Prerequisites.**
+
+- A generated note. See [Generate a clinical note](/core-api/guides/generate-a-clinical-note).
+- A locale for the patient-facing output (`instructions_locale`); this can differ from the note's locale.
+
+## Make the call
+
+<Tabs>
+<Tab title="Node">
+
+```js
+const res = await fetch("https://us.api.nabla.com/v1/core/server/generate-patient-instructions", {
+  method: "POST",
+  headers: {
+    authorization: `Bearer ${access_token}`,
+    "content-type": "application/json",
+  },
+  body: JSON.stringify({
+    note,
+    instructions_locale: "ENGLISH_US",
+    recipient_type: "PATIENT", // or "PARENT" for pediatric encounters
+  }),
+});
+
+const { instructions } = await res.json();
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+resp = requests.post(
+    "https://us.api.nabla.com/v1/core/server/generate-patient-instructions",
+    headers={"authorization": f"Bearer {access_token}", "content-type": "application/json"},
+    json={
+        "note": note,
+        "instructions_locale": "ENGLISH_US",
+        "recipient_type": "PATIENT",
+    },
+).json()
+
+instructions = resp["instructions"]
+```
+
+</Tab>
+</Tabs>
+
+## Locale & recipient
+
+- `instructions_locale` accepts the same 35 values as `speech_locale`. You can transcribe in one language, write the clinician's note in another, and produce patient-facing text in a third.
+- `recipient_type` toggles between an adult-patient voice (`PATIENT`) and a caregiver voice (`PARENT`) for pediatric encounters.
+
+## Error: no actionable content
+
+Starting with version `2026-03-16`, this endpoint returns error code `83023` (`NOTE_HAS_NO_PATIENT_INSTRUCTIONS_INFORMATION`) with HTTP 400 when the source note has no actionable content. Handle this case explicitly — show your own placeholder, or skip the patient-instructions step. See [Error handling](/core-api/best-practices/error-handling).
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Extract FHIR data" icon="hospital" href="/core-api/guides/extract-fhir-normalized-data">
+    Get ICD-10 conditions and LOINC observations alongside the patient summary.
+  </Card>
+  <Card title="Locales overview" icon="language" href="/core-api/concepts/locales">
+    How `speech_locale`, `locale`, and `instructions_locale` interact.
+  </Card>
+</Columns>

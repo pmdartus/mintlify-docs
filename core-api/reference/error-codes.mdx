@@ -1,0 +1,58 @@
+---
+title: "Error codes reference"
+description: "Quick-scan reference of HTTP status codes, WebSocket close codes, and application error codes."
+icon: "list"
+---
+
+This is the quick-lookup version of [Error handling](/core-api/best-practices/error-handling). When something fails, search for the `code` in your error body or the HTTP/WebSocket status code here to find the right action.
+
+The application-level `code` in the response body is the source of truth for routing logic — HTTP status and WebSocket close codes are coarser, and a `400` can mean many different things.
+
+## HTTP status codes
+
+| Status | Name | What it means | What to do |
+|---|---|---|---|
+| 400 | Bad Request | Generic client-side issue. **Don't switch on this alone** — read `code`. | Inspect `code` and fix the request. |
+| 401 | Unauthorized | Token missing, invalid, or expired. | Refresh the token; re-authenticate the user. |
+| 403 | Forbidden | Caller is authenticated but not authorized (e.g., deactivated user). | Reactivate or re-authorize before retry. |
+| 404 | Not Found | Endpoint or resource not found for the targeted API version. | Verify the path and the `X-Nabla-Api-Version`. |
+| 409 | Conflict | Uniqueness constraint violated (e.g., duplicate `external_id`). | Pick a different identifier. |
+| 413 | Payload Too Large | Audio too long or body too big. | Switch to the async endpoint, or split the input. |
+| 422 | Unprocessable Entity | Syntactically valid request with invalid content (e.g., corrupted audio). | Validate the audio locally before retry. |
+| 429 | Too Many Requests | Rate limit exceeded (`code: 85000`). | Back off with exponential jitter; consider webhooks instead of polling. |
+| 5xx | Server Error | Transient. | Retry with backoff. See [Error handling](/core-api/best-practices/error-handling). |
+
+## WebSocket close codes
+
+| Close code | What it means | What to do |
+|---|---|---|
+| 1000 | Normal closure. | None. |
+| 1002 | Protocol error (often paired with `code: 40101` ping timeout or `83011` audio stream idle timeout). | Reconnect; verify frame schema. |
+| 4401 | Auth-equivalent close (expired or invalid token). | Refresh and reconnect. |
+| 4403 | Forbidden (e.g., deactivated user). | Re-authorize. |
+| 4429 | Rate limit exceeded (`code: 85000`). | Back off and reconnect. |
+
+## Notable application error codes
+
+| `code` | `name` | When | Action |
+|---|---|---|---|
+| 20000 | `ENTITY_NOT_FOUND` | The referenced resource (user, request ID, ...) does not exist. | Verify the ID; recreate if needed. |
+| 40101 | `PING_TIMEOUT` | Server received no frames or pings within the idle window. | Send pings or audio frames more frequently. |
+| 83011 | `AUDIO_STREAM_IDLE_TIMEOUT` | A transcription stream went idle. | Resume sending audio or close the stream. |
+| 83015 | `UNEXPECTED_AUDIO_CHUNK_SEQUENCE_ID` | `seq_id` skipped or rewound. | Reset and reconnect; never reuse `seq_id`s out of order. |
+| 83016 | `AUDIO_CHUNKS_BUFFER_OVERFLOW` | You sent audio faster than Nabla could process. | Enable `enable_audio_chunk_ack` and respect backpressure. See [Network resilience](/core-api/best-practices/transcription-network-resilience). |
+| 83023 | `NOTE_HAS_NO_PATIENT_INSTRUCTIONS_INFORMATION` | The note has no actionable content for patient instructions. | Show your own placeholder; skip the call. |
+| 85000 | `ORGANIZATION_RATE_LIMITED` | Per-organization rate limit hit. | Back off; consider webhooks or higher quota. See [Rate limits](/core-api/best-practices/rate-limits). |
+
+For the full narrative — error JSON shape, retry rules, and the `trace_id` — see [Error handling](/core-api/best-practices/error-handling).
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Error handling" icon="circle-exclamation" href="/core-api/best-practices/error-handling">
+    The narrative version, with the retry-with-backoff pattern.
+  </Card>
+  <Card title="Observability & debugging" icon="bug" href="/core-api/best-practices/observability">
+    Capture `trace_id` and file useful support tickets.
+  </Card>
+</Columns>

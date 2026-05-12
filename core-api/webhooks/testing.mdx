@@ -1,0 +1,62 @@
+---
+title: "Testing webhooks locally"
+description: "Tunnel to your machine, trigger test events, and replay deliveries."
+icon: "flask"
+---
+
+You don't have to deploy your webhook handler to production before you can test it. The flow below lets you exercise signature verification, idempotency, and retries from your laptop.
+
+## 1. Tunnel to your dev machine
+
+Use [ngrok](https://ngrok.com/), [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/), or any tool that gives you a public HTTPS URL pointing at a port on your machine.
+
+```bash
+ngrok http 3000
+# Forwarding https://abc123.ngrok.app -> http://localhost:3000
+```
+
+## 2. Register the tunnel URL as a webhook
+
+In the [API Admin Console](https://pro.nabla.com/developers/webhooks), create a new webhook with the tunnel URL plus your route (e.g., `https://abc123.ngrok.app/webhooks/nabla`). Enable the event types you want to receive and copy the signature secret.
+
+## 3. Trigger a real event
+
+The cleanest way to receive a real delivery is to make the async call you want to test from a sandbox account:
+
+```bash
+curl -X POST https://us.api.nabla.com/v1/core/server/generate-note-async \
+  -H "authorization: Bearer $ACCESS_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{
+    "locale": "ENGLISH_US",
+    "template": "GENERIC_SOAP",
+    "transcript_items": [{ "text": "Hello, how are you today?", "speaker_type": "DOCTOR" }]
+  }'
+```
+
+When the async job finishes, Nabla `POST`s `generate_note_async.succeeded` to your tunnel URL. Your local handler runs against the real signed payload.
+
+## 4. Replay a previous delivery
+
+If you've already received an event and want to replay it (e.g., to test a bug fix), find the delivery in the API Admin Console's webhook log and press **Replay**. The same payload is re-sent with the same `id`, which is the perfect way to verify your idempotency logic.
+
+## 5. Simulate failure to verify retries
+
+Return `500` from your handler temporarily. You should see Nabla retry per the [retry schedule](/core-api/webhooks/retries). Then return `200`; the next retry should succeed and you should see your dedup logic skip already-handled `id`s.
+
+## Common pitfalls
+
+- **Don't terminate TLS at a load balancer that buffers and modifies the body.** Signature verification is over the raw body — make sure the bytes you hash are exactly what Nabla sent.
+- **Don't decode the body before hashing.** JSON normalization re-orders keys; signatures won't match. Hash the raw request body.
+- **Don't share signature secrets between environments.** Each webhook in the console has its own secret — use a separate secret for staging vs production.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Setup & signature verification" icon="shield-check" href="/core-api/webhooks/setup">
+    The full signature-verification snippets in Node and Python.
+  </Card>
+  <Card title="Retries & idempotency" icon="rotate-right" href="/core-api/webhooks/retries">
+    The retry schedule and how to dedup.
+  </Card>
+</Columns>

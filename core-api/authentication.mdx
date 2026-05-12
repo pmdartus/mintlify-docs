@@ -4,10 +4,12 @@ description: "Authenticate your API calls"
 icon: "key"
 ---
 
-In order to securely interact with the Nabla Core API, developers need to authenticate via two main API types: the Server API and the User API. Each API serves distinct use cases:
+The Core API exposes two surfaces with separate authentication flows:
 
-- **Server API**: Intended for server-to-server interactions, it allows backend systems to authenticate and manage resources using OAuth 2.0 client credentials flow.
-- **User API**: Designed for client-side interactions, this API allows users to interact directly with Nabla via access tokens, which are provisioned and managed by the Server API.
+- **Server API** — backend-to-backend, OAuth 2.0 client credentials with a JWT bearer assertion. Use it from a trusted server.
+- **User API** — short-lived per-user access tokens issued by the Server API. Use it from a frontend or mobile client.
+
+If you're not sure which one you need, read [Server vs User API](/core-api/concepts/server-vs-user-api) first.
 
 <Info>
 To get access to the Nabla Core API, please reach out to api@nabla.com.
@@ -54,9 +56,7 @@ Upon creation, copy the OAuth Client's UUID to reference it when constructing th
 
 ### 2. Constructing a JWT Client Assertion
 
-The client assertion is a one-time JWT used to authenticate your request to the [Generate Server Access Token](/server/oauth-generate-server-access-token) endpoint.
-{/* TODO: link to ported spec */}
-The JWT must include the following claims, split between the header and body:
+The client assertion is a one-time JWT used to authenticate your request to the Generate Server Access Token endpoint (`POST /oauth/token`). The JWT must include the following claims, split between the header and body:
 
 #### In the JWT header
 
@@ -68,20 +68,70 @@ The JWT must include the following claims, split between the header and body:
 
 - **`sub` (subject)**: The OAuth Client's UUID.
 - **`iss` (issuer)**: Same as `sub`, i.e., the OAuth Client's UUID.
-- **`aud` (audience)**: The full URL of the <u>[Generate Server Access Token](/server/oauth-generate-server-access-token)</u> endpoint.
+- **`aud` (audience)**: The full URL of the Generate Server Access Token endpoint (e.g., `https://us.api.nabla.com/v1/core/server/oauth/token`).
 - **`exp` (expiration time)**: The JWT expiration time, which must not be in the past and no further than 5 minutes in the future.
 - **`iat` (issued at)**: Optional, but if included, it must be within 5 minutes of `exp` and should not be in the future.
 - **`jti` (JWT ID)**: Optional but highly recommended for enhanced security, as it prevents the reuse of the same JWT for future requests.
 
 The JWT needs to be signed using the private key from the public/private key pair corresponding to the specified OAuth Client.
 
-For constructing and signing JWTs, you can use open source libraries like the ones from [Auth0](https://github.com/auth0), notably [java-jwt](https://github.com/auth0/java-jwt) for Java.
+In practice, use a well-maintained JWT library rather than rolling your own. Common choices:
 
-For more details on constructing a JWT assertion and its claims you can check [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523).
+<Tabs>
+<Tab title="Node">
+
+```js
+import { SignJWT, importPKCS8 } from "jose";
+import fs from "node:fs/promises";
+
+const privateKey = await importPKCS8(await fs.readFile("./private_key.pem", "utf8"), "RS256");
+
+const assertion = await new SignJWT({})
+  .setProtectedHeader({ alg: "RS256", typ: "JWT", kid: "<KID_IF_JWKS>" })
+  .setIssuer(clientId)
+  .setSubject(clientId)
+  .setAudience("https://us.api.nabla.com/v1/core/server/oauth/token")
+  .setIssuedAt()
+  .setExpirationTime("5m")
+  .sign(privateKey);
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+import time, jwt  # PyJWT
+
+now = int(time.time())
+assertion = jwt.encode(
+    {
+        "iss": client_id,
+        "sub": client_id,
+        "aud": "https://us.api.nabla.com/v1/core/server/oauth/token",
+        "iat": now,
+        "exp": now + 300,
+    },
+    private_key,
+    algorithm="RS256",
+    headers={"kid": "<KID_IF_JWKS>"},
+)
+```
+
+</Tab>
+<Tab title="Java">
+
+```java
+// See Auth0's java-jwt library: https://github.com/auth0/java-jwt
+```
+
+</Tab>
+</Tabs>
+
+For the full claim semantics, see [RFC 7523](https://datatracker.ietf.org/doc/html/rfc7523).
 
 ### 3. Requesting a Server Access Token
 
-Once you've constructed your JWT assertion, you can use it to authenticate against the <u>[Generate Server Access Token](/server/oauth-generate-server-access-token)</u> endpoint:
+Once you've constructed your JWT assertion, you can use it to authenticate against the Generate Server Access Token endpoint (`POST /oauth/token`):
 
 ```yaml
 POST /oauth/token
@@ -101,7 +151,7 @@ The response will return an access token and its expiration time (`expires_in` i
 ```
 
 This Server Access Token can be used to access all the Server API endpoints, notably endpoints to provision and authenticate users.
-The expiration time is typically set to 1 hour, but it might be subject to change without prior notice.
+The expiration time is typically set to 1 hour, but it might be subject to change without prior notice — always trust `expires_in` over a hard-coded value.
 
 ### 4. Handling Token Expiry
 
@@ -119,8 +169,7 @@ The User API is designed for interactions on behalf of individual users. You can
 
 ### 1. Generating User Tokens
 
-To generate the initial pair of tokens (access and refresh) for a user, call the <u>[Authenticate a user](/server/jwt-authenticate-user)</u> endpoint using a valid server access token:
-{/* TODO: link to ported spec */}
+To generate the initial pair of tokens (access and refresh) for a user, call the Authenticate a user endpoint (`POST /jwt/authenticate/{user_id}`) using a valid server access token:
 
 ```
 POST /jwt/authenticate/{user_id}
@@ -132,8 +181,7 @@ These tokens are scoped to the specified user and allow access only to the resou
 
 ### 2. Refreshing User Tokens
 
-When the user’s access token expires, the client can request new tokens by calling the <u>[Refresh Token](/user/jwt-refresh)</u> endpoint:
-{/* TODO: link to ported spec */}
+When the user’s access token expires, the client can request new tokens by calling the Refresh Token endpoint (`POST /jwt/refresh`):
 
 ```yaml
 POST /jwt/refresh
@@ -143,3 +191,29 @@ POST /jwt/refresh
 ```
 
 The response will include a new access token and a new refresh token for continued API access.
+
+## Troubleshooting
+
+If `/oauth/token` rejects your request, the response body's `code` and `trace_id` are the fastest way in. Common causes:
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `invalid_client` / 401 | `iss` or `sub` doesn't match the OAuth Client UUID. | Recopy the UUID from the API Admin Console. |
+| `invalid_grant` / 400 | `aud` doesn't match the full token URL of the region you're targeting. | Use the exact URL, e.g., `https://us.api.nabla.com/v1/core/server/oauth/token`. |
+| `invalid_grant`, clock-skew message | `iat` or `exp` is outside the ±5-minute window. | Sync your server clock (NTP) and set `exp` to ~5 minutes ahead. |
+| `invalid_client`, key error | JWKS not reachable or `kid` doesn't match a key in the JWKS. | Hit your JWKS URL directly to confirm it serves the public key with the right `kid`. |
+| Sporadic failures right after rotating a key | New JWKS hasn't propagated yet. | Wait ~1 minute and retry, or keep the old key live during the rotation window. |
+| 401 on User API calls that worked yesterday | User access token expired (~1 hour TTL). | Refresh with the refresh token before retrying. |
+
+If none of these apply, include the `trace_id` from the error response when you contact api@nabla.com — it lets us trace your request server-side.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Quickstart" icon="bolt" href="/core-api/quickstart">
+    Make your first authenticated call end-to-end.
+  </Card>
+  <Card title="Server vs User API" icon="scale-balanced" href="/core-api/concepts/server-vs-user-api">
+    Pick the right surface for your architecture.
+  </Card>
+</Columns>

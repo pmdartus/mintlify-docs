@@ -22,33 +22,74 @@
                 "group": "Get started",
                 "pages": [
                   "core-api/introduction",
-                  "core-api/authentication",
-                  "core-api/error-handling",
-                  "core-api/setup-webhooks",
-                  "core-api/ehr-integration",
-                  "core-api/dictation-commands"
+                  "core-api/quickstart",
+                  "core-api/authentication"
                 ]
               },
               {
-                "group": "Note templates and customization",
+                "group": "Concepts",
                 "pages": [
+                  "core-api/concepts/server-vs-user-api",
+                  "core-api/concepts/notes-sections-templates",
+                  "core-api/concepts/sync-async-streaming",
+                  "core-api/concepts/locales"
+                ]
+              },
+              {
+                "group": "Guides",
+                "pages": [
+                  "core-api/guides/transcribe-a-recorded-encounter",
+                  "core-api/guides/stream-a-live-encounter",
+                  "core-api/guides/generate-a-clinical-note",
+                  "core-api/guides/edit-a-note-with-magic-edit",
+                  "core-api/guides/generate-patient-instructions",
+                  "core-api/guides/extract-fhir-normalized-data",
+                  "core-api/guides/dot-phrases-and-custom-dictionaries",
+                  "core-api/guides/ehr-integration"
+                ]
+              },
+              {
+                "group": "Webhooks",
+                "pages": [
+                  "core-api/webhooks/overview",
+                  "core-api/webhooks/setup",
+                  "core-api/webhooks/retries",
+                  "core-api/webhooks/testing"
+                ]
+              },
+              {
+                "group": "Note templates",
+                "pages": [
+                  "core-api/note-templates/choosing-a-template",
                   "core-api/note-templates/sections",
                   "core-api/note-templates/customization"
                 ]
               },
               {
+                "group": "Production best practices",
+                "pages": [
+                  "core-api/best-practices/error-handling",
+                  "core-api/best-practices/rate-limits",
+                  "core-api/best-practices/async-note-generation",
+                  "core-api/best-practices/transcription-network-resilience",
+                  "core-api/best-practices/observability"
+                ]
+              },
+              {
                 "group": "API versioning",
                 "pages": [
-                  "core-api/api-versioning/changelog",
+                  "core-api/api-versioning/strategy",
                   "core-api/api-versioning/targeting-a-version",
+                  "core-api/api-versioning/changelog",
                   "core-api/api-versioning/migrating-pre-2024-10-01"
                 ]
               },
               {
-                "group": "Recommendations & best practices",
+                "group": "Reference",
                 "pages": [
-                  "core-api/best-practices/async-note-generation",
-                  "core-api/best-practices/transcription-network-resilience"
+                  "core-api/reference/dictation-commands",
+                  "core-api/reference/error-codes",
+                  "core-api/reference/glossary"
                 ]
               }
             ]

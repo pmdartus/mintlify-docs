@@ -1,0 +1,42 @@
+---
+title: "Locales & multilingual support"
+description: "Speech locale, note locale, and instructions locale — what they mean and how they interact."
+icon: "language"
+---
+
+Three different `locale` fields appear in Core API requests. They mean different things and accept different sets of values. Mixing them up is the most common source of "why is my note empty?" tickets.
+
+## The three locales
+
+| Field | Where it appears | Controls | Accepted values |
+|---|---|---|---|
+| `speech_locale` (or `speech_locales`) | Transcription request bodies and WS `CONFIG` frames | Which language the **speech recognizer** expects in the audio. | 35 values, e.g., `ENGLISH_US`, `ENGLISH_UK`, `SPANISH_ES`, `SPANISH_MX`, `FRENCH_FR`, `GERMAN_DE`, ... |
+| `locale` (on note objects) and `note_locale` (legacy field name in older versions) | Note generation, Magic Edit, normalization, patient instructions | Which language the **generated note** is written in. | `ENGLISH_US`, `ENGLISH_UK`, `FRENCH_FR` |
+| `instructions_locale` | `/generate-patient-instructions` | Which language the patient-facing **summary** is written in. | Same set as `speech_locale`. |
+
+The takeaway:
+
+- **Recognizing speech** is multilingual (35 languages).
+- **Writing the note** is restricted to three locales today.
+- **Writing patient instructions** is multilingual.
+
+You can transcribe a Spanish encounter and ask for an English-language SOAP note (`speech_locales: ["SPANISH_ES"]`, `locale: "ENGLISH_US"`).
+
+## Bilingual transcription
+
+`speech_locales` accepts an **array** of up to two distinct locales. Use it for code-switched encounters (e.g., a clinician in Miami who alternates English and Spanish). Pass a single-element array if the audio is monolingual.
+
+## Per-section customization availability
+
+Not every per-section customization (e.g., `split_by_problem`, `DETAILED`) is available in every note locale. The customization page has the full matrix; in general, English (US + UK) has the broadest coverage, French is close behind, and locales are added over time.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Templates reference" icon="file-lines" href="/core-api/note-templates/sections">
+    Which templates are available in each note locale.
+  </Card>
+  <Card title="Section customization" icon="sliders" href="/core-api/note-templates/customization">
+    Locale × template × section customization matrix.
+  </Card>
+</Columns>

@@ -4,6 +4,12 @@ description: "Reference of dictation commands interpreted by the dictate endpoin
 icon: "microphone"
 ---
 
+These commands are interpreted by the `/dictate` and `/dictate-async` endpoints (REST) and the dictation WebSocket. When a clinician speaks one of the keywords below — and the WebSocket `CONFIG` frame sets `punctuation_mode: "EXPLICIT"` — the engine replaces the spoken keyword with the corresponding character in the dictated output.
+
+These commands apply only to **dictation** flows, not to **transcription** flows (`/transcribe*`), which already infer punctuation automatically from the conversation. See [Dot Phrases & custom dictionaries](/core-api/guides/dot-phrases-and-custom-dictionaries) for the related feature that lets clinicians define custom macros.
+
+## Command reference
+
 The following commands are interpreted and transformed into characters by the dictate endpoints:
 
 | Action                  | Character | Keywords/Commands                                                                                                                        |
@@ -24,3 +30,14 @@ The following commands are interpreted and transformed into characters by the di
 | Add open bracket        | `[`       | left bracket <br/> open bracket                                                                                                          |
 | Add close bracket       | `]`       | right bracket <br/> close bracket                                                                                                        |
 | Add a dash              | `-`       | dash <br/> hyphen <br/> minus                                                                                                            |
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Dot Phrases" icon="wand-sparkles" href="/core-api/guides/dot-phrases-and-custom-dictionaries">
+    Provider-defined macros that expand inline during note generation.
+  </Card>
+  <Card title="Stream a live encounter" icon="microphone" href="/core-api/guides/stream-a-live-encounter">
+    See where these commands fit in the live dictation WebSocket flow.
+  </Card>
+</Columns>

@@ -1,0 +1,107 @@
+---
+title: "Generate a clinical note"
+description: "Turn a transcript into a structured clinical note."
+icon: "file-lines"
+---
+
+**What you'll build.** A note-generation call that turns a transcript into a `note` with structured sections, using a template like `GENERIC_SOAP`.
+
+**Prerequisites.**
+
+- A Server or User access token. See [Authentication](/core-api/authentication).
+- A transcript — either from `/transcribe`, `/transcribe-async`, or `/transcribe-ws`. See [Transcribe a recorded encounter](/core-api/guides/transcribe-a-recorded-encounter).
+
+## 1. Pick a template
+
+Templates fix the section list. If you don't know which to use, start with `GENERIC_SOAP` for primary care or `GENERIC_MULTIPLE_SECTIONS` for a broader structure. See [Choosing a template](/core-api/note-templates/choosing-a-template) for the full chooser.
+
+## 2. Make the call
+
+<Tabs>
+<Tab title="Node">
+
+```js
+const res = await fetch("https://us.api.nabla.com/v1/core/server/generate-note", {
+  method: "POST",
+  headers: {
+    authorization: `Bearer ${access_token}`,
+    "content-type": "application/json",
+  },
+  body: JSON.stringify({
+    locale: "ENGLISH_US",
+    template: "GENERIC_SOAP",
+    transcript_items,
+  }),
+});
+
+const { note } = await res.json();
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+resp = requests.post(
+    "https://us.api.nabla.com/v1/core/server/generate-note",
+    headers={"authorization": f"Bearer {access_token}", "content-type": "application/json"},
+    json={
+        "locale": "ENGLISH_US",
+        "template": "GENERIC_SOAP",
+        "transcript_items": transcript_items,
+    },
+).json()
+
+note = resp["note"]
+```
+
+</Tab>
+<Tab title="cURL">
+
+```bash
+curl -X POST https://us.api.nabla.com/v1/core/server/generate-note \
+  -H "authorization: Bearer $ACCESS_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{
+    "locale": "ENGLISH_US",
+    "template": "GENERIC_SOAP",
+    "transcript_items": [...]
+  }'
+```
+
+</Tab>
+</Tabs>
+
+The response contains a `note` with a `title` and a list of `sections`. Each section has a `key` (e.g., `SUBJECTIVE`), a `title`, and a `text` body.
+
+## 3. Tune the output (optional)
+
+Pass `note_sections_customization` to override style or detail per section. For example, force bullet points in the Plan section and split HPI by problem:
+
+```json
+{
+  "locale": "ENGLISH_US",
+  "template": "GENERIC_SOAP",
+  "transcript_items": [...],
+  "note_sections_customization": [
+    { "section_key": "HISTORY_OF_PRESENT_ILLNESS", "level_of_detail": "DETAILED", "split_by_problem": true },
+    { "section_key": "PLAN", "style": "BULLET_POINTS" }
+  ]
+}
+```
+
+See [Section customization](/core-api/note-templates/customization) for the full matrix of options.
+
+## 4. For long inputs: go async
+
+If your transcript is long or your environment can't wait synchronously, use `POST /generate-note-async` with the same body. See [Async note generation](/core-api/best-practices/async-note-generation).
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Edit with Magic Edit" icon="wand-magic-sparkles" href="/core-api/guides/edit-a-note-with-magic-edit">
+    Refine the generated note with a natural-language instruction.
+  </Card>
+  <Card title="Extract FHIR data" icon="hospital" href="/core-api/guides/extract-fhir-normalized-data">
+    Get ICD-10 conditions and LOINC observations from the note.
+  </Card>
+</Columns>

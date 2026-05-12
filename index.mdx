@@ -25,9 +25,16 @@ Nabla provides clinical AI building blocks for healthcare apps and EHRs. Pick th
   </Card>
 </Columns>
 
-## Popular guides
+## Start building
 
 <Columns cols={2}>
+  <Card
+    title="Quickstart"
+    icon="bolt"
+    href="/core-api/quickstart"
+  >
+    Make your first Nabla API call in under five minutes — authenticate, transcribe a clip, and generate a clinical note.
+  </Card>
   <Card
     title="Authenticate your API calls"
     icon="key"
@@ -35,26 +42,38 @@ Nabla provides clinical AI building blocks for healthcare apps and EHRs. Pick th
   >
     Set up OAuth 2.0 for the Server API and generate User API tokens.
   </Card>
+</Columns>
+
+## Popular guides
+
+<Columns cols={2}>
+  <Card
+    title="Generate a clinical note"
+    icon="file-lines"
+    href="/core-api/guides/generate-a-clinical-note"
+  >
+    Turn a transcript into a structured SOAP, APSO, or specialty note.
+  </Card>
+  <Card
+    title="Stream a live encounter"
+    icon="microphone"
+    href="/core-api/guides/stream-a-live-encounter"
+  >
+    Send audio over WebSocket and receive transcripts in real time.
+  </Card>
   <Card
     title="Set up webhooks"
     icon="webhook"
-    href="/core-api/setup-webhooks"
+    href="/core-api/webhooks/setup"
   >
     Receive real-time event notifications with HMAC-signed payloads.
   </Card>
   <Card
-    title="Note templates"
-    icon="file-lines"
-    href="/core-api/note-templates/sections"
+    title="Integrate with an EHR"
+    icon="hospital"
+    href="/core-api/guides/ehr-integration"
   >
-    Choose between SOAP, APSO, WCC, and other clinical note templates.
-  </Card>
-  <Card
-    title="API versioning"
-    icon="code-branch"
-    href="/core-api/api-versioning/targeting-a-version"
-  >
-    Pin to a specific API version and read the changelog before upgrading.
+    Push Nabla-generated notes into your EHR via the browser or your backend.
   </Card>
 </Columns>
 

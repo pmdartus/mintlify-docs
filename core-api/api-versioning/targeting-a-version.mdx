@@ -4,35 +4,92 @@ description: "Targeting a specific version"
 icon: "code-branch"
 ---
 
-## Default API version
+If you haven't already, read [Versioning strategy](/core-api/api-versioning/strategy) for the recommended workflow. This page covers the mechanics — how to pin your organization and how to override per request.
 
-All requests use your organization's "pinned version".
-By default, this is the most recent version of the API at the creation time of your organization.
-This value can be checked and updated on the Console in [API Keys](https://pro.nabla.com/developers/api-keys).
-We allow you to pin your API version to any existing version.
+## Why target a specific version
 
-## API updates
+- **Predictability**: every call uses the wire format and behavior of one specific date.
+- **Incremental migration**: when a new version ships, you can opt a subset of traffic in without changing your organization-wide pin.
+- **Reproducibility**: requests embedded in tests or recorded payloads keep behaving the same way over time.
 
-When backwards-incompatible changes are made to the API, a new, dated version is released.
-The current version is `2026-04-24`.
-For a list of all available versions and their associated changes, check out our [Changelog & Upgrades](/guides/api-versioning/changelog-and-upgrades) page. {/* TODO: link to ported spec */}
+## Default: the pinned version
 
-## Manually set the API version
+All requests use your organization's **pinned version** by default. It starts at the most recent version available at the time your organization was created. Check or change it in the [API Keys](https://pro.nabla.com/developers/api-keys) section of the Console. You can pin to any existing version.
+
+The current version is `2026-04-24`. For the complete list, see the [Changelog](/core-api/api-versioning/changelog).
+
+## Override per request
+
+You can override the pinned version on individual requests in two ways. Pick **header** for normal HTTP traffic and **query parameter** for WebSockets (where browsers can't set custom headers).
 
 ### Via header
 
-To set the API version on a specific request, you can add a specific header named `X-Nabla-Api-Version` with the value of the version you are targeting:
+<Tabs>
+<Tab title="cURL">
 
 ```bash
-curl https://us.api.nabla.com/{endpoint} -H "X-Nabla-Api-Version: 2026-04-24"
+curl https://us.api.nabla.com/{endpoint} \
+  -H "X-Nabla-Api-Version: 2026-04-24"
 ```
+
+</Tab>
+<Tab title="Node">
+
+```js
+await fetch("https://us.api.nabla.com/v1/core/server/generate-note", {
+  method: "POST",
+  headers: {
+    authorization: `Bearer ${access_token}`,
+    "content-type": "application/json",
+    "X-Nabla-Api-Version": "2026-04-24",
+  },
+  body: JSON.stringify({ ... }),
+});
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+requests.post(
+    "https://us.api.nabla.com/v1/core/server/generate-note",
+    headers={
+        "authorization": f"Bearer {access_token}",
+        "X-Nabla-Api-Version": "2026-04-24",
+    },
+    json={...},
+)
+```
+
+</Tab>
+</Tabs>
 
 ### Via query parameter
 
-Alternatively, you can use a query parameter named `nabla-api-version`:
-
 ```bash
-curl https://us.api.nabla.com/{endpoint}?nabla-api-version=2026-04-24
+curl "https://us.api.nabla.com/{endpoint}?nabla-api-version=2026-04-24"
 ```
 
-This syntax can be particularly useful with WebSockets, for which web clients generally don't allow to provide a custom header.
+For WebSocket endpoints:
+
+```js
+new WebSocket("wss://us.api.nabla.com/v1/core/user/transcribe-ws?nabla-api-version=2026-04-24");
+```
+
+## Header or query — pick one
+
+If both are present, the header wins. In practice, pick one strategy per integration:
+
+- Use the **header** in backend code.
+- Use the **query parameter** in browser WebSocket code, where setting headers isn't possible.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Versioning strategy" icon="code-branch" href="/core-api/api-versioning/strategy">
+    The recommended pin-and-override workflow.
+  </Card>
+  <Card title="Migrating from pre-2024-10-01" icon="right-left" href="/core-api/api-versioning/migrating-pre-2024-10-01">
+    The migration guide for the largest breaking change in the API's history.
+  </Card>
+</Columns>

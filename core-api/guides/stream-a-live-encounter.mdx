@@ -1,0 +1,106 @@
+---
+title: "Stream a live encounter"
+description: "Open a WebSocket, stream audio, receive transcript items in real time."
+icon: "microphone"
+---
+
+**What you'll build.** A WebSocket session that streams microphone audio to `/transcribe-ws` and renders transcript items as they arrive.
+
+**Prerequisites.**
+
+- A User access token (or a Server access token if your backend is doing the streaming). See [Server vs User API](/core-api/concepts/server-vs-user-api).
+- A way to capture PCM audio in your environment (browser `MediaRecorder`, mobile SDK, server-side ffmpeg, etc.).
+
+## Frame shapes
+
+The WebSocket protocol speaks JSON frames. The shapes you'll send and receive:
+
+| Direction | Frame type | Purpose |
+|---|---|---|
+| Client → Nabla | `CONFIG` (first frame) | Declare encoding, sample rate, `speech_locales`, optional `streams` for diarization. |
+| Client → Nabla | `AUDIO_CHUNK` | A binary chunk of PCM audio. |
+| Client → Nabla | `END` | Mark the end of the stream. |
+| Nabla → Client | `TRANSCRIPT_ITEM` | A finalized utterance with text and `speaker_type`. |
+| Nabla → Client | `AUDIO_CHUNK_ACK` | (Optional) Acknowledges chunks for backpressure. |
+| Nabla → Client | `ERROR` | Includes a numeric `code` and a `trace_id` for support. |
+
+## 1. Open the socket and send config
+
+<Tabs>
+<Tab title="Node">
+
+```js
+import WebSocket from "ws";
+
+const ws = new WebSocket("wss://us.api.nabla.com/v1/core/user/transcribe-ws", {
+  headers: { authorization: `Bearer ${user_access_token}` },
+});
+
+ws.on("open", () => {
+  ws.send(JSON.stringify({
+    type: "CONFIG",
+    encoding: "PCM_S16LE",
+    sample_rate: 16000,
+    speech_locales: ["ENGLISH_US"],
+  }));
+});
+
+ws.on("message", (raw) => {
+  const frame = JSON.parse(raw.toString());
+  if (frame.type === "TRANSCRIPT_ITEM") {
+    console.log(`[${frame.speaker_type}] ${frame.text}`);
+  }
+});
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+import json
+import websockets
+
+async with websockets.connect(
+    "wss://us.api.nabla.com/v1/core/user/transcribe-ws",
+    extra_headers={"authorization": f"Bearer {user_access_token}"},
+) as ws:
+    await ws.send(json.dumps({
+        "type": "CONFIG",
+        "encoding": "PCM_S16LE",
+        "sample_rate": 16000,
+        "speech_locales": ["ENGLISH_US"],
+    }))
+    async for raw in ws:
+        frame = json.loads(raw)
+        if frame.get("type") == "TRANSCRIPT_ITEM":
+            print(f"[{frame['speaker_type']}] {frame['text']}")
+```
+
+</Tab>
+</Tabs>
+
+## 2. Stream audio chunks
+
+Send `AUDIO_CHUNK` frames as fast as audio is produced (typically every 100–250 ms). Each chunk is a JSON envelope with a base64-encoded `data` field, or binary frames if your client supports them.
+
+## 3. Close the session
+
+Send `{ "type": "END" }` when the encounter is over. The server will flush any remaining transcript items and close the socket.
+
+## Production checklist
+
+Before shipping a real-time integration, read:
+
+- [Transcription network resilience](/core-api/best-practices/transcription-network-resilience) — buffering, `enable_audio_chunk_ack`, reconnect on flaky networks.
+- [Error handling](/core-api/best-practices/error-handling) — interpreting `ERROR` frames and WebSocket close codes.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Generate a clinical note" icon="file-lines" href="/core-api/guides/generate-a-clinical-note">
+    Feed the streamed transcript into note generation when the encounter ends.
+  </Card>
+  <Card title="Network resilience" icon="signal" href="/core-api/best-practices/transcription-network-resilience">
+    Production-grade buffering and reconnect logic.
+  </Card>
+</Columns>

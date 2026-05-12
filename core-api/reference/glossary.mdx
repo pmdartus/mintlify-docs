@@ -1,0 +1,73 @@
+---
+title: "Glossary"
+description: "Canonical definitions for the terms you'll see across these docs."
+icon: "book-bookmark"
+---
+
+A short A–Z. Each entry links to the page where the term is explained in full.
+
+## A
+
+**Async (REST)** — Execution model where a call returns immediately with a request ID and the result is delivered later via polling or a webhook. See [Sync, async & streaming](/core-api/concepts/sync-async-streaming).
+
+## B
+
+**Backoff** — Increasing wait time between retries, typically exponential with jitter. See [Error handling](/core-api/best-practices/error-handling).
+
+## C
+
+**Core API** — Nabla's public, programmatic API. The product family this site documents.
+**Customization** — Per-section override (style, level of detail, custom instruction, split by problem) applied at note generation time. See [Customization](/core-api/note-templates/customization).
+
+## D
+
+**Diarization** — Inferring `DOCTOR` / `PATIENT` speaker labels from audio without per-stream tagging. Enabled by leaving `speaker_type` unspecified in the transcription config.
+**Dot Phrase** — Provider-defined macro (`trigger` + `replacement`) that expands during note generation. See [Dot Phrases](/core-api/guides/dot-phrases-and-custom-dictionaries).
+
+## E
+
+**Encounter** — A clinical visit (or relevant portion of one) captured for transcription and note generation.
+
+## J
+
+**JWKS** — JSON Web Key Set, hosted at a URL Nabla can hit to validate your OAuth Client's JWTs. The recommended setup. See [Authentication](/core-api/authentication).
+
+## L
+
+**Locale** — Language for one of three flavours: `speech_locale` (transcription input, 35 values), `locale` (note language, 3 values), `instructions_locale` (patient instructions, 35 values). See [Locales](/core-api/concepts/locales).
+
+## M
+
+**Magic Edit** — Refining a generated note with a natural-language instruction. See [Edit a note with Magic Edit](/core-api/guides/edit-a-note-with-magic-edit).
+
+## N
+
+**Note** — Structured clinical note returned by note-generation endpoints. Contains `title`, `sections`, `locale`, `template`.
+
+## O
+
+**OAuth Client** — The entity in the API Admin Console that authenticates your backend. Identified by a UUID, paired with a private key (or JWKS URL).
+
+## P
+
+**Pinned version** — Your organization's default API version. Overridable per request via `X-Nabla-Api-Version`. See [Versioning strategy](/core-api/api-versioning/strategy).
+
+## S
+
+**Section** — A labelled block inside a note (e.g., `CHIEF_COMPLAINT`).
+**Server API** — Backend-to-backend surface; OAuth 2.0 client credentials. See [Server vs User API](/core-api/concepts/server-vs-user-api).
+**`seq_id`** — Per-chunk sequence ID in the transcription WebSocket, used by Nabla for ordered acknowledgement.
+**Signature secret** — HMAC-SHA256 secret used to sign webhook deliveries. See [Webhooks setup](/core-api/webhooks/setup).
+
+## T
+
+**Template** — The overall shape of a note (e.g., `GENERIC_SOAP`). See [Choosing a template](/core-api/note-templates/choosing-a-template).
+**`trace_id`** — Server-side identifier present in every error response and `ERROR` frame. The single most useful field to log. See [Observability](/core-api/best-practices/observability).
+
+## U
+
+**User API** — Per-user surface; short-lived access + refresh tokens issued by the Server API. See [Server vs User API](/core-api/concepts/server-vs-user-api).
+
+## W
+
+**Webhook** — Nabla `POST`ing event data to your registered URL. The push-based alternative to polling. See [Webhooks overview](/core-api/webhooks/overview).

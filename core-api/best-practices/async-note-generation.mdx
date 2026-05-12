@@ -22,6 +22,19 @@ Asynchronous note generations created by a given user can only be accessed by th
 Thus, when a user creates an asynchronous note generation, they can provide the request ID to their servers in case they want to poll the response on their behalf.
 </Tip>
 
+## State machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> ongoing
+    ongoing --> succeeded: work completes
+    ongoing --> failed: work errors
+    succeeded --> [*]
+    failed --> [*]
+```
+
+Every async request starts at `ongoing` and transitions exactly once to either `succeeded` (with a `payload`) or `failed` (with an error `code`).
+
 ## Example asynchronous note generation
 
 You can create an asynchronous note generation that will start executing immediately (`status = ongoing`).
@@ -90,5 +103,69 @@ Regularly check for updates to the created asynchronous note generation by calli
 
 You can also configure your servers to receive the results of successful note generation (or the error details in case of failure) through a webhook integration.
 
-{/* TODO: link to ported spec */}
-Check the [Setup Webhooks](/guides/setup-webhooks) guide and [Webhook events API specifications](/next/webhook/api-receive-webhook) for more details.
+Check the [Setup webhooks](/core-api/webhooks/setup) guide for more details on registering an endpoint and verifying signatures, and the [Webhooks overview](/core-api/webhooks/overview) for the full event catalog.
+
+## Polling with backoff
+
+If you can't (or don't want to) configure webhooks, poll with exponential backoff rather than a tight loop. Most note generations complete within a few seconds; a back-off pattern starting at 500 ms and capping around 5 seconds is a good default:
+
+<Tabs>
+<Tab title="Node">
+
+```js
+async function awaitAsyncNote(id, accessToken) {
+  let delay = 500;
+  for (;;) {
+    const res = await fetch(`https://us.api.nabla.com/v1/core/server/generate-note-async/${id}`, {
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+    const body = await res.json();
+
+    if (body.status === "succeeded") return body.payload;
+    if (body.status === "failed") throw new Error(`failed: ${body.error?.code}`);
+
+    await new Promise((r) => setTimeout(r, delay));
+    delay = Math.min(delay * 1.5, 5000);
+  }
+}
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+import time
+import requests
+
+def await_async_note(req_id, access_token):
+    delay = 0.5
+    while True:
+        resp = requests.get(
+            f"https://us.api.nabla.com/v1/core/server/generate-note-async/{req_id}",
+            headers={"authorization": f"Bearer {access_token}"},
+        ).json()
+
+        if resp["status"] == "succeeded":
+            return resp["payload"]
+        if resp["status"] == "failed":
+            raise RuntimeError(f"failed: {resp.get('error', {}).get('code')}")
+
+        time.sleep(delay)
+        delay = min(delay * 1.5, 5.0)
+```
+
+</Tab>
+</Tabs>
+
+For high-throughput integrations, prefer webhooks — they remove polling traffic and reduce rate-limit pressure. See [Rate limits & quotas](/core-api/best-practices/rate-limits).
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Webhooks overview" icon="webhook" href="/core-api/webhooks/overview">
+    Receive results without polling.
+  </Card>
+  <Card title="Retries & idempotency" icon="rotate-right" href="/core-api/webhooks/retries">
+    Handle duplicate webhook deliveries safely.
+  </Card>
+</Columns>

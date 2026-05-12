@@ -14,20 +14,41 @@
 
 ## Terminology
 
-{/* Add product-specific terms and preferred usage */}
-{/* Example: Use "workspace" not "project", "member" not "user" */}
+Use these canonical terms consistently across the docs:
+
+- **Server API** and **User API** — always two words, capitalized.
+  - The Server API authenticates with OAuth 2.0 client credentials (JWT bearer assertion) and is meant for backend-to-backend calls.
+  - The User API authenticates with short-lived per-user access tokens issued by the Server API.
+- **Core API** — the public product name. Don't write "Nabla API" or "the API" when distinguishing from Connect.
+- **Note** — a structured clinical note returned by note generation. Always lowercase.
+- **Section** — a labelled block inside a note (e.g., `CHIEF_COMPLAINT`). Never "block" or "field".
+- **Template** — the overall shape of a note (e.g., `GENERIC_SOAP`). Never "format" or "layout".
+- **Customization** — per-section overrides (style, level of detail, custom instruction, split by problem). Singular when general, plural for the per-section list.
+- **Locale** — comes in three flavours; never conflate them:
+  - `speech_locale` — used for transcription (35 supported values).
+  - `note_locale` — used for the generated note (`ENGLISH_US`, `ENGLISH_UK`, `FRENCH_FR`).
+  - `instructions_locale` — used for patient-friendly instructions.
+- **Dot Phrase** — capitalize both words; it's a Nabla feature name, not a generic term.
+- **Magic Edit** — Nabla's name for the edit-note-with-instructions feature; capitalize both words.
+- **Webhook** — singular for the concept ("set up a webhook"); "webhook event" for a delivered payload.
+- **Endpoint** vs **route** — use "endpoint" in prose, reserve "route" for technical contexts.
+
+When referring to specific endpoints, prefer the format `` `POST /generate-note` `` (HTTP verb + path) over hyperlinked or untyped variants.
 
 ## Style preferences
-
-{/* Add any project-specific style rules below */}
 
 - Use active voice and second person ("you")
 - Keep sentences concise — one idea per sentence
 - Use sentence case for headings
 - Bold for UI elements: Click **Settings**
 - Code formatting for file names, commands, paths, and code references
+- Every guide page opens with a one-sentence **What you'll build** statement and a **Prerequisites** list before the first step
+- Every page ends with a `<Card>` grid of two or three "Next steps" links
+- Multi-language code samples use a `<Tabs>` block in this order: cURL → Node → Python
+- Diagrams (Mermaid or images) live next to the prose they illustrate, never at the bottom of the page
 
 ## Content boundaries
 
-{/* Define what should and shouldn't be documented */}
-{/* Example: Don't document internal admin features */}
+- Don't document healthcare compliance (HIPAA, SOC 2, BAA, data residency) here — that lives on the marketing/legal site.
+- Don't document Nabla Connect beyond the existing `connect/overview.mdx` placeholder until product readiness is announced.
+- Don't link to OpenAPI reference pages until they exist on this site. Use inline endpoint code spans (e.g., `` `POST /transcribe-ws` ``) until then.

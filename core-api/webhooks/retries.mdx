@@ -1,0 +1,65 @@
+---
+title: "Retries & idempotency"
+description: "How Nabla retries failed webhook deliveries and how to handle duplicates safely."
+icon: "rotate-right"
+---
+
+## Retry schedule
+
+Nabla retries any delivery that doesn't get a 2xx response within a reasonable timeout. Retries use exponential backoff. The current schedule:
+
+| Attempt | Delay from previous attempt |
+|---|---|
+| 1 | — (immediate) |
+| 2 | ~30 seconds |
+| 3 | ~2 minutes |
+| 4 | ~10 minutes |
+| 5 | ~30 minutes |
+| 6 | ~2 hours |
+| 7 | ~6 hours |
+| 8+ | ~12 hours, then give up after 24 hours total |
+
+After giving up, the event is dropped. Use the [API Admin Console](https://pro.nabla.com/developers/webhooks) to inspect failed deliveries and replay them manually.
+
+## What "success" means
+
+Return a 2xx status as soon as the event is **durably accepted** on your side — typically after you've enqueued it for processing or written it to a database. Don't wait for downstream processing to finish, since that holds Nabla's connection open and increases the chance of a retry.
+
+| Your response | Nabla's behavior |
+|---|---|
+| 2xx | Event marked delivered. No more retries. |
+| 4xx (other than 408/429) | Treated as terminal — Nabla **does not retry**. Use this only for "I will never accept this event" cases (e.g., signature mismatch). |
+| 408 / 429 | Treated as transient — Nabla retries per the schedule above. |
+| 5xx | Treated as transient — Nabla retries. |
+| Connection error / timeout | Treated as transient — Nabla retries. |
+
+## Idempotency
+
+Because retries can deliver the same event more than once, your handler **must** be idempotent. The envelope's top-level `id` is unique per event and stable across retries — use it as the dedup key.
+
+A minimal approach:
+
+```js
+async function handle(event) {
+  const inserted = await db.events.insertIfMissing({ id: event.id });
+  if (!inserted) return; // already processed
+  await processEvent(event);
+}
+```
+
+For higher-throughput integrations, store `(id, processed_at)` in a table with `id` as a unique key; reject duplicate inserts at the storage layer.
+
+## Out-of-order delivery
+
+Retries can also reorder events. If your application cares about ordering (e.g., `succeeded` after `ongoing`), prefer to look up authoritative state via the polling endpoint (`GET /generate-note-async/{id}`) rather than chaining state purely off webhook timing.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Setup & signature verification" icon="shield-check" href="/core-api/webhooks/setup">
+    The verification snippet to put behind every webhook handler.
+  </Card>
+  <Card title="Testing webhooks locally" icon="flask" href="/core-api/webhooks/testing">
+    Reproduce retry behavior locally before shipping.
+  </Card>
+</Columns>

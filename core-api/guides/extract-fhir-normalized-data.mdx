@@ -1,0 +1,103 @@
+---
+title: "Extract FHIR-normalized data"
+description: "Get ICD-10 conditions and LOINC observations from a clinical note."
+icon: "hospital"
+---
+
+**What you'll build.** A `POST /generate-normalized-data` call that turns a generated note into a FHIR-shaped list of conditions (with ICD-10 codes) and observations (with LOINC codes), ready to push into your EHR.
+
+**Prerequisites.**
+
+- A generated note (see [Generate a clinical note](/core-api/guides/generate-a-clinical-note)).
+- The `template` and `locale` you used to generate the note.
+
+## Make the call
+
+<Tabs>
+<Tab title="Node">
+
+```js
+const res = await fetch("https://us.api.nabla.com/v1/core/server/generate-normalized-data", {
+  method: "POST",
+  headers: {
+    authorization: `Bearer ${access_token}`,
+    "content-type": "application/json",
+  },
+  body: JSON.stringify({
+    note,
+  }),
+});
+
+const { conditions, observations, family_history } = await res.json();
+```
+
+</Tab>
+<Tab title="Python">
+
+```python
+resp = requests.post(
+    "https://us.api.nabla.com/v1/core/server/generate-normalized-data",
+    headers={"authorization": f"Bearer {access_token}", "content-type": "application/json"},
+    json={"note": note},
+).json()
+
+conditions = resp["conditions"]
+observations = resp["observations"]
+```
+
+</Tab>
+</Tabs>
+
+## Response shape (excerpt)
+
+```json
+{
+  "conditions": [
+    {
+      "text": "Type 2 diabetes mellitus",
+      "coding": {
+        "code": "E11.9",
+        "display": "Type 2 diabetes mellitus without complications",
+        "system": "http://hl7.org/fhir/sid/icd-10",
+        "is_hcc": true,
+        "is_mcc": false
+      },
+      "alternative_coding": [
+        { "code": "E11.65", "display": "Type 2 diabetes mellitus with hyperglycemia", "system": "..." }
+      ],
+      "clinical_status": "ACTIVE",
+      "category": "ENCOUNTER_DIAGNOSIS",
+      "corresponding_note_problem": "Diabetes"
+    }
+  ],
+  "observations": [...]
+}
+```
+
+- `coding` is the primary code. `alternative_coding` lists clinically plausible alternates — present these to your provider for review if you don't want to auto-accept the primary code.
+- `is_hcc` / `is_mcc` flag risk-adjustment categories.
+- `corresponding_note_problem` (when requested with `include_corresponding_note_problems: true`) links each condition back to the problem string in the note's Assessment & Plan section.
+
+## Grounding extraction with existing diagnoses
+
+If the patient has known active diagnoses, pass them via `active_encounter_diagnoses_coding` so the response prioritizes those ICD-10 codes when they're discussed:
+
+```json
+{
+  "note": { ... },
+  "active_encounter_diagnoses_coding": [
+    { "code": "E11.9", "system": "http://hl7.org/fhir/sid/icd-10" }
+  ]
+}
+```
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Integrate with an EHR" icon="hospital-user" href="/core-api/guides/ehr-integration">
+    Push these conditions and observations into Epic, Cerner, or any web EHR.
+  </Card>
+  <Card title="Patient instructions" icon="user-doctor" href="/core-api/guides/generate-patient-instructions">
+    Generate a patient-facing version of the encounter.
+  </Card>
+</Columns>
