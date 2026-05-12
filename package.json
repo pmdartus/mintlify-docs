@@ -1,0 +1,8 @@
+{
+  "name": "nabla-developer-docs",
+  "private": true,
+  "scripts": {
+    "gen:nav": "node scripts/build-api-nav.mjs",
+    "freeze:next": "node scripts/freeze-next.mjs"
+  }
+}

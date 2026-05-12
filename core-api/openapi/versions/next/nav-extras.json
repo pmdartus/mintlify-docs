@@ -1,0 +1,99 @@
+{
+  "server": {
+    "title": "Server API",
+    "labels": {
+      "Authentication": "Authenticate",
+      "Manage users": "Manage users",
+      "Transcribe": "Transcribe",
+      "Dictate": "Dictate",
+      "Digest": "Generate note",
+      "Normalize": "Generate normalized data",
+      "Patient Instructions": "Generate patient instructions",
+      "Edit Note With Instructions": "Edit note with instructions",
+      "Report": "Report feedback"
+    },
+    "regroup": {
+      "POST /jwt/authenticate/{user_id}": "Manage users"
+    },
+    "untagged_assign": {
+      "GET /transcribe-async/{id}": "Transcribe",
+      "GET /dictate-async/{id}": "Dictate",
+      "GET /generate-note-async/{id}": "Generate note"
+    },
+    "top_level": ["POST /oauth/token"],
+    "order": [
+      "Manage users",
+      "Transcribe",
+      "Dictate",
+      "Generate note",
+      "Generate normalized data",
+      "Generate patient instructions",
+      "Edit note with instructions",
+      "Report feedback"
+    ],
+    "append": {
+      "Dictate": [
+        { "asyncapi": "dictate-ws", "group": "WebSocket /dictate-ws" },
+        { "page": "core-api/reference/dictation-commands" }
+      ]
+    }
+  },
+  "user": {
+    "title": "User API",
+    "labels": {
+      "Authentication": "Authenticate",
+      "Note Settings": "User settings",
+      "Transcribe": "Transcribe",
+      "Dictate": "Dictate",
+      "Text Replacements": "Text replacements",
+      "Digest": "Generate note",
+      "Dot Phrases": "Dot phrases",
+      "Custom Dictionary Expressions": "Custom dictionary",
+      "Normalize": "Generate normalized data",
+      "Patient Instructions": "Generate patient instructions",
+      "Edit Note With Instructions": "Edit note with instructions",
+      "Report": "Report feedback"
+    },
+    "untagged_assign": {
+      "GET /transcribe-async/{id}": "Transcribe",
+      "GET /dictate-async/{id}": "Dictate",
+      "GET /generate-note-async/{id}": "Generate note"
+    },
+    "order": [
+      "Authenticate",
+      "User settings",
+      "Transcribe",
+      "Dictate",
+      "Text replacements",
+      "Generate note",
+      "Dot phrases",
+      "Custom dictionary",
+      "Generate normalized data",
+      "Generate patient instructions",
+      "Edit note with instructions",
+      "Report feedback"
+    ],
+    "subgroups": {
+      "Dot phrases": {
+        "Bulk operations": [
+          "POST /dot-phrases/bulk-create",
+          "POST /dot-phrases/bulk-update",
+          "POST /dot-phrases/bulk-delete"
+        ]
+      }
+    },
+    "append": {
+      "Dictate": [
+        { "asyncapi": "dictate-ws", "group": "WebSocket /dictate-ws" },
+        { "page": "core-api/reference/dictation-commands" }
+      ]
+    }
+  },
+  "webhook": {
+    "title": "Receive webhook events",
+    "labels": {
+      "Webhook": "Receive webhook events"
+    },
+    "top_level": ["POST /webhook"]
+  }
+}

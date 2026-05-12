@@ -1,0 +1,1046 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "Dictate Transcription WebSocket API",
+    "version": "",
+    "description": "Dictate Transcription WebSocket API is designed specifically for healthcare professionals to dictate clinical notes efficiently and accurately.\nIt takes audio from your provider's microphone and returns a live transcription.\n\nBy receiving audio directly captured from the provider's microphone, this API delivers live transcription services tailored for the medical field.\nIt differs from our general transcription service (`/transcribe-ws`) by offering specific configuration options catered to the unique needs of clinical documentation dictation, such as precise control over punctuation. \n\n\n### General specifications\n- All messages sent and received via websockets are encoded as UTF-8 JSON text frames.\n- The order of returned dictated texts is guaranteed to be chronological.\n- We don't keep any of your data beyond the websocket lifecycle.\n  So to be network-resilient, we recommend you store what is relevant for you to be back on track in case of untimely closure.\n\n### Dictation commands\n\nYou can consult the list of available dictation commands in the [dedicated guide](/next/server/dictation-commands).\n\n### Authentication\n- Get an access token, details in _[Authentication](/next/guides/authentication)_. It can be a server's Access-Token or a user's Access-Token depending on whether you are calling the Server API or the User API.\n- We support two different ways of specifying the authentication token:\n  - *The recommended way*: You pass your bearer authentication token as an `Authorization` header when initiating the websocket.\n\n    Example:\n    ```\n    url: 'wss://us.api.nabla.com/v1/core/server/dictate-ws',\n    protocol: 'dictate-protocol',\n    extra_headers: { 'Authorization': 'Bearer <YOUR_TOKEN>' }\n    ```\n  - An alternative way, especially when specifying extra headers is not supported by your websocket client (e.g. from web browsers),\n    is to pass the token as a second websocket protocol prefixed with `jwt-`.\n\n    Example:\n    ```\n    url: 'wss://us.api.nabla.com/v1/core/user/dictate-ws',\n    protocols: ['dictate-protocol', 'jwt-<YOUR_TOKEN>']\n    ```\n"
+  },
+  "servers": {
+    "Server API": {
+      "host": "us.api.nabla.com",
+      "pathname": "/v1/core/server",
+      "protocol": "wss",
+      "description": "Called from your servers, authenticated with a server access token."
+    },
+    "User API": {
+      "host": "us.api.nabla.com",
+      "pathname": "/v1/core/user",
+      "protocol": "wss",
+      "description": "Called from front-end apps, authenticated with a user-scoped access token."
+    }
+  },
+  "channels": {
+    "/dictate-ws": {
+      "address": "/dictate-ws",
+      "messages": {
+        "publish.message.0": {
+          "summary": "Initiates the dictation feature with the given configuration.",
+          "description": "This should be your first message in the websocket.",
+          "payload": {
+            "type": "object",
+            "description": "First message to configure dictation (audio format, locale, etc).\nUnlike older WebSocket APIs, the Dictation API now consistently requires sequence ids in incoming audio chunks and  always emits audio chunk acknowledgment frames.\n    \nRead more in [Make transcription and dictation resilient to network interruptions](/guides/best-practices/transcription-network-resilience).",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "CONFIG"
+                ]
+              },
+              "encoding": {
+                "type": "string",
+                "description": "Encoding of the streamed audio.",
+                "enum": [
+                  "PCM_S16LE"
+                ],
+                "example": "PCM_S16LE"
+              },
+              "sample_rate": {
+                "type": "integer",
+                "description": "Sample rate of submitted streaming audio, in hertz.",
+                "minimum": 8000,
+                "maximum": 192000,
+                "example": 16000
+              },
+              "dictation_locale": {
+                "description": "Language spoken in the audio.",
+                "type": "string",
+                "enum": [
+                  "ENGLISH_US",
+                  "ENGLISH_UK",
+                  "FRENCH_FR"
+                ],
+                "example": "ENGLISH_US"
+              },
+              "punctuation_mode": {
+                "type": "string",
+                "enum": [
+                  "EXPLICIT"
+                ],
+                "description": "Specifies how punctuation is handled. Possible values are:<br/> • `EXPLICIT`: speaker must explicitly dictate punctuation (e.g. \"comma\" or \"quotation mark\")."
+              },
+              "text_field_context": {
+                "type": "object",
+                "description": "Information about the text field in which the user is currently dictating. Having this information ensures that capitalization of the first word of the dictation is correct. It contains:\n* **`text`** – the full, current content of the text field.   \n* **`selection_start`** / **`selection_length`** – either  \n  * the caret position where the dictation result will be **inserted** when nothing is selected (in that case `selection_start` is the cursor index and `selection_length = 0`).\n  * the range of text currently selected and expected to be **replaced** by the dictation WebSocket output.\n\nValidation rules (violations will close the WebSocket with code 1002 Protocol Error):\n1. `0 ≤ selection_start ≤ text.length`  \n2. Let `selection_end = selection_start + selection_length`. It must satisfy `selection_end ≤ text.length`.",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "Text content of the text field.",
+                    "maxLength": 50000
+                  },
+                  "selection_start": {
+                    "type": "integer",
+                    "description": "Selection start of the cursor in the text field.",
+                    "minimum": 0
+                  },
+                  "selection_length": {
+                    "type": "integer",
+                    "description": "Selection length of the cursor in the text field.",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "text",
+                  "selection_start",
+                  "selection_length"
+                ]
+              },
+              "specialty": {
+                "type": "string",
+                "description": "The medical specialty of the provider.",
+                "nullable": true,
+                "enum": [
+                  "ADDICTION_MEDICINE",
+                  "PAIN_MEDICINE",
+                  "ALLERGY_AND_IMMUNOLOGY",
+                  "ANESTHESIOLOGY",
+                  "ONCOLOGY",
+                  "CARDIOLOGY",
+                  "SURGERY",
+                  "DERMATOLOGY",
+                  "DIABETOLOGY",
+                  "ENDOCRINOLOGY",
+                  "GENETICS",
+                  "GERIATRICS",
+                  "GYNECOLOGY",
+                  "HEMATOLOGY",
+                  "HEPATOLOGY",
+                  "GASTROENTEROLOGY",
+                  "SPORTS_MEDICINE",
+                  "OCCUPATIONAL_MEDICINE",
+                  "GENERAL_MEDICINE",
+                  "FORENSIC_MEDICINE",
+                  "PHYSICAL_MEDICINE_AND_REHABILITATION",
+                  "NEPHROLOGY",
+                  "NEUROLOGY",
+                  "NUTRITION",
+                  "DIETETICS",
+                  "OPHTHALMOLOGY",
+                  "ENT",
+                  "PEDIATRICS",
+                  "PULMONOLOGY",
+                  "PSYCHIATRY",
+                  "RHEUMATOLOGY",
+                  "RADIOLOGY",
+                  "IMMUNOLOGY",
+                  "INFECTIOUS_DISEASE",
+                  "SEXUAL_MEDICINE",
+                  "TOXICOLOGY",
+                  "UROLOGY",
+                  "MIDWIFE",
+                  "EMERGENCY_MEDICINE",
+                  "NURSE",
+                  "PSYCHOLOGY",
+                  "PSYCHOTHERAPY",
+                  "INTERNAL_MEDICINE",
+                  "FAMILY_MEDICINE",
+                  "DENTIST",
+                  "VETERINARIAN",
+                  "PHYSIOTHERAPY",
+                  "CHIROPRACTIC",
+                  "OSTEOPATHIC_MEDICINE",
+                  "ORTHOPEDICS",
+                  "OTHER",
+                  "LACTATION_CONSULTANT",
+                  "PODIATRY",
+                  "GENERAL_PRACTICE",
+                  "HOSPITAL_MEDICINE",
+                  "BEHAVIORAL_HEALTH",
+                  "MENTAL_HEALTH",
+                  "SUBSTANCE_USE_DISORDER",
+                  "VASCULAR_MEDICINE",
+                  "LIFESTYLE_MEDICINE",
+                  "PREVENTIVE_MEDICINE",
+                  "PUBLIC_HEALTH",
+                  "ADOLESCENT_MEDICINE",
+                  "WOUND_CARE",
+                  "NEUROSURGERY",
+                  "PLASTIC_SURGERY",
+                  "PALLIATIVE_CARE",
+                  "TRANSPLANT_MEDICINE",
+                  "OBESITY_MEDICINE",
+                  "CASE_MANAGEMENT",
+                  "CARE_MANAGEMENT",
+                  "CARE_COORDINATION",
+                  "SOCIAL_WORK",
+                  "PATHOLOGY",
+                  "RADIATION_ONCOLOGY",
+                  "SLEEP_MEDICINE",
+                  "AUDIOLOGY",
+                  "REPRODUCTIVE_ENDOCRINOLOGY",
+                  "PHARMACIST",
+                  "OCCUPATIONAL_THERAPY",
+                  "SPEECH_LANGUAGE_PATHOLOGY"
+                ],
+                "example": "GENERAL_PRACTICE"
+              }
+            },
+            "required": [
+              "type",
+              "encoding",
+              "sample_rate",
+              "dictation_locale",
+              "punctuation_mode"
+            ]
+          }
+        },
+        "publish.message.1": {
+          "summary": "A chunk of audio from the provider's microphone.",
+          "description": "Chunk (little portion) of audio from the provider's microphone on which they dictate. Maximum allowed duration is 1 second, recommended is 100ms.",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "AUDIO_CHUNK"
+                ]
+              },
+              "payload": {
+                "type": "string",
+                "description": "Raw audio chunk in base64 string.",
+                "example": "ZXhhbXBsZQ=="
+              },
+              "seq_id": {
+                "type": "integer",
+                "description": "A unique identifier for this audio chunk, expected to be sequential (n+1) from one audio chunk to the next.\nFirst value can start at any arbitrary value.\nRead more in [Make transcription and dictation resilient to network interruptions](/guides/best-practices/transcription-network-resilience)."
+              }
+            },
+            "required": [
+              "type",
+              "payload",
+              "seq_id"
+            ]
+          }
+        },
+        "publish.message.2": {
+          "summary": "End the streaming.",
+          "description": "Signal the end of streaming and ask the speech-to-text engine to finish what is still in progress.",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "END"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "example": {
+              "type": "END"
+            }
+          }
+        },
+        "subscribe.message.0": {
+          "summary": "A dictated text.",
+          "description": "A segment of the dictation, usually one or two words.  Each received segment should be appended directly to the ongoing dictation result  without inserting additional spaces, punctuation, or formatting.",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "DICTATED_TEXT"
+                ]
+              },
+              "text": {
+                "type": "string",
+                "description": "The dictated text.",
+                "example": "Patient showed "
+              }
+            },
+            "required": [
+              "type",
+              "text"
+            ]
+          }
+        },
+        "subscribe.message.1": {
+          "summary": "Acknowledgement for audio chunks up to the specified sequential id.",
+          "description": "Server will regularly send audio chunks acknowledgement to signal receipt and imminent processing of audio.\n\nClients should consider acknowledged audio as processed and delete it from their buffer.\n\nMoreover, audio acknowledgement is intended to set the pace for streaming speed: Clients should refrain from sending new audio chunks until acknowledgement is received for previous ones. Server will accept up to 10 seconds of not-yet-acknowledged audio: clients going further will face an \"audio chunks buffer overflow\" error.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/next/guides/best-practices/transcription-network-resilience).",
+          "payload": {
+            "type": "object",
+            "description": "Acknowledgement of audio receipt by the server up to the audio chunk with the sequential id `ack_id`.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/guides/best-practices/transcription-network-resilience).",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "AUDIO_CHUNK_ACK"
+                ]
+              },
+              "ack_id": {
+                "type": "integer",
+                "description": "The sequential id of the audio chunk up to which this acknowledgment applies."
+              }
+            },
+            "example": {
+              "type": "AUDIO_CHUNK_ACK",
+              "ack_id": 42
+            },
+            "required": [
+              "type",
+              "ack_id"
+            ]
+          }
+        },
+        "subscribe.message.2": {
+          "summary": "An error message.",
+          "description": "An error message sent right before closing the websocket due to a fatal error. It explains shortly what went wrong.",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "ERROR_MESSAGE"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "description": "A human-readable explanation of the error, often including contextual details to help understand what went wrong."
+              },
+              "code": {
+                "type": "integer",
+                "description": "A numeric identifier for the error. This may either be a standard HTTP status code (e.g. 400, 401) or a more specific application-level code (typically >1000). Some errors —like an audio buffer overflow due to client misuse— have dedicated codes, while others —like malformed JSON— use broader and generic codes.\n\n**Tip**: You should use this field as the primary reference for implementing error handling logic."
+              },
+              "name": {
+                "type": "string",
+                "description": "An internal enum-style name associated with the error code. While it may help with debugging, it’s mainly for reference—always rely on the numeric code for programmatic handling."
+              },
+              "trace_id": {
+                "type": "string",
+                "description": "A unique identifier for the failed API request. This is especially useful when reaching out to Nabla support, as it allows us to trace the exact request in our systems."
+              }
+            },
+            "required": [
+              "type",
+              "message",
+              "code",
+              "name"
+            ],
+            "example": [
+              {
+                "type": "ERROR_MESSAGE",
+                "message": "Unable to parse JSON at path $.speech_locales",
+                "code": 400,
+                "name": "BAD_REQUEST",
+                "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+              },
+              {
+                "type": "ERROR_MESSAGE",
+                "message": "Received a huge amount of audio in a very short window time.",
+                "code": 83016,
+                "name": "AUDIO_CHUNKS_BUFFER_OVERFLOW",
+                "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+              }
+            ]
+          }
+        }
+      },
+      "description": "Transcription Dictate WebSocket API takes audio from your provider's microphone and returns a live transcription.\n\nDictation API expects audio chunks to flow continuously (even if silent),\n**if no audio chunk is received for 10 seconds the websocket will fail with a timeout error (code: 83011).**\n\nExample communication:\n  - You: Open the websocket specifying an authorization token.\n  - You: Send a first message setting the configuration.\n  - You: continuously send small audio chunks.\n  - Core API: continuously computes and sends dictation items.\n  - You: stop streaming audio and immediately send a `{ \"type\": \"END\" }`.\n  - Core API: finishes processing audio and sends any remaining dictated texts.\n  - Core API: closes the websocket.\n",
+      "bindings": {
+        "ws": {
+          "headers": {
+            "type": "object",
+            "description": "Some websocket clients only support the `Sec-WebSocket-Protocol` header, so we suggest an alternative way of specifying your authentication header. See _Authentication_ section above.",
+            "properties": {
+              "Sec-WebSocket-Protocol": {
+                "type": "string",
+                "enum": [
+                  "dictate-protocol"
+                ],
+                "description": "WebSocket Sub-protocol header, as per the _RFC 6455_."
+              },
+              "Authorization": {
+                "type": "string",
+                "description": "Your authentication token (_server key_ or _user access token_) prefixed by `Bearer `. To get one, check [Authentication](/next/guides/authentication)."
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "operations": {
+    "/dictate-ws.publish": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/~1dictate-ws"
+      },
+      "description": "Stream the audio of the note being dictated by sending it in small, defined chunks (e.g., segments of 100 milliseconds each).",
+      "messages": [
+        {
+          "$ref": "#/channels/~1dictate-ws/messages/publish.message.0"
+        },
+        {
+          "$ref": "#/channels/~1dictate-ws/messages/publish.message.1"
+        },
+        {
+          "$ref": "#/channels/~1dictate-ws/messages/publish.message.2"
+        }
+      ]
+    },
+    "/dictate-ws.subscribe": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/~1dictate-ws"
+      },
+      "description": "Receive the live transcription.",
+      "messages": [
+        {
+          "$ref": "#/channels/~1dictate-ws/messages/subscribe.message.0"
+        },
+        {
+          "$ref": "#/channels/~1dictate-ws/messages/subscribe.message.1"
+        },
+        {
+          "$ref": "#/channels/~1dictate-ws/messages/subscribe.message.2"
+        }
+      ]
+    }
+  },
+  "components": {
+    "messages": {
+      "dictate_config": {
+        "summary": "Initiates the dictation feature with the given configuration.",
+        "description": "This should be your first message in the websocket.",
+        "payload": {
+          "type": "object",
+          "description": "First message to configure dictation (audio format, locale, etc).\nUnlike older WebSocket APIs, the Dictation API now consistently requires sequence ids in incoming audio chunks and  always emits audio chunk acknowledgment frames.\n    \nRead more in [Make transcription and dictation resilient to network interruptions](/guides/best-practices/transcription-network-resilience).",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "CONFIG"
+              ]
+            },
+            "encoding": {
+              "type": "string",
+              "description": "Encoding of the streamed audio.",
+              "enum": [
+                "PCM_S16LE"
+              ],
+              "example": "PCM_S16LE"
+            },
+            "sample_rate": {
+              "type": "integer",
+              "description": "Sample rate of submitted streaming audio, in hertz.",
+              "minimum": 8000,
+              "maximum": 192000,
+              "example": 16000
+            },
+            "dictation_locale": {
+              "description": "Language spoken in the audio.",
+              "type": "string",
+              "enum": [
+                "ENGLISH_US",
+                "ENGLISH_UK",
+                "FRENCH_FR"
+              ],
+              "example": "ENGLISH_US"
+            },
+            "punctuation_mode": {
+              "type": "string",
+              "enum": [
+                "EXPLICIT"
+              ],
+              "description": "Specifies how punctuation is handled. Possible values are:<br/> • `EXPLICIT`: speaker must explicitly dictate punctuation (e.g. \"comma\" or \"quotation mark\")."
+            },
+            "text_field_context": {
+              "type": "object",
+              "description": "Information about the text field in which the user is currently dictating. Having this information ensures that capitalization of the first word of the dictation is correct. It contains:\n* **`text`** – the full, current content of the text field.   \n* **`selection_start`** / **`selection_length`** – either  \n  * the caret position where the dictation result will be **inserted** when nothing is selected (in that case `selection_start` is the cursor index and `selection_length = 0`).\n  * the range of text currently selected and expected to be **replaced** by the dictation WebSocket output.\n\nValidation rules (violations will close the WebSocket with code 1002 Protocol Error):\n1. `0 ≤ selection_start ≤ text.length`  \n2. Let `selection_end = selection_start + selection_length`. It must satisfy `selection_end ≤ text.length`.",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "Text content of the text field.",
+                  "maxLength": 50000
+                },
+                "selection_start": {
+                  "type": "integer",
+                  "description": "Selection start of the cursor in the text field.",
+                  "minimum": 0
+                },
+                "selection_length": {
+                  "type": "integer",
+                  "description": "Selection length of the cursor in the text field.",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "text",
+                "selection_start",
+                "selection_length"
+              ]
+            },
+            "specialty": {
+              "type": "string",
+              "description": "The medical specialty of the provider.",
+              "nullable": true,
+              "enum": [
+                "ADDICTION_MEDICINE",
+                "PAIN_MEDICINE",
+                "ALLERGY_AND_IMMUNOLOGY",
+                "ANESTHESIOLOGY",
+                "ONCOLOGY",
+                "CARDIOLOGY",
+                "SURGERY",
+                "DERMATOLOGY",
+                "DIABETOLOGY",
+                "ENDOCRINOLOGY",
+                "GENETICS",
+                "GERIATRICS",
+                "GYNECOLOGY",
+                "HEMATOLOGY",
+                "HEPATOLOGY",
+                "GASTROENTEROLOGY",
+                "SPORTS_MEDICINE",
+                "OCCUPATIONAL_MEDICINE",
+                "GENERAL_MEDICINE",
+                "FORENSIC_MEDICINE",
+                "PHYSICAL_MEDICINE_AND_REHABILITATION",
+                "NEPHROLOGY",
+                "NEUROLOGY",
+                "NUTRITION",
+                "DIETETICS",
+                "OPHTHALMOLOGY",
+                "ENT",
+                "PEDIATRICS",
+                "PULMONOLOGY",
+                "PSYCHIATRY",
+                "RHEUMATOLOGY",
+                "RADIOLOGY",
+                "IMMUNOLOGY",
+                "INFECTIOUS_DISEASE",
+                "SEXUAL_MEDICINE",
+                "TOXICOLOGY",
+                "UROLOGY",
+                "MIDWIFE",
+                "EMERGENCY_MEDICINE",
+                "NURSE",
+                "PSYCHOLOGY",
+                "PSYCHOTHERAPY",
+                "INTERNAL_MEDICINE",
+                "FAMILY_MEDICINE",
+                "DENTIST",
+                "VETERINARIAN",
+                "PHYSIOTHERAPY",
+                "CHIROPRACTIC",
+                "OSTEOPATHIC_MEDICINE",
+                "ORTHOPEDICS",
+                "OTHER",
+                "LACTATION_CONSULTANT",
+                "PODIATRY",
+                "GENERAL_PRACTICE",
+                "HOSPITAL_MEDICINE",
+                "BEHAVIORAL_HEALTH",
+                "MENTAL_HEALTH",
+                "SUBSTANCE_USE_DISORDER",
+                "VASCULAR_MEDICINE",
+                "LIFESTYLE_MEDICINE",
+                "PREVENTIVE_MEDICINE",
+                "PUBLIC_HEALTH",
+                "ADOLESCENT_MEDICINE",
+                "WOUND_CARE",
+                "NEUROSURGERY",
+                "PLASTIC_SURGERY",
+                "PALLIATIVE_CARE",
+                "TRANSPLANT_MEDICINE",
+                "OBESITY_MEDICINE",
+                "CASE_MANAGEMENT",
+                "CARE_MANAGEMENT",
+                "CARE_COORDINATION",
+                "SOCIAL_WORK",
+                "PATHOLOGY",
+                "RADIATION_ONCOLOGY",
+                "SLEEP_MEDICINE",
+                "AUDIOLOGY",
+                "REPRODUCTIVE_ENDOCRINOLOGY",
+                "PHARMACIST",
+                "OCCUPATIONAL_THERAPY",
+                "SPEECH_LANGUAGE_PATHOLOGY"
+              ],
+              "example": "GENERAL_PRACTICE"
+            }
+          },
+          "required": [
+            "type",
+            "encoding",
+            "sample_rate",
+            "dictation_locale",
+            "punctuation_mode"
+          ]
+        }
+      },
+      "audio_chunk": {
+        "summary": "A chunk of audio from the provider's microphone.",
+        "description": "Chunk (little portion) of audio from the provider's microphone on which they dictate. Maximum allowed duration is 1 second, recommended is 100ms.",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "AUDIO_CHUNK"
+              ]
+            },
+            "payload": {
+              "type": "string",
+              "description": "Raw audio chunk in base64 string.",
+              "example": "ZXhhbXBsZQ=="
+            },
+            "seq_id": {
+              "type": "integer",
+              "description": "A unique identifier for this audio chunk, expected to be sequential (n+1) from one audio chunk to the next.\nFirst value can start at any arbitrary value.\nRead more in [Make transcription and dictation resilient to network interruptions](/guides/best-practices/transcription-network-resilience)."
+            }
+          },
+          "required": [
+            "type",
+            "payload",
+            "seq_id"
+          ]
+        }
+      },
+      "end": {
+        "summary": "End the streaming.",
+        "description": "Signal the end of streaming and ask the speech-to-text engine to finish what is still in progress.",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "END"
+              ]
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "example": {
+            "type": "END"
+          }
+        }
+      },
+      "dictated_text": {
+        "summary": "A dictated text.",
+        "description": "A segment of the dictation, usually one or two words.  Each received segment should be appended directly to the ongoing dictation result  without inserting additional spaces, punctuation, or formatting.",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "DICTATED_TEXT"
+              ]
+            },
+            "text": {
+              "type": "string",
+              "description": "The dictated text.",
+              "example": "Patient showed "
+            }
+          },
+          "required": [
+            "type",
+            "text"
+          ]
+        }
+      },
+      "audio_chunk_ack": {
+        "summary": "Acknowledgement for audio chunks up to the specified sequential id.",
+        "description": "Server will regularly send audio chunks acknowledgement to signal receipt and imminent processing of audio.\n\nClients should consider acknowledged audio as processed and delete it from their buffer.\n\nMoreover, audio acknowledgement is intended to set the pace for streaming speed: Clients should refrain from sending new audio chunks until acknowledgement is received for previous ones. Server will accept up to 10 seconds of not-yet-acknowledged audio: clients going further will face an \"audio chunks buffer overflow\" error.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/next/guides/best-practices/transcription-network-resilience).",
+        "payload": {
+          "type": "object",
+          "description": "Acknowledgement of audio receipt by the server up to the audio chunk with the sequential id `ack_id`.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/guides/best-practices/transcription-network-resilience).",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "AUDIO_CHUNK_ACK"
+              ]
+            },
+            "ack_id": {
+              "type": "integer",
+              "description": "The sequential id of the audio chunk up to which this acknowledgment applies."
+            }
+          },
+          "example": {
+            "type": "AUDIO_CHUNK_ACK",
+            "ack_id": 42
+          },
+          "required": [
+            "type",
+            "ack_id"
+          ]
+        }
+      },
+      "error_message": {
+        "summary": "An error message.",
+        "description": "An error message sent right before closing the websocket due to a fatal error. It explains shortly what went wrong.",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "ERROR_MESSAGE"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "description": "A human-readable explanation of the error, often including contextual details to help understand what went wrong."
+            },
+            "code": {
+              "type": "integer",
+              "description": "A numeric identifier for the error. This may either be a standard HTTP status code (e.g. 400, 401) or a more specific application-level code (typically >1000). Some errors —like an audio buffer overflow due to client misuse— have dedicated codes, while others —like malformed JSON— use broader and generic codes.\n\n**Tip**: You should use this field as the primary reference for implementing error handling logic."
+            },
+            "name": {
+              "type": "string",
+              "description": "An internal enum-style name associated with the error code. While it may help with debugging, it’s mainly for reference—always rely on the numeric code for programmatic handling."
+            },
+            "trace_id": {
+              "type": "string",
+              "description": "A unique identifier for the failed API request. This is especially useful when reaching out to Nabla support, as it allows us to trace the exact request in our systems."
+            }
+          },
+          "required": [
+            "type",
+            "message",
+            "code",
+            "name"
+          ],
+          "example": [
+            {
+              "type": "ERROR_MESSAGE",
+              "message": "Unable to parse JSON at path $.speech_locales",
+              "code": 400,
+              "name": "BAD_REQUEST",
+              "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+            },
+            {
+              "type": "ERROR_MESSAGE",
+              "message": "Received a huge amount of audio in a very short window time.",
+              "code": 83016,
+              "name": "AUDIO_CHUNKS_BUFFER_OVERFLOW",
+              "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+            }
+          ]
+        }
+      }
+    },
+    "schemas": {
+      "dictate_config": {
+        "type": "object",
+        "description": "First message to configure dictation (audio format, locale, etc).\nUnlike older WebSocket APIs, the Dictation API now consistently requires sequence ids in incoming audio chunks and  always emits audio chunk acknowledgment frames.\n    \nRead more in [Make transcription and dictation resilient to network interruptions](/guides/best-practices/transcription-network-resilience).",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "CONFIG"
+            ]
+          },
+          "encoding": {
+            "type": "string",
+            "description": "Encoding of the streamed audio.",
+            "enum": [
+              "PCM_S16LE"
+            ],
+            "example": "PCM_S16LE"
+          },
+          "sample_rate": {
+            "type": "integer",
+            "description": "Sample rate of submitted streaming audio, in hertz.",
+            "minimum": 8000,
+            "maximum": 192000,
+            "example": 16000
+          },
+          "dictation_locale": {
+            "description": "Language spoken in the audio.",
+            "type": "string",
+            "enum": [
+              "ENGLISH_US",
+              "ENGLISH_UK",
+              "FRENCH_FR"
+            ],
+            "example": "ENGLISH_US"
+          },
+          "punctuation_mode": {
+            "type": "string",
+            "enum": [
+              "EXPLICIT"
+            ],
+            "description": "Specifies how punctuation is handled. Possible values are:<br/> • `EXPLICIT`: speaker must explicitly dictate punctuation (e.g. \"comma\" or \"quotation mark\")."
+          },
+          "text_field_context": {
+            "type": "object",
+            "description": "Information about the text field in which the user is currently dictating. Having this information ensures that capitalization of the first word of the dictation is correct. It contains:\n* **`text`** – the full, current content of the text field.   \n* **`selection_start`** / **`selection_length`** – either  \n  * the caret position where the dictation result will be **inserted** when nothing is selected (in that case `selection_start` is the cursor index and `selection_length = 0`).\n  * the range of text currently selected and expected to be **replaced** by the dictation WebSocket output.\n\nValidation rules (violations will close the WebSocket with code 1002 Protocol Error):\n1. `0 ≤ selection_start ≤ text.length`  \n2. Let `selection_end = selection_start + selection_length`. It must satisfy `selection_end ≤ text.length`.",
+            "properties": {
+              "text": {
+                "type": "string",
+                "description": "Text content of the text field.",
+                "maxLength": 50000
+              },
+              "selection_start": {
+                "type": "integer",
+                "description": "Selection start of the cursor in the text field.",
+                "minimum": 0
+              },
+              "selection_length": {
+                "type": "integer",
+                "description": "Selection length of the cursor in the text field.",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "text",
+              "selection_start",
+              "selection_length"
+            ]
+          },
+          "specialty": {
+            "type": "string",
+            "description": "The medical specialty of the provider.",
+            "nullable": true,
+            "enum": [
+              "ADDICTION_MEDICINE",
+              "PAIN_MEDICINE",
+              "ALLERGY_AND_IMMUNOLOGY",
+              "ANESTHESIOLOGY",
+              "ONCOLOGY",
+              "CARDIOLOGY",
+              "SURGERY",
+              "DERMATOLOGY",
+              "DIABETOLOGY",
+              "ENDOCRINOLOGY",
+              "GENETICS",
+              "GERIATRICS",
+              "GYNECOLOGY",
+              "HEMATOLOGY",
+              "HEPATOLOGY",
+              "GASTROENTEROLOGY",
+              "SPORTS_MEDICINE",
+              "OCCUPATIONAL_MEDICINE",
+              "GENERAL_MEDICINE",
+              "FORENSIC_MEDICINE",
+              "PHYSICAL_MEDICINE_AND_REHABILITATION",
+              "NEPHROLOGY",
+              "NEUROLOGY",
+              "NUTRITION",
+              "DIETETICS",
+              "OPHTHALMOLOGY",
+              "ENT",
+              "PEDIATRICS",
+              "PULMONOLOGY",
+              "PSYCHIATRY",
+              "RHEUMATOLOGY",
+              "RADIOLOGY",
+              "IMMUNOLOGY",
+              "INFECTIOUS_DISEASE",
+              "SEXUAL_MEDICINE",
+              "TOXICOLOGY",
+              "UROLOGY",
+              "MIDWIFE",
+              "EMERGENCY_MEDICINE",
+              "NURSE",
+              "PSYCHOLOGY",
+              "PSYCHOTHERAPY",
+              "INTERNAL_MEDICINE",
+              "FAMILY_MEDICINE",
+              "DENTIST",
+              "VETERINARIAN",
+              "PHYSIOTHERAPY",
+              "CHIROPRACTIC",
+              "OSTEOPATHIC_MEDICINE",
+              "ORTHOPEDICS",
+              "OTHER",
+              "LACTATION_CONSULTANT",
+              "PODIATRY",
+              "GENERAL_PRACTICE",
+              "HOSPITAL_MEDICINE",
+              "BEHAVIORAL_HEALTH",
+              "MENTAL_HEALTH",
+              "SUBSTANCE_USE_DISORDER",
+              "VASCULAR_MEDICINE",
+              "LIFESTYLE_MEDICINE",
+              "PREVENTIVE_MEDICINE",
+              "PUBLIC_HEALTH",
+              "ADOLESCENT_MEDICINE",
+              "WOUND_CARE",
+              "NEUROSURGERY",
+              "PLASTIC_SURGERY",
+              "PALLIATIVE_CARE",
+              "TRANSPLANT_MEDICINE",
+              "OBESITY_MEDICINE",
+              "CASE_MANAGEMENT",
+              "CARE_MANAGEMENT",
+              "CARE_COORDINATION",
+              "SOCIAL_WORK",
+              "PATHOLOGY",
+              "RADIATION_ONCOLOGY",
+              "SLEEP_MEDICINE",
+              "AUDIOLOGY",
+              "REPRODUCTIVE_ENDOCRINOLOGY",
+              "PHARMACIST",
+              "OCCUPATIONAL_THERAPY",
+              "SPEECH_LANGUAGE_PATHOLOGY"
+            ],
+            "example": "GENERAL_PRACTICE"
+          }
+        },
+        "required": [
+          "type",
+          "encoding",
+          "sample_rate",
+          "dictation_locale",
+          "punctuation_mode"
+        ]
+      },
+      "audio_chunk": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "AUDIO_CHUNK"
+            ]
+          },
+          "payload": {
+            "type": "string",
+            "description": "Raw audio chunk in base64 string.",
+            "example": "ZXhhbXBsZQ=="
+          },
+          "seq_id": {
+            "type": "integer",
+            "description": "A unique identifier for this audio chunk, expected to be sequential (n+1) from one audio chunk to the next.\nFirst value can start at any arbitrary value.\nRead more in [Make transcription and dictation resilient to network interruptions](/guides/best-practices/transcription-network-resilience)."
+          }
+        },
+        "required": [
+          "type",
+          "payload",
+          "seq_id"
+        ]
+      },
+      "end": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "END"
+            ]
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "example": {
+          "type": "END"
+        }
+      },
+      "dictated_text": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "DICTATED_TEXT"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "description": "The dictated text.",
+            "example": "Patient showed "
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ]
+      },
+      "audio_chunk_ack": {
+        "type": "object",
+        "description": "Acknowledgement of audio receipt by the server up to the audio chunk with the sequential id `ack_id`.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/guides/best-practices/transcription-network-resilience).",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "AUDIO_CHUNK_ACK"
+            ]
+          },
+          "ack_id": {
+            "type": "integer",
+            "description": "The sequential id of the audio chunk up to which this acknowledgment applies."
+          }
+        },
+        "example": {
+          "type": "AUDIO_CHUNK_ACK",
+          "ack_id": 42
+        },
+        "required": [
+          "type",
+          "ack_id"
+        ]
+      },
+      "error_message": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "ERROR_MESSAGE"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "A human-readable explanation of the error, often including contextual details to help understand what went wrong."
+          },
+          "code": {
+            "type": "integer",
+            "description": "A numeric identifier for the error. This may either be a standard HTTP status code (e.g. 400, 401) or a more specific application-level code (typically >1000). Some errors —like an audio buffer overflow due to client misuse— have dedicated codes, while others —like malformed JSON— use broader and generic codes.\n\n**Tip**: You should use this field as the primary reference for implementing error handling logic."
+          },
+          "name": {
+            "type": "string",
+            "description": "An internal enum-style name associated with the error code. While it may help with debugging, it’s mainly for reference—always rely on the numeric code for programmatic handling."
+          },
+          "trace_id": {
+            "type": "string",
+            "description": "A unique identifier for the failed API request. This is especially useful when reaching out to Nabla support, as it allows us to trace the exact request in our systems."
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "code",
+          "name"
+        ],
+        "example": [
+          {
+            "type": "ERROR_MESSAGE",
+            "message": "Unable to parse JSON at path $.speech_locales",
+            "code": 400,
+            "name": "BAD_REQUEST",
+            "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+          },
+          {
+            "type": "ERROR_MESSAGE",
+            "message": "Received a huge amount of audio in a very short window time.",
+            "code": 83016,
+            "name": "AUDIO_CHUNKS_BUFFER_OVERFLOW",
+            "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+          }
+        ]
+      }
+    }
+  }
+}

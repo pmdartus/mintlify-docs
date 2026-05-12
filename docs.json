@@ -9,386 +9,820 @@
   },
   "favicon": "/favicon.svg",
   "navigation": {
-    "products": [
+    "versions": [
       {
-        "product": "Core API",
-        "description": "Transcribe, generate notes, and extract clinical data.",
-        "icon": "plug",
-        "tabs": [
+        "version": "Current (2026-04-24)",
+        "products": [
           {
-            "tab": "Guides",
-            "groups": [
+            "product": "Core API",
+            "description": "Transcribe, generate notes, and extract clinical data.",
+            "icon": "plug",
+            "tabs": [
               {
-                "group": "Get started",
-                "pages": [
-                  "core-api/introduction",
-                  "core-api/quickstart",
-                  "core-api/authentication"
-                ]
-              },
-              {
-                "group": "Concepts",
-                "pages": [
-                  "core-api/concepts/server-vs-user-api",
-                  "core-api/concepts/notes-sections-templates",
-                  "core-api/concepts/sync-async-streaming",
-                  "core-api/concepts/locales"
-                ]
-              },
-              {
-                "group": "Guides",
-                "pages": [
-                  "core-api/guides/transcribe-a-recorded-encounter",
-                  "core-api/guides/stream-a-live-encounter",
-                  "core-api/guides/generate-a-clinical-note",
-                  "core-api/guides/edit-a-note-with-magic-edit",
-                  "core-api/guides/generate-patient-instructions",
-                  "core-api/guides/extract-fhir-normalized-data",
-                  "core-api/guides/dot-phrases-and-custom-dictionaries",
-                  "core-api/guides/ehr-integration"
-                ]
-              },
-              {
-                "group": "Webhooks",
-                "pages": [
-                  "core-api/webhooks/overview",
-                  "core-api/webhooks/setup",
-                  "core-api/webhooks/retries",
-                  "core-api/webhooks/testing"
-                ]
-              },
-              {
-                "group": "Note templates",
-                "pages": [
-                  "core-api/note-templates/choosing-a-template",
-                  "core-api/note-templates/sections",
-                  "core-api/note-templates/customization"
-                ]
-              },
-              {
-                "group": "Production best practices",
-                "pages": [
-                  "core-api/best-practices/error-handling",
-                  "core-api/best-practices/rate-limits",
-                  "core-api/best-practices/async-note-generation",
-                  "core-api/best-practices/transcription-network-resilience",
-                  "core-api/best-practices/observability"
-                ]
-              },
-              {
-                "group": "API versioning",
-                "pages": [
-                  "core-api/api-versioning/strategy",
-                  "core-api/api-versioning/targeting-a-version"
-                ]
-              },
-              {
-                "group": "Reference",
-                "pages": [
-                  "core-api/reference/dictation-commands",
-                  "core-api/reference/error-codes",
-                  "core-api/reference/glossary"
-                ]
-              }
-            ]
-          },
-          {
-            "tab": "API Reference",
-            "groups": [
-              {
-                "group": "Server API",
-                "openapi": {
-                  "source": "/core-api/openapi/server.json",
-                  "directory": "api-reference/server"
-                },
-                "pages": [
-                  "POST /oauth/token",
+                "tab": "Guides",
+                "groups": [
                   {
-                    "group": "Manage users",
+                    "group": "Get started",
                     "pages": [
-                      "POST /users",
-                      "PATCH /users/{user_id}",
-                      "POST /jwt/authenticate/{user_id}",
-                      "POST /users/{user_id}/deactivate",
-                      "POST /users/{user_id}/activate",
-                      "GET /users",
-                      "GET /users/{user_id}",
-                      "GET /users/find_by_external_id/{external_id}"
+                      "core-api/introduction",
+                      "core-api/quickstart",
+                      "core-api/authentication"
                     ]
                   },
                   {
-                    "group": "Transcribe",
+                    "group": "Concepts",
                     "pages": [
-                      "POST /transcribe",
-                      "POST /transcribe-async",
-                      "GET /transcribe-async/{id}"
+                      "core-api/concepts/server-vs-user-api",
+                      "core-api/concepts/notes-sections-templates",
+                      "core-api/concepts/sync-async-streaming",
+                      "core-api/concepts/locales"
                     ]
                   },
                   {
-                    "group": "Dictate",
+                    "group": "Guides",
                     "pages": [
-                      "POST /dictate",
-                      "POST /dictate-async",
-                      "GET /dictate-async/{id}",
-                      {
-                        "group": "WebSocket /dictate-ws",
-                        "asyncapi": {
-                          "source": "/core-api/asyncapi/dictate-ws.json",
-                          "directory": "api-reference/server/dictate-ws"
-                        }
-                      },
-                      "core-api/reference/dictation-commands"
+                      "core-api/guides/transcribe-a-recorded-encounter",
+                      "core-api/guides/stream-a-live-encounter",
+                      "core-api/guides/generate-a-clinical-note",
+                      "core-api/guides/edit-a-note-with-magic-edit",
+                      "core-api/guides/generate-patient-instructions",
+                      "core-api/guides/extract-fhir-normalized-data",
+                      "core-api/guides/dot-phrases-and-custom-dictionaries",
+                      "core-api/guides/ehr-integration"
                     ]
                   },
                   {
-                    "group": "Generate note",
+                    "group": "Webhooks",
                     "pages": [
-                      "POST /generate-note",
-                      "POST /generate-note-async",
-                      "GET /generate-note-async/{id}"
+                      "core-api/webhooks/overview",
+                      "core-api/webhooks/setup",
+                      "core-api/webhooks/retries",
+                      "core-api/webhooks/testing"
                     ]
                   },
                   {
-                    "group": "Generate normalized data",
-                    "pages": ["POST /generate-normalized-data"]
+                    "group": "Note templates",
+                    "pages": [
+                      "core-api/note-templates/choosing-a-template",
+                      "core-api/note-templates/sections",
+                      "core-api/note-templates/customization"
+                    ]
                   },
                   {
-                    "group": "Generate patient instructions",
-                    "pages": ["POST /generate-patient-instructions"]
+                    "group": "Production best practices",
+                    "pages": [
+                      "core-api/best-practices/error-handling",
+                      "core-api/best-practices/rate-limits",
+                      "core-api/best-practices/async-note-generation",
+                      "core-api/best-practices/transcription-network-resilience",
+                      "core-api/best-practices/observability"
+                    ]
                   },
                   {
-                    "group": "Edit note with instructions",
-                    "pages": ["POST /edit-note-with-instructions"]
+                    "group": "API versioning",
+                    "pages": [
+                      "core-api/api-versioning/strategy",
+                      "core-api/api-versioning/targeting-a-version"
+                    ]
                   },
                   {
-                    "group": "Report feedback",
-                    "pages": ["POST /reports"]
+                    "group": "Reference",
+                    "pages": [
+                      "core-api/reference/dictation-commands",
+                      "core-api/reference/error-codes",
+                      "core-api/reference/glossary"
+                    ]
                   }
                 ]
               },
               {
-                "group": "User API",
-                "openapi": {
-                  "source": "/core-api/openapi/user.json",
-                  "directory": "api-reference/user"
-                },
-                "pages": [
+                "tab": "API Reference",
+                "groups": [
                   {
-                    "group": "Authenticate",
+                    "group": "Server API",
+                    "openapi": {
+                      "source": "/core-api/openapi/versions/2026-04-24/server.json",
+                      "directory": "api-reference/2026-04-24/server"
+                    },
                     "pages": [
-                      "POST /jwt/refresh",
-                      "POST /jwt/logout"
-                    ]
-                  },
-                  {
-                    "group": "User settings",
-                    "pages": [
-                      "GET /note-settings",
-                      "PATCH /note-settings",
-                      "GET /note-settings/note-sections-customization/{note_template}",
-                      "PATCH /note-settings/note-sections-customization/{note_template}"
-                    ]
-                  },
-                  {
-                    "group": "Transcribe",
-                    "pages": [
-                      "POST /transcribe",
-                      "POST /transcribe-async",
-                      "GET /transcribe-async/{id}"
-                    ]
-                  },
-                  {
-                    "group": "Dictate",
-                    "pages": [
-                      "POST /dictate",
-                      "POST /dictate-async",
-                      "GET /dictate-async/{id}",
+                      "POST /oauth/token",
                       {
-                        "group": "WebSocket /dictate-ws",
-                        "asyncapi": {
-                          "source": "/core-api/asyncapi/dictate-ws.json",
-                          "directory": "api-reference/user/dictate-ws"
-                        }
-                      },
-                      "core-api/reference/dictation-commands"
-                    ]
-                  },
-                  {
-                    "group": "Text replacements",
-                    "pages": [
-                      "GET /text-replacements",
-                      "GET /text-replacements/{id}",
-                      "POST /text-replacements",
-                      "PATCH /text-replacements/{id}",
-                      "DELETE /text-replacements/{id}"
-                    ]
-                  },
-                  {
-                    "group": "Generate note",
-                    "pages": [
-                      "POST /generate-note",
-                      "POST /generate-note-async",
-                      "GET /generate-note-async/{id}"
-                    ]
-                  },
-                  {
-                    "group": "Dot phrases",
-                    "pages": [
-                      "GET /dot-phrases",
-                      "GET /dot-phrases/{id}",
-                      "POST /dot-phrases",
-                      "PATCH /dot-phrases/{id}",
-                      "DELETE /dot-phrases/{id}",
-                      {
-                        "group": "Bulk operations",
+                        "group": "Manage users",
                         "pages": [
-                          "POST /dot-phrases/bulk-create",
-                          "POST /dot-phrases/bulk-update",
-                          "POST /dot-phrases/bulk-delete"
+                          "POST /users",
+                          "GET /users",
+                          "GET /users/{user_id}",
+                          "PATCH /users/{user_id}",
+                          "GET /users/find_by_external_id/{external_id}",
+                          "POST /users/{user_id}/activate",
+                          "POST /users/{user_id}/deactivate",
+                          "POST /jwt/authenticate/{user_id}"
+                        ]
+                      },
+                      {
+                        "group": "Transcribe",
+                        "pages": [
+                          "POST /transcribe",
+                          "POST /transcribe-async",
+                          "GET /transcribe-async/{id}"
+                        ]
+                      },
+                      {
+                        "group": "Dictate",
+                        "pages": [
+                          "POST /dictate",
+                          "POST /dictate-async",
+                          "GET /dictate-async/{id}",
+                          {
+                            "group": "WebSocket /dictate-ws",
+                            "asyncapi": {
+                              "source": "/core-api/openapi/versions/2026-04-24/asyncapi/dictate-ws.json",
+                              "directory": "api-reference/2026-04-24/server/dictate-ws"
+                            }
+                          },
+                          "core-api/reference/dictation-commands"
+                        ]
+                      },
+                      {
+                        "group": "Generate note",
+                        "pages": [
+                          "POST /generate-note",
+                          "POST /generate-note-async",
+                          "GET /generate-note-async/{id}"
+                        ]
+                      },
+                      {
+                        "group": "Generate normalized data",
+                        "pages": [
+                          "POST /generate-normalized-data"
+                        ]
+                      },
+                      {
+                        "group": "Generate patient instructions",
+                        "pages": [
+                          "POST /generate-patient-instructions"
+                        ]
+                      },
+                      {
+                        "group": "Edit note with instructions",
+                        "pages": [
+                          "POST /edit-note-with-instructions"
+                        ]
+                      },
+                      {
+                        "group": "Report feedback",
+                        "pages": [
+                          "POST /reports"
                         ]
                       }
                     ]
                   },
                   {
-                    "group": "Custom dictionary",
+                    "group": "User API",
+                    "openapi": {
+                      "source": "/core-api/openapi/versions/2026-04-24/user.json",
+                      "directory": "api-reference/2026-04-24/user"
+                    },
                     "pages": [
-                      "GET /custom-dictionary-expressions",
-                      "GET /custom-dictionary-expressions/{id}",
-                      "POST /custom-dictionary-expressions",
-                      "PATCH /custom-dictionary-expressions/{id}",
-                      "DELETE /custom-dictionary-expressions/{id}"
+                      {
+                        "group": "Authenticate",
+                        "pages": [
+                          "POST /jwt/refresh",
+                          "POST /jwt/logout"
+                        ]
+                      },
+                      {
+                        "group": "User settings",
+                        "pages": [
+                          "GET /note-settings",
+                          "PATCH /note-settings",
+                          "GET /note-settings/note-sections-customization/{note_template}",
+                          "PATCH /note-settings/note-sections-customization/{note_template}"
+                        ]
+                      },
+                      {
+                        "group": "Transcribe",
+                        "pages": [
+                          "POST /transcribe",
+                          "POST /transcribe-async",
+                          "GET /transcribe-async/{id}"
+                        ]
+                      },
+                      {
+                        "group": "Dictate",
+                        "pages": [
+                          "POST /dictate",
+                          "POST /dictate-async",
+                          "GET /dictate-async/{id}",
+                          {
+                            "group": "WebSocket /dictate-ws",
+                            "asyncapi": {
+                              "source": "/core-api/openapi/versions/2026-04-24/asyncapi/dictate-ws.json",
+                              "directory": "api-reference/2026-04-24/user/dictate-ws"
+                            }
+                          },
+                          "core-api/reference/dictation-commands"
+                        ]
+                      },
+                      {
+                        "group": "Text replacements",
+                        "pages": [
+                          "POST /text-replacements",
+                          "GET /text-replacements",
+                          "GET /text-replacements/{id}",
+                          "PATCH /text-replacements/{id}",
+                          "DELETE /text-replacements/{id}"
+                        ]
+                      },
+                      {
+                        "group": "Generate note",
+                        "pages": [
+                          "POST /generate-note",
+                          "POST /generate-note-async",
+                          "GET /generate-note-async/{id}"
+                        ]
+                      },
+                      {
+                        "group": "Dot phrases",
+                        "pages": [
+                          "POST /dot-phrases",
+                          "GET /dot-phrases",
+                          "GET /dot-phrases/{id}",
+                          "PATCH /dot-phrases/{id}",
+                          "DELETE /dot-phrases/{id}",
+                          {
+                            "group": "Bulk operations",
+                            "pages": [
+                              "POST /dot-phrases/bulk-create",
+                              "POST /dot-phrases/bulk-update",
+                              "POST /dot-phrases/bulk-delete"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "group": "Custom dictionary",
+                        "pages": [
+                          "POST /custom-dictionary-expressions",
+                          "GET /custom-dictionary-expressions",
+                          "GET /custom-dictionary-expressions/{id}",
+                          "PATCH /custom-dictionary-expressions/{id}",
+                          "DELETE /custom-dictionary-expressions/{id}"
+                        ]
+                      },
+                      {
+                        "group": "Generate normalized data",
+                        "pages": [
+                          "POST /generate-normalized-data"
+                        ]
+                      },
+                      {
+                        "group": "Generate patient instructions",
+                        "pages": [
+                          "POST /generate-patient-instructions"
+                        ]
+                      },
+                      {
+                        "group": "Edit note with instructions",
+                        "pages": [
+                          "POST /edit-note-with-instructions"
+                        ]
+                      },
+                      {
+                        "group": "Report feedback",
+                        "pages": [
+                          "POST /reports"
+                        ]
+                      }
                     ]
                   },
                   {
-                    "group": "Generate normalized data",
-                    "pages": ["POST /generate-normalized-data"]
-                  },
-                  {
-                    "group": "Generate patient instructions",
-                    "pages": ["POST /generate-patient-instructions"]
-                  },
-                  {
-                    "group": "Edit note with instructions",
-                    "pages": ["POST /edit-note-with-instructions"]
-                  },
-                  {
-                    "group": "Report feedback",
-                    "pages": ["POST /reports"]
+                    "group": "Receive webhook events",
+                    "openapi": {
+                      "source": "/core-api/openapi/versions/2026-04-24/webhook.json",
+                      "directory": "api-reference/2026-04-24/webhook"
+                    },
+                    "pages": [
+                      "POST /webhook"
+                    ]
                   }
                 ]
               },
               {
-                "group": "Receive webhook events",
-                "openapi": {
-                  "source": "/core-api/openapi/webhook.json",
-                  "directory": "api-reference/webhook"
-                },
-                "pages": ["POST /webhook"]
+                "tab": "Changelog",
+                "groups": [
+                  {
+                    "group": "Changelog",
+                    "pages": [
+                      "core-api/changelog",
+                      {
+                        "group": "Migration guides",
+                        "pages": [
+                          "core-api/api-versioning/migrating-pre-2024-10-01"
+                        ]
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           },
           {
-            "tab": "Changelog",
-            "groups": [
+            "product": "Nabla Connect",
+            "description": "Embed Nabla in your product.",
+            "icon": "rocket",
+            "tabs": [
               {
-                "group": "Changelog",
-                "pages": [
-                  "core-api/changelog",
+                "tab": "Guides",
+                "groups": [
                   {
-                    "group": "Migration guides",
+                    "group": "Get started",
                     "pages": [
-                      "core-api/api-versioning/migrating-pre-2024-10-01"
+                      "connect/introduction",
+                      "connect/quickstart",
+                      "connect/authentication"
+                    ]
+                  },
+                  {
+                    "group": "Concepts",
+                    "pages": [
+                      "connect/concepts/flow-overview",
+                      "connect/concepts/incoming-vs-outgoing-apis",
+                      "connect/concepts/iframe-embedding"
+                    ]
+                  },
+                  {
+                    "group": "Guides",
+                    "pages": [
+                      "connect/guides/launch-an-encounter",
+                      "connect/guides/provision-users",
+                      "connect/guides/handle-callbacks",
+                      "connect/guides/export-notes"
+                    ]
+                  },
+                  {
+                    "group": "Production best practices",
+                    "pages": [
+                      "connect/best-practices/key-rotation",
+                      "connect/best-practices/idempotency",
+                      "connect/best-practices/callback-latency"
+                    ]
+                  },
+                  {
+                    "group": "API versioning",
+                    "pages": [
+                      "connect/api-versioning/strategy",
+                      "connect/api-versioning/targeting-a-version"
+                    ]
+                  }
+                ]
+              },
+              {
+                "tab": "API reference",
+                "groups": [
+                  {
+                    "group": "Server API",
+                    "pages": [
+                      "connect/reference/server-api/oauth-token",
+                      "connect/reference/server-api/upsert-user",
+                      "connect/reference/server-api/create-encounter",
+                      "connect/reference/server-api/refresh-encounter-url"
+                    ]
+                  },
+                  {
+                    "group": "Callbacks",
+                    "pages": [
+                      "connect/reference/callbacks/overview",
+                      "connect/reference/callbacks/note-export",
+                      "connect/reference/callbacks/patient-instructions-export"
+                    ]
+                  }
+                ]
+              },
+              {
+                "tab": "Changelog",
+                "groups": [
+                  {
+                    "group": "Changelog",
+                    "pages": [
+                      "connect/changelog",
+                      {
+                        "group": "Migration guides",
+                        "pages": [
+                          "connect/api-versioning/migrating-pre-2026-02-13"
+                        ]
+                      }
                     ]
                   }
                 ]
               }
             ]
           }
-        ]
+        ],
+        "default": true
       },
       {
-        "product": "Nabla Connect",
-        "description": "Embed Nabla in your product.",
-        "icon": "rocket",
-        "tabs": [
+        "version": "Next",
+        "products": [
           {
-            "tab": "Guides",
-            "groups": [
+            "product": "Core API",
+            "description": "Transcribe, generate notes, and extract clinical data.",
+            "icon": "plug",
+            "tabs": [
               {
-                "group": "Get started",
-                "pages": [
-                  "connect/introduction",
-                  "connect/quickstart",
-                  "connect/authentication"
-                ]
-              },
-              {
-                "group": "Concepts",
-                "pages": [
-                  "connect/concepts/flow-overview",
-                  "connect/concepts/incoming-vs-outgoing-apis",
-                  "connect/concepts/iframe-embedding"
-                ]
-              },
-              {
-                "group": "Guides",
-                "pages": [
-                  "connect/guides/launch-an-encounter",
-                  "connect/guides/provision-users",
-                  "connect/guides/handle-callbacks",
-                  "connect/guides/export-notes"
-                ]
-              },
-              {
-                "group": "Production best practices",
-                "pages": [
-                  "connect/best-practices/key-rotation",
-                  "connect/best-practices/idempotency",
-                  "connect/best-practices/callback-latency"
-                ]
-              },
-              {
-                "group": "API versioning",
-                "pages": [
-                  "connect/api-versioning/strategy",
-                  "connect/api-versioning/targeting-a-version"
-                ]
-              }
-            ]
-          },
-          {
-            "tab": "API reference",
-            "groups": [
-              {
-                "group": "Server API",
-                "pages": [
-                  "connect/reference/server-api/oauth-token",
-                  "connect/reference/server-api/upsert-user",
-                  "connect/reference/server-api/create-encounter",
-                  "connect/reference/server-api/refresh-encounter-url"
-                ]
-              },
-              {
-                "group": "Callbacks",
-                "pages": [
-                  "connect/reference/callbacks/overview",
-                  "connect/reference/callbacks/note-export",
-                  "connect/reference/callbacks/patient-instructions-export"
-                ]
-              }
-            ]
-          },
-          {
-            "tab": "Changelog",
-            "groups": [
-              {
-                "group": "Changelog",
-                "pages": [
-                  "connect/changelog",
+                "tab": "Guides",
+                "groups": [
                   {
-                    "group": "Migration guides",
+                    "group": "Get started",
                     "pages": [
-                      "connect/api-versioning/migrating-pre-2026-02-13"
+                      "core-api/introduction",
+                      "core-api/quickstart",
+                      "core-api/authentication"
+                    ]
+                  },
+                  {
+                    "group": "Concepts",
+                    "pages": [
+                      "core-api/concepts/server-vs-user-api",
+                      "core-api/concepts/notes-sections-templates",
+                      "core-api/concepts/sync-async-streaming",
+                      "core-api/concepts/locales"
+                    ]
+                  },
+                  {
+                    "group": "Guides",
+                    "pages": [
+                      "core-api/guides/transcribe-a-recorded-encounter",
+                      "core-api/guides/stream-a-live-encounter",
+                      "core-api/guides/generate-a-clinical-note",
+                      "core-api/guides/edit-a-note-with-magic-edit",
+                      "core-api/guides/generate-patient-instructions",
+                      "core-api/guides/extract-fhir-normalized-data",
+                      "core-api/guides/dot-phrases-and-custom-dictionaries",
+                      "core-api/guides/ehr-integration"
+                    ]
+                  },
+                  {
+                    "group": "Webhooks",
+                    "pages": [
+                      "core-api/webhooks/overview",
+                      "core-api/webhooks/setup",
+                      "core-api/webhooks/retries",
+                      "core-api/webhooks/testing"
+                    ]
+                  },
+                  {
+                    "group": "Note templates",
+                    "pages": [
+                      "core-api/note-templates/choosing-a-template",
+                      "core-api/note-templates/sections",
+                      "core-api/note-templates/customization"
+                    ]
+                  },
+                  {
+                    "group": "Production best practices",
+                    "pages": [
+                      "core-api/best-practices/error-handling",
+                      "core-api/best-practices/rate-limits",
+                      "core-api/best-practices/async-note-generation",
+                      "core-api/best-practices/transcription-network-resilience",
+                      "core-api/best-practices/observability"
+                    ]
+                  },
+                  {
+                    "group": "API versioning",
+                    "pages": [
+                      "core-api/api-versioning/strategy",
+                      "core-api/api-versioning/targeting-a-version"
+                    ]
+                  },
+                  {
+                    "group": "Reference",
+                    "pages": [
+                      "core-api/reference/dictation-commands",
+                      "core-api/reference/error-codes",
+                      "core-api/reference/glossary"
+                    ]
+                  }
+                ]
+              },
+              {
+                "tab": "API Reference",
+                "groups": [
+                  {
+                    "group": "Server API",
+                    "openapi": {
+                      "source": "/core-api/openapi/versions/next/server.json",
+                      "directory": "api-reference/next/server"
+                    },
+                    "pages": [
+                      "POST /oauth/token",
+                      {
+                        "group": "Manage users",
+                        "pages": [
+                          "POST /users",
+                          "GET /users",
+                          "GET /users/{user_id}",
+                          "PATCH /users/{user_id}",
+                          "GET /users/find_by_external_id/{external_id}",
+                          "POST /users/{user_id}/activate",
+                          "POST /users/{user_id}/deactivate",
+                          "POST /jwt/authenticate/{user_id}"
+                        ]
+                      },
+                      {
+                        "group": "Transcribe",
+                        "pages": [
+                          "POST /transcribe",
+                          "POST /transcribe-async",
+                          "GET /transcribe-async/{id}"
+                        ]
+                      },
+                      {
+                        "group": "Dictate",
+                        "pages": [
+                          "POST /dictate",
+                          "POST /dictate-async",
+                          "GET /dictate-async/{id}",
+                          {
+                            "group": "WebSocket /dictate-ws",
+                            "asyncapi": {
+                              "source": "/core-api/openapi/versions/next/asyncapi/dictate-ws.json",
+                              "directory": "api-reference/next/server/dictate-ws"
+                            }
+                          },
+                          "core-api/reference/dictation-commands"
+                        ]
+                      },
+                      {
+                        "group": "Generate note",
+                        "pages": [
+                          "POST /generate-note",
+                          "POST /generate-note-async",
+                          "GET /generate-note-async/{id}"
+                        ]
+                      },
+                      {
+                        "group": "Generate normalized data",
+                        "pages": [
+                          "POST /generate-normalized-data"
+                        ]
+                      },
+                      {
+                        "group": "Generate patient instructions",
+                        "pages": [
+                          "POST /generate-patient-instructions"
+                        ]
+                      },
+                      {
+                        "group": "Edit note with instructions",
+                        "pages": [
+                          "POST /edit-note-with-instructions"
+                        ]
+                      },
+                      {
+                        "group": "Report feedback",
+                        "pages": [
+                          "POST /reports"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "User API",
+                    "openapi": {
+                      "source": "/core-api/openapi/versions/next/user.json",
+                      "directory": "api-reference/next/user"
+                    },
+                    "pages": [
+                      {
+                        "group": "Authenticate",
+                        "pages": [
+                          "POST /jwt/refresh",
+                          "POST /jwt/logout"
+                        ]
+                      },
+                      {
+                        "group": "User settings",
+                        "pages": [
+                          "GET /note-settings",
+                          "PATCH /note-settings",
+                          "GET /note-settings/note-sections-customization/{note_template}",
+                          "PATCH /note-settings/note-sections-customization/{note_template}"
+                        ]
+                      },
+                      {
+                        "group": "Transcribe",
+                        "pages": [
+                          "POST /transcribe",
+                          "POST /transcribe-async",
+                          "GET /transcribe-async/{id}"
+                        ]
+                      },
+                      {
+                        "group": "Dictate",
+                        "pages": [
+                          "POST /dictate",
+                          "POST /dictate-async",
+                          "GET /dictate-async/{id}",
+                          {
+                            "group": "WebSocket /dictate-ws",
+                            "asyncapi": {
+                              "source": "/core-api/openapi/versions/next/asyncapi/dictate-ws.json",
+                              "directory": "api-reference/next/user/dictate-ws"
+                            }
+                          },
+                          "core-api/reference/dictation-commands"
+                        ]
+                      },
+                      {
+                        "group": "Text replacements",
+                        "pages": [
+                          "POST /text-replacements",
+                          "GET /text-replacements",
+                          "GET /text-replacements/{id}",
+                          "PATCH /text-replacements/{id}",
+                          "DELETE /text-replacements/{id}"
+                        ]
+                      },
+                      {
+                        "group": "Generate note",
+                        "pages": [
+                          "POST /generate-note",
+                          "POST /generate-note-async",
+                          "GET /generate-note-async/{id}"
+                        ]
+                      },
+                      {
+                        "group": "Dot phrases",
+                        "pages": [
+                          "POST /dot-phrases",
+                          "GET /dot-phrases",
+                          "GET /dot-phrases/{id}",
+                          "PATCH /dot-phrases/{id}",
+                          "DELETE /dot-phrases/{id}",
+                          {
+                            "group": "Bulk operations",
+                            "pages": [
+                              "POST /dot-phrases/bulk-create",
+                              "POST /dot-phrases/bulk-update",
+                              "POST /dot-phrases/bulk-delete"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "group": "Custom dictionary",
+                        "pages": [
+                          "POST /custom-dictionary-expressions",
+                          "GET /custom-dictionary-expressions",
+                          "GET /custom-dictionary-expressions/{id}",
+                          "PATCH /custom-dictionary-expressions/{id}",
+                          "DELETE /custom-dictionary-expressions/{id}"
+                        ]
+                      },
+                      {
+                        "group": "Generate normalized data",
+                        "pages": [
+                          "POST /generate-normalized-data"
+                        ]
+                      },
+                      {
+                        "group": "Generate patient instructions",
+                        "pages": [
+                          "POST /generate-patient-instructions"
+                        ]
+                      },
+                      {
+                        "group": "Edit note with instructions",
+                        "pages": [
+                          "POST /edit-note-with-instructions"
+                        ]
+                      },
+                      {
+                        "group": "Report feedback",
+                        "pages": [
+                          "POST /reports"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "Receive webhook events",
+                    "openapi": {
+                      "source": "/core-api/openapi/versions/next/webhook.json",
+                      "directory": "api-reference/next/webhook"
+                    },
+                    "pages": [
+                      "POST /webhook"
+                    ]
+                  }
+                ]
+              },
+              {
+                "tab": "Changelog",
+                "groups": [
+                  {
+                    "group": "Changelog",
+                    "pages": [
+                      "core-api/changelog",
+                      {
+                        "group": "Migration guides",
+                        "pages": [
+                          "core-api/api-versioning/migrating-pre-2024-10-01"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "product": "Nabla Connect",
+            "description": "Embed Nabla in your product.",
+            "icon": "rocket",
+            "tabs": [
+              {
+                "tab": "Guides",
+                "groups": [
+                  {
+                    "group": "Get started",
+                    "pages": [
+                      "connect/introduction",
+                      "connect/quickstart",
+                      "connect/authentication"
+                    ]
+                  },
+                  {
+                    "group": "Concepts",
+                    "pages": [
+                      "connect/concepts/flow-overview",
+                      "connect/concepts/incoming-vs-outgoing-apis",
+                      "connect/concepts/iframe-embedding"
+                    ]
+                  },
+                  {
+                    "group": "Guides",
+                    "pages": [
+                      "connect/guides/launch-an-encounter",
+                      "connect/guides/provision-users",
+                      "connect/guides/handle-callbacks",
+                      "connect/guides/export-notes"
+                    ]
+                  },
+                  {
+                    "group": "Production best practices",
+                    "pages": [
+                      "connect/best-practices/key-rotation",
+                      "connect/best-practices/idempotency",
+                      "connect/best-practices/callback-latency"
+                    ]
+                  },
+                  {
+                    "group": "API versioning",
+                    "pages": [
+                      "connect/api-versioning/strategy",
+                      "connect/api-versioning/targeting-a-version"
+                    ]
+                  }
+                ]
+              },
+              {
+                "tab": "API reference",
+                "groups": [
+                  {
+                    "group": "Server API",
+                    "pages": [
+                      "connect/reference/server-api/oauth-token",
+                      "connect/reference/server-api/upsert-user",
+                      "connect/reference/server-api/create-encounter",
+                      "connect/reference/server-api/refresh-encounter-url"
+                    ]
+                  },
+                  {
+                    "group": "Callbacks",
+                    "pages": [
+                      "connect/reference/callbacks/overview",
+                      "connect/reference/callbacks/note-export",
+                      "connect/reference/callbacks/patient-instructions-export"
+                    ]
+                  }
+                ]
+              },
+              {
+                "tab": "Changelog",
+                "groups": [
+                  {
+                    "group": "Changelog",
+                    "pages": [
+                      "connect/changelog",
+                      {
+                        "group": "Migration guides",
+                        "pages": [
+                          "connect/api-versioning/migrating-pre-2026-02-13"
+                        ]
+                      }
                     ]
                   }
                 ]

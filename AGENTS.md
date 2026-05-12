@@ -51,3 +51,30 @@ When referring to specific endpoints, prefer the format `` `POST /generate-note`
 
 - Don't document healthcare compliance (HIPAA, SOC 2, BAA, data residency) here — that lives on the marketing/legal site.
 - Don't link to OpenAPI reference pages until they exist on this site. Use inline endpoint code spans (e.g., `` `POST /transcribe-ws` ``) until then.
+
+## Versioned Core API reference
+
+The Core API ships a new dated version (e.g. `2026-04-24`) ~monthly. The site serves every supported version plus an unreleased `next`. The navigation is generated — do not hand-edit it in `docs.json`.
+
+**Layout:**
+
+- `core-api/openapi/versions.json` — manifest declaring `current`, `stable` (ordered), and `next`.
+- `core-api/openapi/versions/<version>/{server,user,webhook}.json` — frozen OpenAPI specs.
+- `core-api/openapi/versions/<version>/asyncapi/*.json` — frozen AsyncAPI specs.
+- `core-api/openapi/versions/<version>/nav-extras.json` — per-version sidebar tweaks (group labels, top-level promotions, sub-groups, asyncapi/cross-link appends).
+- `core-api/openapi/nav-shared.json` — version-agnostic tab content (Guides, Changelog, Connect).
+- `scripts/build-api-nav.mjs` — generator (`npm run gen:nav`).
+- `scripts/freeze-next.mjs` — release helper (`npm run freeze:next YYYY-MM-DD`).
+
+**`docs.json` ownership:** `navigation` is fully generator-owned. Everything else is hand-edited.
+
+**Edit `next`:** modify files under `core-api/openapi/versions/next/`, then `npm run gen:nav`.
+
+**Release a new version `YYYY-MM-DD`:**
+
+```
+npm run freeze:next YYYY-MM-DD   # copies next/ to YYYY-MM-DD/, updates versions.json
+npm run gen:nav                  # regenerates docs.json
+```
+
+**Add a historical version:** drop the spec files into `core-api/openapi/versions/<date>/`, copy a sibling version's `nav-extras.json` and adjust if the API surface differs, append `<date>` to `stable` in `versions.json`, then `npm run gen:nav`.
