@@ -79,8 +79,7 @@
                 "group": "API versioning",
                 "pages": [
                   "core-api/api-versioning/strategy",
-                  "core-api/api-versioning/targeting-a-version",
-                  "core-api/api-versioning/migrating-pre-2024-10-01"
+                  "core-api/api-versioning/targeting-a-version"
                 ]
               },
               {
@@ -290,7 +289,20 @@
           },
           {
             "tab": "Changelog",
-            "pages": ["core-api/changelog"]
+            "groups": [
+              {
+                "group": "Changelog",
+                "pages": [
+                  "core-api/changelog",
+                  {
+                    "group": "Migration guides",
+                    "pages": [
+                      "core-api/api-versioning/migrating-pre-2024-10-01"
+                    ]
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -339,8 +351,7 @@
                 "group": "API versioning",
                 "pages": [
                   "connect/api-versioning/strategy",
-                  "connect/api-versioning/targeting-a-version",
-                  "connect/api-versioning/migrating-pre-2026-02-13"
+                  "connect/api-versioning/targeting-a-version"
                 ]
               }
             ]
@@ -369,7 +380,20 @@
           },
           {
             "tab": "Changelog",
-            "pages": ["connect/changelog"]
+            "groups": [
+              {
+                "group": "Changelog",
+                "pages": [
+                  "connect/changelog",
+                  {
+                    "group": "Migration guides",
+                    "pages": [
+                      "connect/api-versioning/migrating-pre-2026-02-13"
+                    ]
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
