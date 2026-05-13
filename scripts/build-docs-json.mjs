@@ -69,6 +69,49 @@ function filterPagesForSpec(pages, spec) {
   return out;
 }
 
+// Collect every "METHOD /path" key referenced anywhere under a nav tree.
+function collectNavOps(pages, out = new Set()) {
+  for (const entry of pages) {
+    if (typeof entry === "string") {
+      if (/^[A-Z]+ \//.test(entry)) out.add(entry);
+    } else if (entry && typeof entry === "object" && entry.group) {
+      collectNavOps(entry.pages ?? [], out);
+    }
+  }
+  return out;
+}
+
+// Catch the failure mode that hid the pre-2024-10-01 legacy endpoints for
+// weeks: a spec defines operations that no nav entry maps to, so they get
+// silently dropped from docs.json. Throw with the full list instead.
+function verifySpecCoverage(spec, navPages, { version, kind }) {
+  const navOps = collectNavOps(navPages);
+  const navByNormalized = new Set();
+  for (const key of navOps) {
+    const m = key.match(/^([A-Z]+) (\/.+)$/);
+    if (m) navByNormalized.add(`${m[1]} ${normalizePath(m[2])}`);
+  }
+
+  const uncovered = [];
+  for (const [p, item] of Object.entries(spec.paths ?? {})) {
+    for (const method of ["get", "post", "put", "patch", "delete", "head", "options"]) {
+      if (!item?.[method]) continue;
+      const key = `${method.toUpperCase()} ${p}`;
+      if (!navByNormalized.has(`${method.toUpperCase()} ${normalizePath(p)}`)) {
+        uncovered.push(key);
+      }
+    }
+  }
+
+  if (uncovered.length > 0) {
+    throw new Error(
+      `Spec ${version}/${kind}.json defines ${uncovered.length} operation(s) absent from scripts/nav.mjs:\n` +
+        uncovered.map((k) => `  ${k}`).join("\n") +
+        `\nAdd them to scripts/nav.mjs (or remove from the spec).`
+    );
+  }
+}
+
 function buildApiReferenceTab(manifest) {
   const versionsEntries = [];
 
@@ -100,6 +143,7 @@ function buildVersionEntry({ version, dir, isDefault = false, isPreview = false 
     if (!existsSync(specFile)) continue;
     const spec = JSON.parse(readFileSync(specFile, "utf8"));
     const nav = NAV[kind];
+    verifySpecCoverage(spec, nav.pages, { version, kind });
     const filtered = filterPagesForSpec(nav.pages, spec);
     if (filtered.length === 0) continue;
 
