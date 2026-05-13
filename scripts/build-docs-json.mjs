@@ -27,11 +27,26 @@ const SNIPPET = path.join(ROOT, "snippets", "current-version.mdx");
 const args = new Set(process.argv.slice(2));
 const checkMode = args.has("--check");
 
-function specHasOperation(spec, key) {
+// Path-parameter names drift across API versions (e.g. {id} -> {user_id}).
+// Compare on a normalized shape so a single nav entry covers both eras.
+function normalizePath(p) {
+  return p.replace(/\{[^}]+\}/g, "{}");
+}
+
+// Returns the spec's literal "METHOD /path" key for an operation matching
+// the given nav key on a normalized shape, or null if not present. The
+// returned key may differ from the input (e.g. "/users/{id}" vs "/users/{user_id}").
+function resolveSpecOperation(spec, key) {
   const m = key.match(/^([A-Z]+) (\/.+)$/);
-  if (!m) return false;
+  if (!m) return null;
   const [, method, p] = m;
-  return Boolean(spec.paths?.[p]?.[method.toLowerCase()]);
+  const wanted = normalizePath(p);
+  for (const [specPath, item] of Object.entries(spec.paths ?? {})) {
+    if (normalizePath(specPath) === wanted && item?.[method.toLowerCase()]) {
+      return `${method} ${specPath}`;
+    }
+  }
+  return null;
 }
 
 function filterPagesForSpec(pages, spec) {
@@ -39,7 +54,8 @@ function filterPagesForSpec(pages, spec) {
   for (const entry of pages) {
     if (typeof entry === "string") {
       if (/^[A-Z]+ \//.test(entry)) {
-        if (specHasOperation(spec, entry)) out.push(entry);
+        const resolved = resolveSpecOperation(spec, entry);
+        if (resolved) out.push(resolved);
       } else {
         out.push(entry);
       }
@@ -51,6 +67,49 @@ function filterPagesForSpec(pages, spec) {
     }
   }
   return out;
+}
+
+// Collect every "METHOD /path" key referenced anywhere under a nav tree.
+function collectNavOps(pages, out = new Set()) {
+  for (const entry of pages) {
+    if (typeof entry === "string") {
+      if (/^[A-Z]+ \//.test(entry)) out.add(entry);
+    } else if (entry && typeof entry === "object" && entry.group) {
+      collectNavOps(entry.pages ?? [], out);
+    }
+  }
+  return out;
+}
+
+// Catch the failure mode that hid the pre-2024-10-01 legacy endpoints for
+// weeks: a spec defines operations that no nav entry maps to, so they get
+// silently dropped from docs.json. Throw with the full list instead.
+function verifySpecCoverage(spec, navPages, { version, kind }) {
+  const navOps = collectNavOps(navPages);
+  const navByNormalized = new Set();
+  for (const key of navOps) {
+    const m = key.match(/^([A-Z]+) (\/.+)$/);
+    if (m) navByNormalized.add(`${m[1]} ${normalizePath(m[2])}`);
+  }
+
+  const uncovered = [];
+  for (const [p, item] of Object.entries(spec.paths ?? {})) {
+    for (const method of ["get", "post", "put", "patch", "delete", "head", "options"]) {
+      if (!item?.[method]) continue;
+      const key = `${method.toUpperCase()} ${p}`;
+      if (!navByNormalized.has(`${method.toUpperCase()} ${normalizePath(p)}`)) {
+        uncovered.push(key);
+      }
+    }
+  }
+
+  if (uncovered.length > 0) {
+    throw new Error(
+      `Spec ${version}/${kind}.json defines ${uncovered.length} operation(s) absent from scripts/nav.mjs:\n` +
+        uncovered.map((k) => `  ${k}`).join("\n") +
+        `\nAdd them to scripts/nav.mjs (or remove from the spec).`
+    );
+  }
 }
 
 function buildApiReferenceTab(manifest) {
@@ -84,6 +143,7 @@ function buildVersionEntry({ version, dir, isDefault = false, isPreview = false 
     if (!existsSync(specFile)) continue;
     const spec = JSON.parse(readFileSync(specFile, "utf8"));
     const nav = NAV[kind];
+    verifySpecCoverage(spec, nav.pages, { version, kind });
     const filtered = filterPagesForSpec(nav.pages, spec);
     if (filtered.length === 0) continue;
 
