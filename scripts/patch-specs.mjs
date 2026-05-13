@@ -1,56 +1,50 @@
 #!/usr/bin/env node
 // Normalize tags on every checked-in OpenAPI spec under core-api/openapi.
 //
-// Drives Mintlify's tag-based auto-grouping in docs.json, replacing the
-// per-path navigation list. Source of truth is scripts/tags.mjs. The script
-// is idempotent — running twice is a no-op.
+// Tags themselves don't drive Mintlify navigation in this repo (the
+// build-docs-json script materializes pages explicitly from nav.mjs).
+// We still set them so that third-party OpenAPI tooling sees consistent
+// grouping. Source of truth is scripts/nav.mjs.
 //
 // Usage:
 //   pnpm patch-specs            rewrites files in place
 //   pnpm patch-specs --check    exit non-zero if any file is out of sync (CI)
 //
-// This is a prototype: once the upstream spec generator emits the same tag
-// shape, delete this script and scripts/tags.mjs.
+// Prototype: once the upstream spec generator emits the same tag shape,
+// delete this script.
 
 import { readFile, writeFile, readdir, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { TAG_MAP } from "./tags.mjs";
+import { NAV, flattenPathTags, topLevelTags } from "./nav.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OPENAPI_DIR = path.join(ROOT, "core-api", "openapi");
-const SPEC_KINDS = Object.keys(TAG_MAP); // ["server", "user", "webhook"]
+const SPEC_KINDS = Object.keys(NAV); // ["server", "user", "webhook"]
 
 const args = new Set(process.argv.slice(2));
 const checkMode = args.has("--check");
 
 async function listVersionDirs() {
   const entries = await readdir(OPENAPI_DIR, { withFileTypes: true });
-  const dirs = [];
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    dirs.push(path.join(OPENAPI_DIR, entry.name));
-  }
-  return dirs;
+  return entries.filter((e) => e.isDirectory()).map((e) => path.join(OPENAPI_DIR, e.name));
 }
 
 function patchSpec(spec, kind) {
-  const { order, paths: pathTagMap } = TAG_MAP[kind];
+  const nav = NAV[kind];
+  spec.tags = topLevelTags(nav.pages);
 
-  spec.tags = order.map(({ name, description }) => ({ name, description }));
+  const tagByKey = new Map(flattenPathTags(nav.pages).map(({ key, tag }) => [key, tag]));
 
   for (const [pathKey, pathItem] of Object.entries(spec.paths ?? {})) {
     for (const method of ["get", "post", "put", "patch", "delete", "head", "options"]) {
       const op = pathItem[method];
       if (!op) continue;
       const key = `${method.toUpperCase()} ${pathKey}`;
-      const tag = pathTagMap[key];
-      if (tag) {
-        op.tags = [tag];
-      }
+      const tag = tagByKey.get(key);
+      if (tag) op.tags = [tag];
     }
   }
-
   return spec;
 }
 
@@ -61,15 +55,10 @@ function stableStringify(obj) {
 async function processFile(file, kind) {
   const original = await readFile(file, "utf8");
   const spec = JSON.parse(original);
-  const patched = patchSpec(spec, kind);
-  const next = stableStringify(patched);
+  const next = stableStringify(patchSpec(spec, kind));
 
-  if (next === original) {
-    return { file, changed: false };
-  }
-  if (checkMode) {
-    return { file, changed: true };
-  }
+  if (next === original) return { file, changed: false };
+  if (checkMode) return { file, changed: true };
   await writeFile(file, next);
   return { file, changed: true };
 }
@@ -88,7 +77,7 @@ async function main() {
       try {
         await stat(file);
       } catch {
-        continue; // a version may legitimately lack a kind (e.g. webhook only post-2024-10-01)
+        continue;
       }
       results.push(await processFile(file, kind));
     }
@@ -97,7 +86,7 @@ async function main() {
   const changed = results.filter((r) => r.changed);
   if (checkMode) {
     if (changed.length > 0) {
-      console.error("Specs out of sync with tag map. Run `pnpm patch-specs`.");
+      console.error("Specs out of sync with nav. Run `node scripts/patch-specs.mjs`.");
       for (const r of changed) console.error(`  ${path.relative(ROOT, r.file)}`);
       process.exit(1);
     }

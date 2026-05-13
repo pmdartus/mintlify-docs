@@ -1,81 +1,102 @@
 #!/usr/bin/env node
 // Generate docs.json from docs.template.json + core-api/openapi/versions.json.
 //
-// The template carries everything except the parts that fan out per API
-// version. Each generator placeholder has the shape:
-//   { "$generate": "<id>" }
-// and is replaced by the matching expansion below.
+// For each entry in versions.json (plus `next`), this emits an API Reference
+// version block that materializes the NAV tree from scripts/nav.mjs against
+// the actual paths in that version's spec. The `directory` field on each
+// openapi config is namespaced by the version directory, which gives every
+// operation a distinct URL like `/<version>/api-reference/server/<slug>`.
 //
 // Usage:
-//   pnpm build-docs-json           write docs.json
-//   pnpm build-docs-json --check   exit non-zero if docs.json is stale (CI)
+//   node scripts/build-docs-json.mjs           write docs.json + snippet
+//   node scripts/build-docs-json.mjs --check   exit non-zero if stale (CI)
 
 import { readFile, writeFile } from "node:fs/promises";
+import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { NAV } from "./nav.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const TEMPLATE = path.join(ROOT, "docs.template.json");
 const MANIFEST = path.join(ROOT, "core-api", "openapi", "versions.json");
+const OPENAPI_DIR = path.join(ROOT, "core-api", "openapi");
 const OUTPUT = path.join(ROOT, "docs.json");
 const SNIPPET = path.join(ROOT, "snippets", "current-version.mdx");
 
 const args = new Set(process.argv.slice(2));
 const checkMode = args.has("--check");
 
-// Each version block produces a Mintlify version entry containing the
-// Core API "API Reference" tab. The Server / User / Webhooks groups
-// auto-generate their pages from the spec's tags (configured by
-// scripts/patch-specs.mjs), so we don't list endpoints here.
-//
-// SCHEMA NOTE: Mintlify's `versions` array is consumed inside `navigation`.
-// We attach it to the API Reference tab via a `versions` property so the
-// dropdown only swaps API Reference content. If Mintlify's resolver
-// expects `versions` higher up the tree, move the array up — the data
-// shape stays the same.
-function buildApiReferenceTab(manifest) {
-  const entries = [];
+function specHasOperation(spec, key) {
+  const m = key.match(/^([A-Z]+) (\/.+)$/);
+  if (!m) return false;
+  const [, method, p] = m;
+  return Boolean(spec.paths?.[p]?.[method.toLowerCase()]);
+}
 
-  entries.push(buildVersionEntry({
+function filterPagesForSpec(pages, spec) {
+  const out = [];
+  for (const entry of pages) {
+    if (typeof entry === "string") {
+      if (/^[A-Z]+ \//.test(entry)) {
+        if (specHasOperation(spec, entry)) out.push(entry);
+      } else {
+        out.push(entry);
+      }
+      continue;
+    }
+    if (entry && typeof entry === "object" && entry.group) {
+      const sub = filterPagesForSpec(entry.pages ?? [], spec);
+      if (sub.length > 0) out.push({ group: entry.group, pages: sub });
+    }
+  }
+  return out;
+}
+
+function buildApiReferenceTab(manifest) {
+  const versionsEntries = [];
+
+  versionsEntries.push(buildVersionEntry({
     version: manifest.next.label,
     dir: manifest.next.dir,
     isPreview: true,
   }));
 
   for (const v of manifest.versions) {
-    entries.push(buildVersionEntry({
+    versionsEntries.push(buildVersionEntry({
       version: v.date,
       dir: v.date,
       isDefault: v.date === manifest.current,
     }));
   }
 
-  return {
-    tab: "API Reference",
-    versions: entries,
-  };
+  return { tab: "API Reference", versions: versionsEntries };
 }
 
 function buildVersionEntry({ version, dir, isDefault = false, isPreview = false }) {
   const entry = { version };
   if (isDefault) entry.default = true;
-  entry.groups = [
-    {
-      group: "Server API",
-      openapi: { source: `core-api/openapi/${dir}/server.json` },
-      pages: ["core-api/api-reference/server/transcribe-ws", "core-api/api-reference/server/dictate-ws"],
-    },
-    {
-      group: "User API",
-      openapi: { source: `core-api/openapi/${dir}/user.json` },
-      pages: ["core-api/api-reference/user/transcribe-ws", "core-api/api-reference/user/dictate-ws"],
-    },
-    {
-      group: "Receive webhook events",
-      openapi: { source: `core-api/openapi/${dir}/webhook.json` },
-    },
-  ];
   if (isPreview) entry.tag = "preview";
+
+  entry.groups = [];
+  for (const kind of Object.keys(NAV)) {
+    const specFile = path.join(OPENAPI_DIR, dir, `${kind}.json`);
+    if (!existsSync(specFile)) continue;
+    const spec = JSON.parse(readFileSync(specFile, "utf8"));
+    const nav = NAV[kind];
+    const filtered = filterPagesForSpec(nav.pages, spec);
+    if (filtered.length === 0) continue;
+
+    entry.groups.push({
+      group: nav.title,
+      openapi: {
+        source: `core-api/openapi/${dir}/${kind}.json`,
+        directory: `${dir}/${nav.directory}`,
+      },
+      pages: filtered,
+    });
+  }
+
   return entry;
 }
 
@@ -106,9 +127,7 @@ async function syncFile(target, next) {
   let current = "";
   try {
     current = await readFile(target, "utf8");
-  } catch {
-    // first run
-  }
+  } catch {}
   if (next === current) return { changed: false };
   if (checkMode) return { changed: true };
   await writeFile(target, next);
@@ -124,14 +143,14 @@ async function main() {
   const snippet = buildSnippet(manifest);
 
   const results = [
-    { name: "docs.json", target: OUTPUT, ...(await syncFile(OUTPUT, docsJson)) },
-    { name: "snippets/current-version.mdx", target: SNIPPET, ...(await syncFile(SNIPPET, snippet)) },
+    { name: "docs.json", ...(await syncFile(OUTPUT, docsJson)) },
+    { name: "snippets/current-version.mdx", ...(await syncFile(SNIPPET, snippet)) },
   ];
 
   const stale = results.filter((r) => r.changed);
   if (checkMode) {
     if (stale.length > 0) {
-      console.error("Generated files are stale. Run `pnpm build-docs-json`:");
+      console.error("Generated files are stale. Run `node scripts/build-docs-json.mjs`:");
       for (const r of stale) console.error(`  ${r.name}`);
       process.exit(1);
     }

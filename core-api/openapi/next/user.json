@@ -680,7 +680,7 @@
         "description": "Creates multiple Dot Phrases for the current user in a single request.",
         "operationId": "bulk-create-user-dot-phrases",
         "tags": [
-          "Dot phrases — Bulk operations"
+          "Bulk operations"
         ],
         "requestBody": {
           "required": true,
@@ -712,7 +712,7 @@
         "description": "Updates multiple Dot Phrases for the current user in a single request.",
         "operationId": "bulk-update-user-dot-phrases",
         "tags": [
-          "Dot phrases — Bulk operations"
+          "Bulk operations"
         ],
         "requestBody": {
           "required": true,
@@ -744,7 +744,7 @@
         "description": "Deletes multiple Dot Phrases for the current user in a single request.",
         "operationId": "bulk-delete-user-dot-phrases",
         "tags": [
-          "Dot phrases — Bulk operations"
+          "Bulk operations"
         ],
         "requestBody": {
           "required": true,
@@ -4851,56 +4851,43 @@
   },
   "tags": [
     {
-      "name": "Authenticate",
-      "description": "Refresh or revoke user tokens."
+      "name": "Authenticate"
     },
     {
-      "name": "User settings",
-      "description": "Per-user note generation preferences."
+      "name": "User settings"
     },
     {
-      "name": "Transcribe",
-      "description": "Convert audio into text."
+      "name": "Transcribe"
     },
     {
-      "name": "Dictate",
-      "description": "Convert dictation audio into text."
+      "name": "Dictate"
     },
     {
-      "name": "Text replacements",
-      "description": "Manage dictation text replacements."
+      "name": "Text replacements"
     },
     {
-      "name": "Generate note",
-      "description": "Generate clinical notes."
+      "name": "Generate note"
     },
     {
-      "name": "Dot phrases",
-      "description": "Manage user-level Dot Phrases."
+      "name": "Dot phrases"
     },
     {
-      "name": "Dot phrases — Bulk operations",
-      "description": "Bulk-manage Dot Phrases (up to 100 per call)."
+      "name": "Bulk operations"
     },
     {
-      "name": "Custom dictionary",
-      "description": "Manage user-level custom dictionary expressions."
+      "name": "Custom dictionary"
     },
     {
-      "name": "Generate normalized data",
-      "description": "Extract FHIR-normalized data."
+      "name": "Generate normalized data"
     },
     {
-      "name": "Generate patient instructions",
-      "description": "Generate patient-friendly instructions."
+      "name": "Generate patient instructions"
     },
     {
-      "name": "Edit note with instructions",
-      "description": "Apply natural-language edits to a note."
+      "name": "Edit note with instructions"
     },
     {
-      "name": "Report feedback",
-      "description": "Report feedback on API output."
+      "name": "Report feedback"
     }
   ]
 }

@@ -19,11 +19,11 @@ The Core API ships a dated version (`YYYY-MM-DD`) every few weeks, plus a moving
 1. **Drop the spec files** for the new version into `core-api/openapi/<date>/{server,user,webhook}.json`. Update the `next/` copies in the same PR if `next` advanced.
 2. **Update the manifest** `core-api/openapi/versions.json`: prepend the new date to `versions` and set `current` to it.
 3. **Run the scripts**:
-   - `node scripts/patch-specs.mjs` — normalizes `tags` on every spec so Mintlify auto-groups operations the same way across versions. Edit `scripts/tags.mjs` if a new endpoint needs a new group.
-   - `node scripts/build-docs-json.mjs` — regenerates `docs.json` and `snippets/current-version.mdx` from the manifest.
+   - `node scripts/patch-specs.mjs` — normalizes `tags` on every spec so third-party OpenAPI tooling sees consistent grouping. Edit `scripts/nav.mjs` if a new endpoint needs a new group.
+   - `node scripts/build-docs-json.mjs` — regenerates `docs.json` and `snippets/current-version.mdx` from the manifest. It walks the NAV tree from `scripts/nav.mjs`, materializes per-version page lists by filtering against each version's actual paths, and namespaces URLs via `openapi.directory: <version>/api-reference/<server|user|webhook>`.
    - In CI, run both with `--check` to gate on stale output.
 
-The two scripts are a prototype: long-term, tagging should move into the upstream spec generator and the patch script can be deleted. The build-docs-json script stays because it's the only thing that knows the per-version directory layout.
+The patch script is a prototype: long-term, tagging should move into the upstream spec generator and `patch-specs.mjs` can be deleted. The build-docs-json script and `nav.mjs` stay because they own the version-aware navigation tree.
 
 Hardcoded `2026-04-24`-style literals in prose are forbidden — import `{ currentVersion }` from `/snippets/current-version.mdx` instead. Date literals inside code examples and changelog `<Update label="...">` entries are intentional and stay as-is.
 

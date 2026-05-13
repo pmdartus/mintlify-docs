@@ -4357,40 +4357,31 @@
   },
   "tags": [
     {
-      "name": "Authentication",
-      "description": "Authenticate your backend."
+      "name": "Authentication"
     },
     {
-      "name": "Manage users",
-      "description": "Provision and manage users."
+      "name": "Manage users"
     },
     {
-      "name": "Transcribe",
-      "description": "Convert audio into text."
+      "name": "Transcribe"
     },
     {
-      "name": "Dictate",
-      "description": "Convert dictation audio into text."
+      "name": "Dictate"
     },
     {
-      "name": "Generate note",
-      "description": "Generate clinical notes."
+      "name": "Generate note"
     },
     {
-      "name": "Generate normalized data",
-      "description": "Extract FHIR-normalized data."
+      "name": "Generate normalized data"
     },
     {
-      "name": "Generate patient instructions",
-      "description": "Generate patient-friendly instructions."
+      "name": "Generate patient instructions"
     },
     {
-      "name": "Edit note with instructions",
-      "description": "Apply natural-language edits to a note."
+      "name": "Edit note with instructions"
     },
     {
-      "name": "Report feedback",
-      "description": "Report feedback on API output."
+      "name": "Report feedback"
     }
   ]
 }

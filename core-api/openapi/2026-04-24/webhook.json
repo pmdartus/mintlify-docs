@@ -673,8 +673,7 @@
   },
   "tags": [
     {
-      "name": "Receive webhook events",
-      "description": "Endpoint to receive Nabla webhook events."
+      "name": "Receive webhook events"
     }
   ]
 }
