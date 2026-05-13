@@ -1,0 +1,32 @@
+name: Docs check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: Validate docs build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check OpenAPI spec tags are in sync
+        run: node scripts/patch-specs.mjs --check
+
+      - name: Check docs.json is in sync with template
+        run: node scripts/build-docs-json.mjs --check
+
+      - name: Install Mintlify CLI
+        run: npm install -g mint
+
+      - name: Validate docs configuration
+        run: mint validate
+
+      - name: Validate docs build (broken links)
+        run: mint broken-links
