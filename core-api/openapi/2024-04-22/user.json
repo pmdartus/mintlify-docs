@@ -590,7 +590,7 @@
         "summary": "Listen — From audio file",
         "description": "Generate a transcript and a structured clinical note from an audio file. Only `audio/*` mime types are supported. The maximum duration is 10 minutes. If you have longer files, please use the [asynchronous equivalent](/server/copilot-listen-from-file-async).",
         "tags": [
-          "Listen"
+          "Transcribe"
         ],
         "operationId": "copilot-listen-from-file",
         "x-custom-timeout-seconds": 600,
@@ -646,7 +646,7 @@
         "summary": "Listen — From audio file asynchronously",
         "description": "Generate a transcript and a structured clinical note from an audio file. Only `audio/*` mime types are supported. The maximum duration is 60 minutes. The result of the request is posted to the callback URL once available.",
         "tags": [
-          "Listen"
+          "Transcribe"
         ],
         "operationId": "copilot-listen-from-file-async",
         "x-custom-async-timeout-seconds": 2400,
@@ -703,7 +703,7 @@
         "summary": "Generate a note",
         "description": "Digests a list of transcript items and produces a structured clinical note.",
         "tags": [
-          "Digest"
+          "Generate note"
         ],
         "operationId": "copilot-digest",
         "x-custom-timeout-seconds": 600,
@@ -737,7 +737,7 @@
         "summary": "Generate a note asynchronously",
         "description": "Digests a list of transcript items and produces a structured clinical note.",
         "tags": [
-          "Digest"
+          "Generate note"
         ],
         "operationId": "copilot-digest-async",
         "x-custom-async-timeout-seconds": 600,
@@ -794,7 +794,7 @@
         "summary": "Generate normalized data from a note",
         "description": "Generate normalized data from a Nabla-generated clinical note by extracting ICD-10 and LOINC codes in a FHIR-compliant structure.\n\nIt adeptly identifies and categorizes key medical information within the notes, such as past medical history, family medical history, clinical assessments, and vital signs.\n\nEach piece of medical information is represented as an array of FHIR's conditions/observations, each including relevant ICD-10 codes, thereby ensuring compatibility with standardized medical data frameworks.\n\nThe Normalize functionality is tailored to enhance the integration of clinical notes into Electronic Health Records (EHRs), facilitating accurate and efficient documentation by aligning with FHIR protocols.",
         "tags": [
-          "Normalize"
+          "Generate normalized data"
         ],
         "operationId": "old-generate-normalized-data",
         "x-custom-timeout-seconds": 600,
@@ -828,7 +828,7 @@
         "summary": "Generate patient instructions",
         "description": "Generates post-visit instructions for the patient. This extracts and summarizes the instructions the healthcare provider gave to the patient during the encounter.",
         "tags": [
-          "Patient Instructions"
+          "Generate patient instructions"
         ],
         "operationId": "old-copilot-generate-patient-instructions",
         "x-custom-timeout-seconds": 600,
@@ -864,7 +864,7 @@
         "operationId": "create-user-dot-phrase",
         "x-multi-wired-handler": true,
         "tags": [
-          "Dot Phrases"
+          "Dot phrases"
         ],
         "responses": {
           "200": {
@@ -923,7 +923,7 @@
         "operationId": "get-user-dot-phrases",
         "x-multi-wired-handler": true,
         "tags": [
-          "Dot Phrases"
+          "Dot phrases"
         ],
         "parameters": [
           {
@@ -981,7 +981,7 @@
         "operationId": "get-user-dot-phrase",
         "x-multi-wired-handler": true,
         "tags": [
-          "Dot Phrases"
+          "Dot phrases"
         ],
         "responses": {
           "200": {
@@ -1002,7 +1002,7 @@
         "operationId": "update-user-dot-phrase",
         "x-multi-wired-handler": true,
         "tags": [
-          "Dot Phrases"
+          "Dot phrases"
         ],
         "responses": {
           "200": {
@@ -1062,7 +1062,7 @@
         "operationId": "delete-user-dot-phrase",
         "x-multi-wired-handler": true,
         "tags": [
-          "Dot Phrases"
+          "Dot phrases"
         ],
         "responses": {
           "200": {

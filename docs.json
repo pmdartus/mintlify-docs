@@ -3280,7 +3280,10 @@
                       {
                         "group": "Transcribe",
                         "pages": [
-                          "core-api/api-reference/server/transcribe-ws"
+                          "core-api/api-reference/server/transcribe-ws",
+                          "POST /listen",
+                          "POST /listen_async",
+                          "POST /copilot/listen"
                         ]
                       },
                       {
@@ -3288,6 +3291,27 @@
                         "pages": [
                           "core-api/api-reference/server/dictate-ws",
                           "core-api/reference/dictation-commands"
+                        ]
+                      },
+                      {
+                        "group": "Generate note",
+                        "pages": [
+                          "POST /digest",
+                          "POST /digest_async",
+                          "POST /copilot/digest",
+                          "POST /copilot/digest_async"
+                        ]
+                      },
+                      {
+                        "group": "Generate normalized data",
+                        "pages": [
+                          "POST /generate_normalized_data"
+                        ]
+                      },
+                      {
+                        "group": "Generate patient instructions",
+                        "pages": [
+                          "POST /generate_patient_instructions"
                         ]
                       },
                       {
@@ -3315,7 +3339,9 @@
                       {
                         "group": "Transcribe",
                         "pages": [
-                          "core-api/api-reference/user/transcribe-ws"
+                          "core-api/api-reference/user/transcribe-ws",
+                          "POST /listen",
+                          "POST /listen_async"
                         ]
                       },
                       {
@@ -3326,13 +3352,25 @@
                         ]
                       },
                       {
+                        "group": "Generate note",
+                        "pages": [
+                          "POST /digest",
+                          "POST /digest_async"
+                        ]
+                      },
+                      {
                         "group": "Dot phrases",
                         "pages": [
                           "GET /dot-phrases",
                           "GET /dot-phrases/{id}",
                           "POST /dot-phrases",
                           "PATCH /dot-phrases/{id}",
-                          "DELETE /dot-phrases/{id}"
+                          "DELETE /dot-phrases/{id}",
+                          "GET /dot_phrases",
+                          "GET /dot_phrases/{id}",
+                          "POST /dot_phrases",
+                          "PATCH /dot_phrases/{id}",
+                          "DELETE /dot_phrases/{id}"
                         ]
                       },
                       {
@@ -3343,6 +3381,18 @@
                           "POST /custom-dictionary-expressions",
                           "PATCH /custom-dictionary-expressions/{id}",
                           "DELETE /custom-dictionary-expressions/{id}"
+                        ]
+                      },
+                      {
+                        "group": "Generate normalized data",
+                        "pages": [
+                          "POST /generate_normalized_data"
+                        ]
+                      },
+                      {
+                        "group": "Generate patient instructions",
+                        "pages": [
+                          "POST /generate_patient_instructions"
                         ]
                       },
                       {
