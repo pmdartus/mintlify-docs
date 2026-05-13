@@ -679,6 +679,9 @@
       "auth": {
         "method": "bearer"
       }
+    },
+    "playground": {
+      "display": "none"
     }
   },
   "seo": {
