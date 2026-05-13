@@ -43,6 +43,11 @@ export const NAV = {
           "POST /transcribe-async",
           "GET /transcribe-async/{id}",
           "core-api/api-reference/server/transcribe-ws",
+          // Pre-2024-10-01 only — renamed to /transcribe and /transcribe-async.
+          // Covered by core-api/api-versioning/migrating-pre-2024-10-01.mdx.
+          // "POST /listen",
+          // "POST /listen_async",
+          // "POST /copilot/listen",
         ],
       },
       {
@@ -61,10 +66,29 @@ export const NAV = {
           "POST /generate-note",
           "POST /generate-note-async",
           "GET /generate-note-async/{id}",
+          // Pre-2024-10-01 only — renamed to /generate-note and /generate-note-async.
+          // "POST /digest",
+          // "POST /digest_async",
+          // "POST /copilot/digest",
+          // "POST /copilot/digest_async",
         ],
       },
-      { group: "Generate normalized data", pages: ["POST /generate-normalized-data"] },
-      { group: "Generate patient instructions", pages: ["POST /generate-patient-instructions"] },
+      {
+        group: "Generate normalized data",
+        pages: [
+          "POST /generate-normalized-data",
+          // Pre-2024-10-01 only — snake_case ancestor.
+          // "POST /generate_normalized_data",
+        ],
+      },
+      {
+        group: "Generate patient instructions",
+        pages: [
+          "POST /generate-patient-instructions",
+          // Pre-2024-10-01 only — snake_case ancestor.
+          // "POST /generate_patient_instructions",
+        ],
+      },
       { group: "Edit note with instructions", pages: ["POST /edit-note-with-instructions"] },
       { group: "Report feedback", pages: ["POST /reports"] },
     ],
@@ -91,6 +115,10 @@ export const NAV = {
           "POST /transcribe-async",
           "GET /transcribe-async/{id}",
           "core-api/api-reference/user/transcribe-ws",
+          // Pre-2024-10-01 only — renamed to /transcribe and /transcribe-async.
+          // Covered by core-api/api-versioning/migrating-pre-2024-10-01.mdx.
+          // "POST /listen",
+          // "POST /listen_async",
         ],
       },
       {
@@ -119,6 +147,9 @@ export const NAV = {
           "POST /generate-note",
           "POST /generate-note-async",
           "GET /generate-note-async/{id}",
+          // Pre-2024-10-01 only — renamed to /generate-note and /generate-note-async.
+          // "POST /digest",
+          // "POST /digest_async",
         ],
       },
       {
@@ -137,6 +168,12 @@ export const NAV = {
               "POST /dot-phrases/bulk-delete",
             ],
           },
+          // Pre-2024-10-01 only — snake_case ancestor of /dot-phrases.
+          // "GET /dot_phrases",
+          // "GET /dot_phrases/{id}",
+          // "POST /dot_phrases",
+          // "PATCH /dot_phrases/{id}",
+          // "DELETE /dot_phrases/{id}",
         ],
       },
       {
@@ -149,8 +186,22 @@ export const NAV = {
           "DELETE /custom-dictionary-expressions/{id}",
         ],
       },
-      { group: "Generate normalized data", pages: ["POST /generate-normalized-data"] },
-      { group: "Generate patient instructions", pages: ["POST /generate-patient-instructions"] },
+      {
+        group: "Generate normalized data",
+        pages: [
+          "POST /generate-normalized-data",
+          // Pre-2024-10-01 only — snake_case ancestor.
+          // "POST /generate_normalized_data",
+        ],
+      },
+      {
+        group: "Generate patient instructions",
+        pages: [
+          "POST /generate-patient-instructions",
+          // Pre-2024-10-01 only — snake_case ancestor.
+          // "POST /generate_patient_instructions",
+        ],
+      },
       { group: "Edit note with instructions", pages: ["POST /edit-note-with-instructions"] },
       { group: "Report feedback", pages: ["POST /reports"] },
     ],
