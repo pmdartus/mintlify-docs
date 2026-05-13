@@ -1,0 +1,10 @@
+{
+  "current": "2026-04-24",
+  "next": {
+    "label": "next (preview)",
+    "dir": "next"
+  },
+  "versions": [
+    { "date": "2026-04-24", "status": "current" }
+  ]
+}

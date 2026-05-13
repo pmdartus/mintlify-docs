@@ -196,7 +196,10 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Transcribe"
+        ]
       }
     },
     "/dictate": {
@@ -302,7 +305,10 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Dictate"
+        ]
       }
     },
     "/generate-note": {
@@ -310,7 +316,7 @@
         "summary": "Generate a note",
         "description": "Generate a structured clinical note given the transcript.",
         "tags": [
-          "Digest"
+          "Generate note"
         ],
         "operationId": "generate-note",
         "x-custom-timeout-seconds": 600,
@@ -344,7 +350,7 @@
         "summary": "Generate a note asynchronously",
         "description": "Creates an asynchronous task (also called asynchronous request) that will generate a structured clinical note given the transcript, then keeps the response for two hours before removing it, allowing it to be fetched using the [poll endpoint](/api-reference/server/default/get-an-asynchronous-note-generation).\nMore details about asynchronous note generation can be found in the [best practices guide](/core-api/best-practices/async-note-generation).",
         "tags": [
-          "Digest"
+          "Generate note"
         ],
         "operationId": "generate-note-async",
         "x-custom-async-timeout-seconds": 600,
@@ -395,7 +401,10 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Generate note"
+        ]
       }
     },
     "/generate-normalized-data": {
@@ -403,7 +412,7 @@
         "summary": "Generate normalized data from a note",
         "description": "Generate normalized data from a Nabla-generated clinical note by extracting ICD-10 and LOINC codes in a FHIR-compliant structure.\n\nIt adeptly identifies and categorizes key medical information within the notes, such as past medical history, family medical history, clinical assessments, and vital signs.\n\nEach piece of medical information is represented as an array of FHIR's conditions/observations, each including relevant ICD-10 codes, thereby ensuring compatibility with standardized medical data frameworks.\n\nThe Normalize functionality is tailored to enhance the integration of clinical notes into Electronic Health Records (EHRs), facilitating accurate and efficient documentation by aligning with FHIR protocols.",
         "tags": [
-          "Normalize"
+          "Generate normalized data"
         ],
         "operationId": "generate-normalized-data",
         "x-custom-timeout-seconds": 600,
@@ -437,7 +446,7 @@
         "summary": "Generate patient instructions",
         "description": "Generates clear, post-visit instructions based on what the healthcare provider communicated to the patient during the encounter. These instructions are intended to help patients better understand and follow their care plan.\n\n:::note Provider review\n\nPatient instructions are generated automatically and may be translated. A licensed healthcare provider should review and approve them before sharing with the patient, especially when translation is involved.\n\n:::\n\nThis endpoint supports multiple input formats and languages to fit a variety of clinical workflows.",
         "tags": [
-          "Patient Instructions"
+          "Generate patient instructions"
         ],
         "operationId": "generate-patient-instructions",
         "x-custom-timeout-seconds": 600,
@@ -471,7 +480,7 @@
         "summary": "Edit Note With Instructions",
         "description": "Edit the Nabla-generated clinical note following human-readable text instructions, to customize and have more control over its content and structure.",
         "tags": [
-          "Edit Note With Instructions"
+          "Edit note with instructions"
         ],
         "operationId": "edit-note-with-instructions",
         "x-custom-timeout-seconds": 600,
@@ -505,7 +514,7 @@
         "summary": "Create report",
         "description": "Create detailed feedback or report issues directly related to specific API interactions.",
         "tags": [
-          "Report"
+          "Report feedback"
         ],
         "operationId": "create-report",
         "x-custom-timeout-seconds": 150,
@@ -838,7 +847,7 @@
         "summary": "Authenticate a user",
         "description": "Use this endpoint to get JWT tokens to authenticate a user with the Nabla Core API. These tokens only gives access to resources for the specified user. This endpoint should typically be called by your backend on behalf of an authenticated user, and the resulting JWT tokens should be forwarded to the user's frontend securely.",
         "tags": [
-          "Authentication"
+          "Manage users"
         ],
         "operationId": "jwt-authenticate-user",
         "responses": {
@@ -4345,5 +4354,43 @@
         }
       }
     }
-  }
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Authenticate your backend."
+    },
+    {
+      "name": "Manage users",
+      "description": "Provision and manage users."
+    },
+    {
+      "name": "Transcribe",
+      "description": "Convert audio into text."
+    },
+    {
+      "name": "Dictate",
+      "description": "Convert dictation audio into text."
+    },
+    {
+      "name": "Generate note",
+      "description": "Generate clinical notes."
+    },
+    {
+      "name": "Generate normalized data",
+      "description": "Extract FHIR-normalized data."
+    },
+    {
+      "name": "Generate patient instructions",
+      "description": "Generate patient-friendly instructions."
+    },
+    {
+      "name": "Edit note with instructions",
+      "description": "Apply natural-language edits to a note."
+    },
+    {
+      "name": "Report feedback",
+      "description": "Report feedback on API output."
+    }
+  ]
 }

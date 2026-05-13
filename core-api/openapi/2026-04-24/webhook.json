@@ -11,7 +11,7 @@
         "summary": "Receive webhook events",
         "description": "This is the endpoint you need to implement on your server to receive events. This page references the format of all the possible events.",
         "tags": [
-          "Webhook"
+          "Receive webhook events"
         ],
         "operationId": "api-receive-webhook",
         "requestBody": {
@@ -670,5 +670,11 @@
         }
       }
     }
-  }
+  },
+  "tags": [
+    {
+      "name": "Receive webhook events",
+      "description": "Endpoint to receive Nabla webhook events."
+    }
+  ]
 }

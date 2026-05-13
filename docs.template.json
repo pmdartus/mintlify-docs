@@ -93,73 +93,7 @@
             ]
           },
           {
-            "tab": "API Reference",
-            "versions": [
-              {
-                "version": "next (preview)",
-                "groups": [
-                  {
-                    "group": "Server API",
-                    "openapi": {
-                      "source": "core-api/openapi/next/server.json"
-                    },
-                    "pages": [
-                      "core-api/api-reference/server/transcribe-ws",
-                      "core-api/api-reference/server/dictate-ws"
-                    ]
-                  },
-                  {
-                    "group": "User API",
-                    "openapi": {
-                      "source": "core-api/openapi/next/user.json"
-                    },
-                    "pages": [
-                      "core-api/api-reference/user/transcribe-ws",
-                      "core-api/api-reference/user/dictate-ws"
-                    ]
-                  },
-                  {
-                    "group": "Receive webhook events",
-                    "openapi": {
-                      "source": "core-api/openapi/next/webhook.json"
-                    }
-                  }
-                ],
-                "tag": "preview"
-              },
-              {
-                "version": "2026-04-24",
-                "default": true,
-                "groups": [
-                  {
-                    "group": "Server API",
-                    "openapi": {
-                      "source": "core-api/openapi/2026-04-24/server.json"
-                    },
-                    "pages": [
-                      "core-api/api-reference/server/transcribe-ws",
-                      "core-api/api-reference/server/dictate-ws"
-                    ]
-                  },
-                  {
-                    "group": "User API",
-                    "openapi": {
-                      "source": "core-api/openapi/2026-04-24/user.json"
-                    },
-                    "pages": [
-                      "core-api/api-reference/user/transcribe-ws",
-                      "core-api/api-reference/user/dictate-ws"
-                    ]
-                  },
-                  {
-                    "group": "Receive webhook events",
-                    "openapi": {
-                      "source": "core-api/openapi/2026-04-24/webhook.json"
-                    }
-                  }
-                ]
-              }
-            ]
+            "$generate": "core-api-versioned-api-reference"
           },
           {
             "tab": "Changelog",

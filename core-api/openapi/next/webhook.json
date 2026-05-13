@@ -1,0 +1,680 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Webhook API",
+    "description": "Webhook API reference.",
+    "version": ""
+  },
+  "paths": {
+    "/webhook": {
+      "post": {
+        "summary": "Receive webhook events",
+        "description": "This is the endpoint you need to implement on your server to receive events. This page references the format of all the possible events.",
+        "tags": [
+          "Receive webhook events"
+        ],
+        "operationId": "api-receive-webhook",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/webhook_event"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Respond with 200 to acknowledge the handling of this webhook event, otherwise we will retry the call later."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "generate_note_async.succeeded": {
+        "$ref": "#/components/schemas/generate_note_async_succeeded"
+      },
+      "generate_note_async.failed": {
+        "$ref": "#/components/schemas/generate_note_async_failed"
+      },
+      "transcribe_async.succeeded": {
+        "$ref": "#/components/schemas/transcribe_async_succeeded"
+      },
+      "transcribe_async.failed": {
+        "$ref": "#/components/schemas/transcribe_async_failed"
+      },
+      "dictate_async.succeeded": {
+        "$ref": "#/components/schemas/dictate_async_succeeded"
+      },
+      "dictate_async.failed": {
+        "$ref": "#/components/schemas/dictate_async_failed"
+      },
+      "uuid": {
+        "type": "string",
+        "format": "uuid",
+        "description": "A unique identifier.",
+        "example": "98FCE1EF-DBCA-41EF-8BC7-4D1621AC07C6"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "description": "The creation date of this object, in ISO 8601 format.",
+        "example": "2022-03-10T19:16:23.456Z"
+      },
+      "base_webhook_event": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/uuid",
+            "description": "The unique identifier of this webhook event."
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/created_at",
+            "description": "Creation date of this webhook event."
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of this event, serves as a discriminator between the different possible webhook types."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "type"
+        ]
+      },
+      "client_request_id": {
+        "type": "string",
+        "maxLength": 128,
+        "description": "An optional unique client-made id for this request. When specified, this id is included in  the Json payload that will be sent asynchronously. This can help clients both guarantee idempotency and correlate asynchronous responses with their requests.\n\n_Note_: this id must be different for every request. It is recommended to use a randomly generated UUID."
+      },
+      "async_request_status": {
+        "type": "string",
+        "enum": [
+          "ONGOING",
+          "FAILED",
+          "SUCCEEDED"
+        ]
+      },
+      "note_section_key": {
+        "type": "string",
+        "description": "A key identifying a section of a note.\nThe set of possible keys depend on the template that is used. Check [Note template](/core-api/note-templates/sections) for possible values.",
+        "example": "CHIEF_COMPLAINT",
+        "enum": [
+          "ALLERGIES",
+          "APPOINTMENTS",
+          "ASSESSMENT",
+          "ASSESSMENT_AND_PLAN",
+          "CARDIOVASCULAR_RISK_FACTORS",
+          "CHIEF_COMPLAINT",
+          "CURRENT_MEDICATIONS",
+          "DIAGNOSTIC_TESTS_ORDERED",
+          "FOOD_HABITS",
+          "LIFESTYLE",
+          "PAST_MEDICAL_HISTORY",
+          "OBJECTIVES_AND_ADVICE",
+          "FAMILY_HISTORY",
+          "HISTORY_OF_PRESENT_ILLNESS",
+          "IMAGING_RESULTS",
+          "IMMUNIZATIONS",
+          "LAB_RESULTS",
+          "MENTAL_HEALTH_EXAM",
+          "MENTAL_HEALTH_HISTORY",
+          "PAST_OBSTETRIC_HISTORY",
+          "PAST_SURGICAL_HISTORY",
+          "PHYSICAL_EXAM",
+          "PLAN",
+          "PRESCRIPTION",
+          "HISTORY_OF_PRESENT_COMPLAINT",
+          "OBJECTIVE",
+          "SUBJECTIVE",
+          "SOCIAL_HISTORY",
+          "VITALS",
+          "WELL_CHILD_CARE"
+        ]
+      },
+      "note_section": {
+        "type": "object",
+        "description": "A note section.",
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/note_section_key"
+          },
+          "title": {
+            "type": "string",
+            "description": "The section title.",
+            "example": "Chief complaint"
+          },
+          "text": {
+            "type": "string",
+            "description": "Content of the note section.",
+            "example": "Sleep disorder"
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "text"
+        ],
+        "example": [
+          {
+            "key": "CHIEF_COMPLAINT",
+            "title": "Chief complaint",
+            "text": "Fatigue and headaches"
+          },
+          {
+            "key": "SYMPTOMS",
+            "title": "Symptoms",
+            "text": "- Tiredness all day long\n- Mild headaches on the right side"
+          }
+        ]
+      },
+      "note_locale": {
+        "type": "string",
+        "description": "Locale of the note.",
+        "enum": [
+          "ENGLISH_US",
+          "ENGLISH_UK",
+          "FRENCH_FR"
+        ],
+        "example": "ENGLISH_US"
+      },
+      "note_template": {
+        "type": "string",
+        "enum": [
+          "GENERIC_MULTIPLE_SECTIONS",
+          "GENERIC_MULTIPLE_SECTIONS_AP_MERGED",
+          "GENERIC_SOAP",
+          "GENERIC_SOAP_AP_MERGED",
+          "GENERIC_SOAP_PLUS_EXAM_TESTS_AP_MERGED",
+          "GENERIC_APSO_AP_MERGED",
+          "EMERGENCY_MULTIPLE_SECTIONS",
+          "EMERGENCY_SOAP",
+          "WCC_MULTIPLE_SECTIONS",
+          "WCC_SOAP",
+          "PSYCHIATRY_MULTIPLE_SECTIONS",
+          "PSYCHIATRY_SOAP",
+          "PSYCHOLOGY_MULTIPLE_SECTIONS",
+          "CARDIOLOGY_MULTIPLE_SECTIONS",
+          "DIET_MULTIPLE_SECTIONS"
+        ],
+        "description": "The template of the note.\n\nSome templates are **only available in specific languages**. Check [Note template](/core-api/note-templates/sections) for details.",
+        "example": "GENERIC_MULTIPLE_SECTIONS"
+      },
+      "note": {
+        "type": "object",
+        "description": "The generated note.",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Title of the note.",
+            "example": "Fever and strong headache"
+          },
+          "sections": {
+            "type": "array",
+            "description": "Content of the note structured in multiple sections.",
+            "items": {
+              "$ref": "#/components/schemas/note_section"
+            }
+          },
+          "locale": {
+            "$ref": "#/components/schemas/note_locale"
+          },
+          "template": {
+            "$ref": "#/components/schemas/note_template"
+          }
+        },
+        "required": [
+          "sections",
+          "locale",
+          "template"
+        ]
+      },
+      "async_note_generation_succeeded_payload": {
+        "type": "object",
+        "description": "The generated note.",
+        "required": [
+          "note"
+        ],
+        "properties": {
+          "note": {
+            "$ref": "#/components/schemas/note"
+          }
+        }
+      },
+      "async_note_generation_succeeded": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/uuid",
+            "description": "The id of the asynchronous request."
+          },
+          "client_request_id": {
+            "$ref": "#/components/schemas/client_request_id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/async_request_status"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/async_note_generation_succeeded_payload"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ]
+      },
+      "generate_note_async_succeeded": {
+        "x-sensitive-medical-data": true,
+        "x-webhook-type": "CORE_API_GENERATE_NOTE_ASYNC_SUCCEEDED",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/base_webhook_event"
+          },
+          {
+            "type": "object",
+            "description": "Event sent when an **asynchronous** note generation succeeds.",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/async_note_generation_succeeded"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          }
+        ]
+      },
+      "async_request_failed_payload": {
+        "type": "object",
+        "properties": {
+          "error_code": {
+            "type": "integer",
+            "example": 422
+          },
+          "error_message": {
+            "type": "string",
+            "example": "We can't generate the note when the transcript is too short."
+          }
+        },
+        "required": [
+          "error_code"
+        ]
+      },
+      "async_request_failed": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/uuid",
+            "description": "The id of the asynchronous request."
+          },
+          "client_request_id": {
+            "$ref": "#/components/schemas/client_request_id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/async_request_status"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/async_request_failed_payload"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "payload"
+        ]
+      },
+      "generate_note_async_failed": {
+        "x-sensitive-medical-data": false,
+        "x-webhook-type": "CORE_API_GENERATE_NOTE_ASYNC_FAILED",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/base_webhook_event"
+          },
+          {
+            "type": "object",
+            "description": "Event sent when an **asynchronous** note generation fails.",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/async_request_failed"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          }
+        ]
+      },
+      "speaker": {
+        "type": "string",
+        "enum": [
+          "DOCTOR",
+          "PATIENT",
+          "UNSPECIFIED"
+        ],
+        "description": "Who said the text in this transcript item.",
+        "example": "DOCTOR"
+      },
+      "speech_locale": {
+        "type": "string",
+        "enum": [
+          "ENGLISH_US",
+          "ENGLISH_UK",
+          "SPANISH_ES",
+          "SPANISH_MX",
+          "FRENCH_FR",
+          "ARABIC_EG",
+          "ARABIC_LB",
+          "ARABIC_MA",
+          "ARABIC_SA",
+          "ARMENIAN_AM",
+          "BENGALI_IN",
+          "CANTONESE_CN",
+          "CROATIAN_HR",
+          "FILIPINO_PH",
+          "GERMAN_DE",
+          "GREEK_GR",
+          "GUJARATI_IN",
+          "HEBREW_IL",
+          "HINDI_IN",
+          "ITALIAN_IT",
+          "JAPANESE_JP",
+          "KHMER_KH",
+          "KOREAN_KR",
+          "MANDARIN_CN",
+          "PERSIAN_IR",
+          "POLISH_PL",
+          "PORTUGUESE_PT",
+          "PUNJABI_IN",
+          "RUSSIAN_RU",
+          "SERBIAN_RS",
+          "TAMIL_IN",
+          "TELUGU_IN",
+          "THAI_TH",
+          "URDU_IN",
+          "VIETNAMESE_VN"
+        ],
+        "example": "ENGLISH_US"
+      },
+      "transcript_item": {
+        "type": "object",
+        "description": "A portion of the transcribed consultation.",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "The transcribed text.",
+            "example": "Also, I’m allergic to peanuts."
+          },
+          "speaker_type": {
+            "$ref": "#/components/schemas/speaker"
+          },
+          "locale": {
+            "$ref": "#/components/schemas/speech_locale",
+            "description": "Locale for this transcript item, detected by the speech-to-text engine from the list of locales in the input."
+          },
+          "start_offset_ms": {
+            "type": "integer",
+            "description": "Start time of this transcription item as the offset, in milliseconds, from the start of the audio file.",
+            "example": 65100
+          },
+          "end_offset_ms": {
+            "type": "integer",
+            "description": "End time of this transcription item as the offset, in milliseconds, from the start of the audio file. Equals the `start_time_ms` plus the duration of the related transcribed audio portion.",
+            "example": 69300
+          }
+        },
+        "required": [
+          "text",
+          "locale",
+          "start_offset_ms",
+          "end_offset_ms"
+        ]
+      },
+      "transcript": {
+        "type": "array",
+        "description": "Transcript items from the audio file.",
+        "items": {
+          "$ref": "#/components/schemas/transcript_item"
+        }
+      },
+      "async_transcription_succeeded_payload": {
+        "type": "object",
+        "description": "The generated transcript.",
+        "properties": {
+          "transcript": {
+            "$ref": "#/components/schemas/transcript"
+          }
+        },
+        "required": [
+          "transcript"
+        ]
+      },
+      "async_transcription_succeeded": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/uuid",
+            "description": "The id of the asynchronous request."
+          },
+          "client_request_id": {
+            "$ref": "#/components/schemas/client_request_id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/async_request_status"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/async_transcription_succeeded_payload"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ]
+      },
+      "transcribe_async_succeeded": {
+        "x-sensitive-medical-data": true,
+        "x-webhook-type": "CORE_API_TRANSCRIBE_ASYNC_SUCCEEDED",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/base_webhook_event"
+          },
+          {
+            "type": "object",
+            "description": "Event sent when an **asynchronous** transcription succeeds.",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/async_transcription_succeeded"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          }
+        ]
+      },
+      "transcribe_async_failed": {
+        "x-sensitive-medical-data": false,
+        "x-webhook-type": "CORE_API_TRANSCRIBE_ASYNC_FAILED",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/base_webhook_event"
+          },
+          {
+            "type": "object",
+            "description": "Event sent when an **asynchronous** transcription fails.",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/async_request_failed"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          }
+        ]
+      },
+      "async_dictation_succeeded_payload": {
+        "type": "object",
+        "description": "The generated dictation.",
+        "properties": {
+          "dictation": {
+            "type": "string",
+            "description": "The generated dictation string."
+          }
+        },
+        "required": [
+          "dictation"
+        ]
+      },
+      "async_dictation_succeeded": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/uuid",
+            "description": "The id of the asynchronous request."
+          },
+          "client_request_id": {
+            "$ref": "#/components/schemas/client_request_id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/async_request_status"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/async_dictation_succeeded_payload"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ]
+      },
+      "dictate_async_succeeded": {
+        "x-sensitive-medical-data": true,
+        "x-webhook-type": "CORE_API_DICTATE_ASYNC_SUCCEEDED",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/base_webhook_event"
+          },
+          {
+            "type": "object",
+            "description": "Event sent when an **asynchronous** dictation succeeds.",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/async_dictation_succeeded"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          }
+        ]
+      },
+      "dictate_async_failed": {
+        "x-sensitive-medical-data": false,
+        "x-webhook-type": "CORE_API_DICTATE_ASYNC_FAILED",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/base_webhook_event"
+          },
+          {
+            "type": "object",
+            "description": "Event sent when an **asynchronous** dictation fails.",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/async_request_failed"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          }
+        ]
+      },
+      "webhook_event": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/generate_note_async_succeeded",
+            "title": "generate_note_async.succeeded"
+          },
+          {
+            "$ref": "#/components/schemas/generate_note_async_failed",
+            "title": "generate_note_async.failed"
+          },
+          {
+            "$ref": "#/components/schemas/transcribe_async_succeeded",
+            "title": "transcribe_async.succeeded"
+          },
+          {
+            "$ref": "#/components/schemas/transcribe_async_failed",
+            "title": "transcribe_async.failed"
+          },
+          {
+            "$ref": "#/components/schemas/dictate_async_succeeded",
+            "title": "dictate_async.succeeded"
+          },
+          {
+            "$ref": "#/components/schemas/dictate_async_failed",
+            "title": "dictate_async.failed"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "generate_note_async.succeeded": "#/components/schemas/generate_note_async_succeeded",
+            "generate_note_async.failed": "#/components/schemas/generate_note_async_failed",
+            "transcribe_async.succeeded": "#/components/schemas/transcribe_async_succeeded",
+            "transcribe_async.failed": "#/components/schemas/transcribe_async_failed",
+            "dictate_async.succeeded": "#/components/schemas/dictate_async_succeeded",
+            "dictate_async.failed": "#/components/schemas/dictate_async_failed"
+          }
+        },
+        "example": {
+          "id": "0cf0b04d-5bbe-47a9-9601-3dd037644f65",
+          "created_at": "2024-07-15T12:47:34.380Z",
+          "type": "generate_note_async.succeeded",
+          "data": {
+            "id": "51abd747-ab5b-4b61-8f28-5a41b554bd7a",
+            "created_at": "2024-07-15T12:47:34.380Z",
+            "type": "generate_note_async.succeeded",
+            "data": {
+              "id": "ec546a5a-37ec-40da-b719-127366072fdc",
+              "client_request_id": "notegen_n123456789",
+              "status": "succeeded",
+              "payload": {
+                "note": {
+                  "title": "Fatigue and headache",
+                  "sections": [
+                    {
+                      "key": "CHIEF_COMPLAINT",
+                      "title": "Chief complaint",
+                      "text": "- Persistent fatigue\n- Mild headaches on the right side"
+                    },
+                    {
+                      "key": "PAST_MEDICAL_HISTORY",
+                      "title": "Past medical history",
+                      "text": "- Hypertension\n- Elevated blood sugar levels"
+                    },
+                    {
+                      "key": "LAB_RESULTS",
+                      "title": "Lab results",
+                      "text": "- Blood sugar level: 1.4 g/L\n- LDL cholesterol: 2 g/L"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Receive webhook events",
+      "description": "Endpoint to receive Nabla webhook events."
+    }
+  ]
+}
