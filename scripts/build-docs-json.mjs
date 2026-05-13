@@ -27,11 +27,26 @@ const SNIPPET = path.join(ROOT, "snippets", "current-version.mdx");
 const args = new Set(process.argv.slice(2));
 const checkMode = args.has("--check");
 
-function specHasOperation(spec, key) {
+// Path-parameter names drift across API versions (e.g. {id} -> {user_id}).
+// Compare on a normalized shape so a single nav entry covers both eras.
+function normalizePath(p) {
+  return p.replace(/\{[^}]+\}/g, "{}");
+}
+
+// Returns the spec's literal "METHOD /path" key for an operation matching
+// the given nav key on a normalized shape, or null if not present. The
+// returned key may differ from the input (e.g. "/users/{id}" vs "/users/{user_id}").
+function resolveSpecOperation(spec, key) {
   const m = key.match(/^([A-Z]+) (\/.+)$/);
-  if (!m) return false;
+  if (!m) return null;
   const [, method, p] = m;
-  return Boolean(spec.paths?.[p]?.[method.toLowerCase()]);
+  const wanted = normalizePath(p);
+  for (const [specPath, item] of Object.entries(spec.paths ?? {})) {
+    if (normalizePath(specPath) === wanted && item?.[method.toLowerCase()]) {
+      return `${method} ${specPath}`;
+    }
+  }
+  return null;
 }
 
 function filterPagesForSpec(pages, spec) {
@@ -39,7 +54,8 @@ function filterPagesForSpec(pages, spec) {
   for (const entry of pages) {
     if (typeof entry === "string") {
       if (/^[A-Z]+ \//.test(entry)) {
-        if (specHasOperation(spec, entry)) out.push(entry);
+        const resolved = resolveSpecOperation(spec, entry);
+        if (resolved) out.push(resolved);
       } else {
         out.push(entry);
       }

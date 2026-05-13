@@ -30,18 +30,30 @@ async function listVersionDirs() {
   return entries.filter((e) => e.isDirectory()).map((e) => path.join(OPENAPI_DIR, e.name));
 }
 
+// Path-parameter names drift across API versions (e.g. {id} -> {user_id}).
+// Match nav entries to spec paths on a normalized shape so a single nav entry
+// covers both eras.
+function normalizePath(p) {
+  return p.replace(/\{[^}]+\}/g, "{}");
+}
+
 function patchSpec(spec, kind) {
   const nav = NAV[kind];
   spec.tags = topLevelTags(nav.pages);
 
-  const tagByKey = new Map(flattenPathTags(nav.pages).map(({ key, tag }) => [key, tag]));
+  const tagByKey = new Map(
+    flattenPathTags(nav.pages).map(({ key, tag }) => {
+      const m = key.match(/^([A-Z]+) (\/.+)$/);
+      return [`${m[1]} ${normalizePath(m[2])}`, tag];
+    })
+  );
 
   for (const [pathKey, pathItem] of Object.entries(spec.paths ?? {})) {
+    const normPath = normalizePath(pathKey);
     for (const method of ["get", "post", "put", "patch", "delete", "head", "options"]) {
       const op = pathItem[method];
       if (!op) continue;
-      const key = `${method.toUpperCase()} ${pathKey}`;
-      const tag = tagByKey.get(key);
+      const tag = tagByKey.get(`${method.toUpperCase()} ${normPath}`);
       if (tag) op.tags = [tag];
     }
   }
