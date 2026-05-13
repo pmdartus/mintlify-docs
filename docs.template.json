@@ -1,0 +1,260 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "aspen",
+  "name": "Nabla Developer Docs",
+  "colors": {
+    "primary": "#16A34A",
+    "light": "#07C983",
+    "dark": "#15803D"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "products": [
+      {
+        "product": "Core API",
+        "description": "Transcribe, generate notes, and extract clinical data.",
+        "icon": "plug",
+        "tabs": [
+          {
+            "tab": "Guides",
+            "groups": [
+              {
+                "group": "Get started",
+                "pages": [
+                  "core-api/introduction",
+                  "core-api/quickstart",
+                  "core-api/authentication"
+                ]
+              },
+              {
+                "group": "Concepts",
+                "pages": [
+                  "core-api/concepts/server-vs-user-api",
+                  "core-api/concepts/notes-sections-templates",
+                  "core-api/concepts/sync-async-streaming",
+                  "core-api/concepts/locales"
+                ]
+              },
+              {
+                "group": "Guides",
+                "pages": [
+                  "core-api/guides/transcribe-a-recorded-encounter",
+                  "core-api/guides/stream-a-live-encounter",
+                  "core-api/guides/generate-a-clinical-note",
+                  "core-api/guides/edit-a-note-with-magic-edit",
+                  "core-api/guides/generate-patient-instructions",
+                  "core-api/guides/extract-fhir-normalized-data",
+                  "core-api/guides/dot-phrases-and-custom-dictionaries",
+                  "core-api/guides/ehr-integration"
+                ]
+              },
+              {
+                "group": "Webhooks",
+                "pages": [
+                  "core-api/webhooks/overview",
+                  "core-api/webhooks/setup",
+                  "core-api/webhooks/retries",
+                  "core-api/webhooks/testing"
+                ]
+              },
+              {
+                "group": "Note templates",
+                "pages": [
+                  "core-api/note-templates/choosing-a-template",
+                  "core-api/note-templates/sections",
+                  "core-api/note-templates/customization"
+                ]
+              },
+              {
+                "group": "Production best practices",
+                "pages": [
+                  "core-api/best-practices/error-handling",
+                  "core-api/best-practices/rate-limits",
+                  "core-api/best-practices/async-note-generation",
+                  "core-api/best-practices/transcription-network-resilience",
+                  "core-api/best-practices/observability"
+                ]
+              },
+              {
+                "group": "API versioning",
+                "pages": [
+                  "core-api/api-versioning/strategy",
+                  "core-api/api-versioning/targeting-a-version"
+                ]
+              },
+              {
+                "group": "Reference",
+                "pages": [
+                  "core-api/reference/dictation-commands",
+                  "core-api/reference/error-codes",
+                  "core-api/reference/glossary"
+                ]
+              }
+            ]
+          },
+          {
+            "$generate": "core-api-versioned-api-reference"
+          },
+          {
+            "tab": "Changelog",
+            "groups": [
+              {
+                "group": "Changelog",
+                "pages": [
+                  "core-api/changelog",
+                  {
+                    "group": "Migration guides",
+                    "pages": [
+                      "core-api/api-versioning/migrating-pre-2024-10-01"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "product": "Nabla Connect",
+        "description": "Embed Nabla in your product.",
+        "icon": "rocket",
+        "tabs": [
+          {
+            "tab": "Guides",
+            "groups": [
+              {
+                "group": "Get started",
+                "pages": [
+                  "connect/introduction",
+                  "connect/quickstart",
+                  "connect/authentication"
+                ]
+              },
+              {
+                "group": "Concepts",
+                "pages": [
+                  "connect/concepts/flow-overview",
+                  "connect/concepts/incoming-vs-outgoing-apis",
+                  "connect/concepts/iframe-embedding"
+                ]
+              },
+              {
+                "group": "Guides",
+                "pages": [
+                  "connect/guides/launch-an-encounter",
+                  "connect/guides/provision-users",
+                  "connect/guides/handle-callbacks",
+                  "connect/guides/export-notes"
+                ]
+              },
+              {
+                "group": "Production best practices",
+                "pages": [
+                  "connect/best-practices/key-rotation",
+                  "connect/best-practices/idempotency",
+                  "connect/best-practices/callback-latency"
+                ]
+              },
+              {
+                "group": "API versioning",
+                "pages": [
+                  "connect/api-versioning/strategy",
+                  "connect/api-versioning/targeting-a-version"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "API reference",
+            "groups": [
+              {
+                "group": "Server API",
+                "pages": [
+                  "connect/reference/server-api/oauth-token",
+                  "connect/reference/server-api/upsert-user",
+                  "connect/reference/server-api/create-encounter",
+                  "connect/reference/server-api/refresh-encounter-url"
+                ]
+              },
+              {
+                "group": "Callbacks",
+                "pages": [
+                  "connect/reference/callbacks/overview",
+                  "connect/reference/callbacks/note-export",
+                  "connect/reference/callbacks/patient-instructions-export"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "Changelog",
+            "groups": [
+              {
+                "group": "Changelog",
+                "pages": [
+                  "connect/changelog",
+                  {
+                    "group": "Migration guides",
+                    "pages": [
+                      "connect/api-versioning/migrating-pre-2026-02-13"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:hi@nabla.com"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Dashboard",
+      "href": "https://dashboard.mintlify.com"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "footer": {
+    "socials": {
+      "x": "https://x.com/nabla_ai",
+      "github": "https://github.com/nabla",
+      "linkedin": "https://linkedin.com/company/nablahq"
+    }
+  },
+  "api": {
+    "mdx": {
+      "server": "https://us.api.nabla.com",
+      "auth": {
+        "method": "bearer"
+      }
+    }
+  },
+  "seo": {
+    "metatags": {
+      "robots": "noindex, nofollow"
+    },
+    "indexing": "navigable"
+  }
+}

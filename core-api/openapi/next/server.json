@@ -1,13 +1,13 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Core User API",
-    "description": "Reference for the client-side Core API.",
+    "title": "Core Server API",
+    "description": "Reference for the server-side Core API.",
     "version": "1.0.0"
   },
   "servers": [
     {
-      "url": "https://{region}.api.nabla.com/v1/core/user",
+      "url": "https://{region}.api.nabla.com/v1/core/server",
       "variables": {
         "region": {
           "enum": [
@@ -26,6 +26,73 @@
     }
   ],
   "paths": {
+    "/oauth/token": {
+      "post": {
+        "summary": "Authenticate your backend",
+        "description": "Use this endpoint to get a medium-lived JWT access token for your backend to perform calls the Server API exposed by Nabla. See the [Authentication](/core-api/authentication) guide for details on how to construct the client assertion.",
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "oauth-generate-server-access-token",
+        "x-unauthenticated": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "grant_type": {
+                    "type": "string",
+                    "description": "This endpoint only supports the 'client_credentials' value.",
+                    "example": "client_credentials"
+                  },
+                  "client_assertion_type": {
+                    "type": "string",
+                    "description": "This endpoint only supports the 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer' value.",
+                    "example": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+                  },
+                  "client_assertion": {
+                    "type": "string",
+                    "description": "A short-lived JWT assertion that serves to authenticate this request."
+                  }
+                },
+                "required": [
+                  "grant_type",
+                  "client_assertion_type",
+                  "client_assertion"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A JWT access token that can be used to access the server API.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "$ref": "#/components/schemas/jwt_token"
+                    },
+                    "expires_in": {
+                      "type": "integer",
+                      "description": "The lifetime of the access token, in seconds."
+                    }
+                  },
+                  "required": [
+                    "access_token",
+                    "expires_in"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/transcribe": {
       "post": {
         "summary": "Transcribe — From audio file",
@@ -129,13 +196,16 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Transcribe"
+        ]
       }
     },
     "/dictate": {
       "post": {
         "summary": "Dictate — From audio file",
-        "description": "Generate a dictation from an audio file. Only `audio/*` mime types are supported. The maximum duration is 10 minutes. If you have longer files, please use the [asynchronous equivalent](/api-reference/server/dictate/dictate-from-audio-file-asynchronously).",
+        "description": "Generate a dictation from an audio file. Only `audio/*` mime types are supported. The maximum duration is 10 minutes. If you have longer files, please use the [asynchronous equivalent](/api-reference/server/dictate/dictate-from-audio-file-asynchronously).\n\nThe Dictation API currently only supports the English (US) language.",
         "tags": [
           "Dictate"
         ],
@@ -235,15 +305,18 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Dictate"
+        ]
       }
     },
     "/generate-note": {
       "post": {
         "summary": "Generate a note",
-        "description": "Generate a structured clinical note based on the provided transcript and, if available, patient context.\n\nThe generated note will be localized to the user's language and can be customized using  the user's [note generation settings](/api-reference/user/note-settings/update-note-settings)  and template-specific [per-section customization options](/api-reference/user/note-settings/update-sections-customization).\nCustomization includes adjusting the level of detail, organizing content by problem, and other formatting preferences.",
+        "description": "Generate a structured clinical note given the transcript.",
         "tags": [
-          "Digest"
+          "Generate note"
         ],
         "operationId": "generate-note",
         "x-custom-timeout-seconds": 600,
@@ -275,9 +348,9 @@
     "/generate-note-async": {
       "post": {
         "summary": "Generate a note asynchronously",
-        "description": "Creates an asynchronous task (also called asynchronous request) that will generate  a structured clinical note given the transcript, then keeps the response for two hours before removing it, allowing it to be fetched using the [poll endpoint](/api-reference/user/default/get-an-asynchronous-note-generation).\nMore details about asynchronous note generation can be found in the [best practices guide](/core-api/best-practices/async-note-generation).\nThe generated note will be localized to the user's language and can be customized using  the user's [note generation settings](/api-reference/user/note-settings/update-note-settings)  and template-specific [per-section customization options](/api-reference/user/note-settings/update-sections-customization).\nCustomization includes adjusting the level of detail, organizing content by problem, and other formatting preferences.",
+        "description": "Creates an asynchronous task (also called asynchronous request) that will generate a structured clinical note given the transcript, then keeps the response for two hours before removing it, allowing it to be fetched using the [poll endpoint](/api-reference/server/default/get-an-asynchronous-note-generation).\nMore details about asynchronous note generation can be found in the [best practices guide](/core-api/best-practices/async-note-generation).",
         "tags": [
-          "Digest"
+          "Generate note"
         ],
         "operationId": "generate-note-async",
         "x-custom-async-timeout-seconds": 600,
@@ -328,7 +401,10 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Generate note"
+        ]
       }
     },
     "/generate-normalized-data": {
@@ -336,7 +412,7 @@
         "summary": "Generate normalized data from a note",
         "description": "Generate normalized data from a Nabla-generated clinical note by extracting ICD-10 and LOINC codes in a FHIR-compliant structure.\n\nIt adeptly identifies and categorizes key medical information within the notes, such as past medical history, family medical history, clinical assessments, and vital signs.\n\nEach piece of medical information is represented as an array of FHIR's conditions/observations, each including relevant ICD-10 codes, thereby ensuring compatibility with standardized medical data frameworks.\n\nThe Normalize functionality is tailored to enhance the integration of clinical notes into Electronic Health Records (EHRs), facilitating accurate and efficient documentation by aligning with FHIR protocols.",
         "tags": [
-          "Normalize"
+          "Generate normalized data"
         ],
         "operationId": "generate-normalized-data",
         "x-custom-timeout-seconds": 600,
@@ -370,7 +446,7 @@
         "summary": "Generate patient instructions",
         "description": "Generates clear, post-visit instructions based on what the healthcare provider communicated to the patient during the encounter. These instructions are intended to help patients better understand and follow their care plan.\n\n:::note Provider review\n\nPatient instructions are generated automatically and may be translated. A licensed healthcare provider should review and approve them before sharing with the patient, especially when translation is involved.\n\n:::\n\nThis endpoint supports multiple input formats and languages to fit a variety of clinical workflows.",
         "tags": [
-          "Patient Instructions"
+          "Generate patient instructions"
         ],
         "operationId": "generate-patient-instructions",
         "x-custom-timeout-seconds": 600,
@@ -404,7 +480,7 @@
         "summary": "Edit Note With Instructions",
         "description": "Edit the Nabla-generated clinical note following human-readable text instructions, to customize and have more control over its content and structure.",
         "tags": [
-          "Edit Note With Instructions"
+          "Edit note with instructions"
         ],
         "operationId": "edit-note-with-instructions",
         "x-custom-timeout-seconds": 600,
@@ -438,7 +514,7 @@
         "summary": "Create report",
         "description": "Create detailed feedback or report issues directly related to specific API interactions.",
         "tags": [
-          "Report"
+          "Report feedback"
         ],
         "operationId": "create-report",
         "x-custom-timeout-seconds": 150,
@@ -472,22 +548,21 @@
         }
       }
     },
-    "/dot-phrases": {
+    "/users": {
       "post": {
-        "summary": "Create a Dot Phrase",
-        "description": "Creates a Dot Phrase for the current user.",
-        "operationId": "create-user-dot-phrase",
-        "x-multi-wired-handler": true,
+        "summary": "Create a user",
+        "description": "Creates a Core API user.",
         "tags": [
-          "Dot Phrases"
+          "Manage users"
         ],
+        "operationId": "create-user",
         "responses": {
           "200": {
-            "description": "The created Dot Phrase.",
+            "description": "User.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dot_phrase"
+                  "$ref": "#/components/schemas/user"
                 }
               }
             }
@@ -498,20 +573,34 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/create_dot_phrase_item"
+                "type": "object",
+                "example": {},
+                "properties": {
+                  "external_id": {
+                    "type": "string",
+                    "description": "A unique identifier for the user from another system which is given to Nabla.",
+                    "nullable": true,
+                    "maxLength": 256
+                  },
+                  "metadata": {
+                    "$ref": "#/components/schemas/metadata"
+                  },
+                  "specialty": {
+                    "$ref": "#/components/schemas/specialty_kind"
+                  }
+                }
               }
             }
           }
         }
       },
       "get": {
-        "summary": "Get all Dot Phrases",
-        "description": "Retrieve a list of user's Dot Phrases.",
-        "operationId": "get-user-dot-phrases",
-        "x-multi-wired-handler": true,
+        "summary": "Get users",
+        "description": "Retrieve a list of your organization's Core API Users, ordered by creation time.",
         "tags": [
-          "Dot Phrases"
+          "Manage users"
         ],
+        "operationId": "get-users",
         "parameters": [
           {
             "$ref": "#/components/parameters/cursor"
@@ -521,11 +610,20 @@
           },
           {
             "$ref": "#/components/parameters/order"
+          },
+          {
+            "name": "activated",
+            "description": "Optional filter for activated/deactivated users.",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "A paginated list of Dot Phrases.",
+            "description": "A paginated list of Users.",
             "content": {
               "application/json": {
                 "schema": {
@@ -534,7 +632,7 @@
                     "data": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/dot_phrase"
+                        "$ref": "#/components/schemas/user"
                       }
                     },
                     "has_more": {
@@ -556,27 +654,26 @@
         }
       }
     },
-    "/dot-phrases/{id}": {
+    "/users/{user_id}": {
       "parameters": [
         {
-          "$ref": "#/components/parameters/dot_phrase_id"
+          "$ref": "#/components/parameters/user_id"
         }
       ],
       "get": {
-        "summary": "Get a Dot Phrase",
-        "description": "Get a single Dot Phrase.",
-        "operationId": "get-user-dot-phrase",
-        "x-multi-wired-handler": true,
+        "summary": "Get a user",
+        "description": "Get a single user by their id.",
         "tags": [
-          "Dot Phrases"
+          "Manage users"
         ],
+        "operationId": "get-user",
         "responses": {
           "200": {
-            "description": "Dot Phrase.",
+            "description": "User.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dot_phrase"
+                  "$ref": "#/components/schemas/user"
                 }
               }
             }
@@ -584,20 +681,19 @@
         }
       },
       "patch": {
-        "summary": "Update a Dot Phrase",
-        "description": "Update a Dot Phrase.",
-        "operationId": "update-user-dot-phrase",
-        "x-multi-wired-handler": true,
+        "summary": "Update a user",
+        "description": "Update a Nabla Core API user. Please be aware that this operation supports partial updates of the user's fields. However partial updates are not supported within the metadata dictionary. Therefore, to update a field within metadata, you must resend the entire dictionary each time.",
         "tags": [
-          "Dot Phrases"
+          "Manage users"
         ],
+        "operationId": "update-user",
         "responses": {
           "200": {
-            "description": "The updated Dot Phrase.",
+            "description": "User.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dot_phrase"
+                  "$ref": "#/components/schemas/user"
                 }
               }
             }
@@ -609,343 +705,57 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "description": "Only provide the fields you want to patch.",
                 "x-patch-properties": [
-                  "title",
-                  "trigger",
-                  "replacement",
-                  "content_auto_update_enabled"
+                  "external_id",
+                  "metadata",
+                  "specialty"
                 ],
                 "properties": {
-                  "title": {
+                  "external_id": {
                     "type": "string",
-                    "description": "A user-friendly title for the Dot Phrase. Does not impact the matching logic.",
-                    "example": "Normal physical exam"
+                    "description": "A unique identifier for the user from another system which is given to Nabla.",
+                    "nullable": true,
+                    "maxLength": 256
                   },
-                  "trigger": {
-                    "type": "string",
-                    "description": "The text which, if present in the transcript, will prompt the suggestion of this Dot Phrase.",
-                    "example": "Your physical exam is normal"
+                  "metadata": {
+                    "$ref": "#/components/schemas/metadata"
                   },
-                  "content_auto_update_enabled": {
-                    "type": "boolean",
-                    "description": "If true, whenever this dot phrase is suggested, the replacement text will be automatically updated based on the encounter discussion.",
-                    "example": false
-                  },
-                  "replacement": {
-                    "type": "string",
-                    "description": "The replacement text for this Dot Phrase. If the Dot Phrase's trigger is detected, this text will be suggested in the note generation's response.",
-                    "example": "- Heart Examination: Normal, with regular rate and rhythm, no murmurs. - Lung Assessment: Normal breath sounds, no wheezes, crackles, or rhonchi. - Abdominal Evaluation: Normal, no tenderness, masses, or hepatosplenomegaly."
+                  "specialty": {
+                    "$ref": "#/components/schemas/specialty_kind"
                   }
                 }
               }
             }
           }
         }
-      },
-      "delete": {
-        "summary": "Delete a Dot Phrase",
-        "description": "Delete a Dot Phrase.",
-        "operationId": "delete-user-dot-phrase",
-        "x-multi-wired-handler": true,
-        "tags": [
-          "Dot Phrases"
-        ],
-        "responses": {
-          "200": {
-            "description": "The Dot Phrase id.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/uuid"
-                }
-              }
-            }
-          }
-        }
       }
     },
-    "/dot-phrases/bulk-create": {
-      "post": {
-        "summary": "Bulk create Dot Phrases",
-        "description": "Creates multiple Dot Phrases for the current user in a single request.",
-        "operationId": "bulk-create-user-dot-phrases",
-        "tags": [
-          "Dot Phrases"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/bulk_create_dot_phrases_request"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The created Dot Phrases.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/bulk_create_dot_phrases_response"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/dot-phrases/bulk-update": {
-      "post": {
-        "summary": "Bulk update Dot Phrases",
-        "description": "Updates multiple Dot Phrases for the current user in a single request.",
-        "operationId": "bulk-update-user-dot-phrases",
-        "tags": [
-          "Dot Phrases"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/bulk_update_dot_phrases_request"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The updated Dot Phrases.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/bulk_update_dot_phrases_response"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/dot-phrases/bulk-delete": {
-      "post": {
-        "summary": "Bulk delete Dot Phrases",
-        "description": "Deletes multiple Dot Phrases for the current user in a single request.",
-        "operationId": "bulk-delete-user-dot-phrases",
-        "tags": [
-          "Dot Phrases"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/bulk_delete_dot_phrases_request"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The deleted Dot Phrase ids.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/bulk_delete_dot_phrases_response"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/text-replacements": {
-      "post": {
-        "summary": "Create a Text Replacement",
-        "description": "Creates a Text Replacement for the current user.",
-        "operationId": "create-user-text-replacement",
-        "tags": [
-          "Text Replacements"
-        ],
-        "responses": {
-          "200": {
-            "description": "The created Text Replacement.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/text_replacement"
-                }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "trigger",
-                  "replacement"
-                ],
-                "properties": {
-                  "trigger": {
-                    "type": "string",
-                    "description": "The text which, if present in the dictation, will be automatically replaced with the replacement text.",
-                    "example": "Normal blood pressure"
-                  },
-                  "replacement": {
-                    "type": "string",
-                    "description": "The replacement text for this Text Replacement. If the Text Replacement's trigger is detected during dictation, this text will be automatically applied to the dictation result.",
-                    "example": "- Blood Pressure: 120/80 mmHg — within normal limits.\\n- No orthostatic change detected."
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "summary": "Get all Text Replacements",
-        "description": "Retrieve a list of user's Text Replacements.",
-        "operationId": "get-user-text-replacements",
-        "tags": [
-          "Text Replacements"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/cursor"
-          },
-          {
-            "$ref": "#/components/parameters/limit"
-          },
-          {
-            "$ref": "#/components/parameters/order"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A paginated list of Text Replacements.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/text_replacement"
-                      }
-                    },
-                    "has_more": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "next_cursor": {
-                      "$ref": "#/components/schemas/next_cursor"
-                    }
-                  },
-                  "required": [
-                    "data",
-                    "has_more"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/text-replacements/{id}": {
+    "/users/find_by_external_id/{external_id}": {
       "parameters": [
         {
-          "$ref": "#/components/parameters/text_replacement_id"
+          "in": "path",
+          "name": "external_id",
+          "description": "A unique identifier for the user from another system.",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
         }
       ],
       "get": {
-        "summary": "Get a Text Replacement",
-        "description": "Get a single Text Replacement.",
-        "operationId": "get-user-text-replacement",
+        "summary": "Find a user by their external id",
+        "description": "Get a single user by their external id.",
         "tags": [
-          "Text Replacements"
+          "Manage users"
         ],
+        "operationId": "find-user-by-external-id",
         "responses": {
           "200": {
-            "description": "Text Replacement.",
+            "description": "User.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/text_replacement"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "summary": "Update a Text Replacement",
-        "description": "Update a Text Replacement.",
-        "operationId": "update-user-text-replacement",
-        "tags": [
-          "Text Replacements"
-        ],
-        "responses": {
-          "200": {
-            "description": "The updated Text Replacement.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/text_replacement"
-                }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "description": "Only provide the fields you want to patch.",
-                "x-patch-properties": [
-                  "trigger",
-                  "replacement"
-                ],
-                "properties": {
-                  "trigger": {
-                    "type": "string",
-                    "description": "The text which, if present in the dictation, will be automatically replaced with the replacement text.",
-                    "example": "Normal blood pressure"
-                  },
-                  "replacement": {
-                    "type": "string",
-                    "description": "The replacement text for this Text Replacement. If the Text Replacement's trigger is detected during dictation, this text will be automatically applied to the dictation result.",
-                    "example": "- Blood Pressure: 120/80 mmHg — within normal limits.\\n- No orthostatic change detected."
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "summary": "Delete a Text Replacement",
-        "description": "Delete a Text Replacement.",
-        "operationId": "delete-user-text-replacement",
-        "tags": [
-          "Text Replacements"
-        ],
-        "responses": {
-          "200": {
-            "description": "The Text Replacement id.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/uuid"
+                  "$ref": "#/components/schemas/user"
                 }
               }
             }
@@ -953,145 +763,26 @@
         }
       }
     },
-    "/custom-dictionary-expressions": {
-      "post": {
-        "summary": "Create a Custom Dictionary Expression",
-        "description": "Creates a Custom Dictionary Expression for the current user.",
-        "operationId": "create-user-custom-dictionary-expression",
-        "tags": [
-          "Custom Dictionary Expressions"
-        ],
-        "responses": {
-          "200": {
-            "description": "The created Custom Dictionary Expression.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/custom_dictionary_expression"
-                }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "expression",
-                  "speech_locale"
-                ],
-                "properties": {
-                  "expression": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 64,
-                    "description": "The expression for which you want an improved transcription accuracy.",
-                    "example": "metformin"
-                  },
-                  "speech_locale": {
-                    "$ref": "#/components/schemas/speech_locale",
-                    "description": "The locale of the expression."
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "summary": "Get all Custom Dictionary Expressions",
-        "description": "Retrieve a list of user's Custom Dictionary Expressions.",
-        "operationId": "get-user-custom-dictionary-expressions",
-        "tags": [
-          "Custom Dictionary Expressions"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/cursor"
-          },
-          {
-            "$ref": "#/components/parameters/limit"
-          },
-          {
-            "$ref": "#/components/parameters/order"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A paginated list of Custom Dictionary Expressions.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/custom_dictionary_expression"
-                      }
-                    },
-                    "has_more": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "next_cursor": {
-                      "$ref": "#/components/schemas/next_cursor"
-                    }
-                  },
-                  "required": [
-                    "data",
-                    "has_more"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/custom-dictionary-expressions/{id}": {
+    "/users/{user_id}/activate": {
       "parameters": [
         {
-          "$ref": "#/components/parameters/custom_dictionary_expression_id"
+          "$ref": "#/components/parameters/user_id"
         }
       ],
-      "get": {
-        "summary": "Get a Custom Dictionary Expression",
-        "description": "Get a single Custom Dictionary Expression.",
-        "operationId": "get-user-custom-dictionary-expression",
+      "post": {
+        "summary": "Activate a user",
+        "description": "Re-activate a previously [deactivated](/api-reference/server/manage-users/deactivate-a-user) user.",
         "tags": [
-          "Custom Dictionary Expressions"
+          "Manage users"
         ],
+        "operationId": "activate-user",
         "responses": {
           "200": {
-            "description": "Custom Dictionary Expression.",
+            "description": "User.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/custom_dictionary_expression"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "summary": "Update a Custom Dictionary Expression",
-        "description": "Update a Custom Dictionary Expression.",
-        "operationId": "update-user-custom-dictionary-expression",
-        "tags": [
-          "Custom Dictionary Expressions"
-        ],
-        "responses": {
-          "200": {
-            "description": "The updated Custom Dictionary Expression.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/custom_dictionary_expression"
+                  "$ref": "#/components/schemas/user"
                 }
               }
             }
@@ -1102,155 +793,33 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "description": "Only provide the fields you want to patch.",
-                "x-patch-properties": [
-                  "expression",
-                  "speech_locale"
-                ],
-                "properties": {
-                  "expression": {
-                    "type": "string",
-                    "minLength": 1,
-                    "description": "The expression for which you want an improved transcription accuracy.",
-                    "example": "metformin"
-                  },
-                  "speech_locale": {
-                    "$ref": "#/components/schemas/speech_locale",
-                    "description": "The locale of the expression."
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "summary": "Delete a Custom Dictionary Expression",
-        "description": "Delete a Custom Dictionary Expression.",
-        "operationId": "delete-user-custom-dictionary-expression",
-        "tags": [
-          "Custom Dictionary Expressions"
-        ],
-        "responses": {
-          "200": {
-            "description": "The unique identifier of the deleted Custom Dictionary Expression.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/uuid"
-                }
+                "type": "object"
               }
             }
           }
         }
       }
     },
-    "/note-settings": {
-      "get": {
-        "summary": "Get note settings",
-        "description": "Get the current user's settings for note generation.",
-        "operationId": "get-note-settings",
-        "tags": [
-          "Note Settings"
-        ],
-        "responses": {
-          "200": {
-            "description": "Note settings.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/note_settings"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "summary": "Update note settings",
-        "description": "Update the current user's settings for note generation.",
-        "operationId": "update-note-settings",
-        "tags": [
-          "Note Settings"
-        ],
-        "responses": {
-          "200": {
-            "description": "The new note settings.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/note_settings"
-                }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "description": "Only provide the fields you want to patch.",
-                "x-patch-properties": [
-                  "note_template",
-                  "note_locale"
-                ],
-                "properties": {
-                  "note_template": {
-                    "$ref": "#/components/schemas/note_template"
-                  },
-                  "note_locale": {
-                    "$ref": "#/components/schemas/note_locale"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/note-settings/note-sections-customization/{note_template}": {
+    "/users/{user_id}/deactivate": {
       "parameters": [
         {
-          "$ref": "#/components/parameters/note_template"
+          "$ref": "#/components/parameters/user_id"
         }
       ],
-      "get": {
-        "summary": "Get sections customization",
-        "description": "Get the current user's note generation per-section customization options.",
-        "operationId": "get-note-sections-customization",
+      "post": {
+        "summary": "Deactivate a user",
+        "description": "Deactivate a user. Deactivated users loose access to the API. They will face authentication errors and will not be able to use any feature.",
+        "operationId": "deactivate-user",
         "tags": [
-          "Note Settings"
+          "Manage users"
         ],
         "responses": {
           "200": {
-            "description": "Per-section customization options.",
+            "description": "User.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/note_sections_customization"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "summary": "Update sections customization",
-        "description": "Update the current user's note generation per-section customization options.",
-        "operationId": "update-note-sections-customization",
-        "tags": [
-          "Note Settings"
-        ],
-        "responses": {
-          "200": {
-            "description": "The new per-section customization options.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/note_sections_customization"
+                  "$ref": "#/components/schemas/user"
                 }
               }
             }
@@ -1261,67 +830,26 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "required": [
-                  "note_sections_customization"
-                ],
-                "properties": {
-                  "note_sections_customization": {
-                    "type": "array",
-                    "description": "Advanced per-section customization options for the chosen template.\n\nYou should **only specify sections that belong to the given template**, and **only specify customization options that are supported for the given section**. Also, only specify sections you want to customize, no need to be exhaustive.\n\n\nCheck [Note templates sections](/core-api/note-templates/customization) for compatibility matrix.",
-                    "items": {
-                      "type": "object",
-                      "required": [
-                        "section_key"
-                      ],
-                      "x-patch-properties": [
-                        "custom_instruction",
-                        "style",
-                        "level_of_detail",
-                        "split_by_problem"
-                      ],
-                      "properties": {
-                        "section_key": {
-                          "description": "Key of the note section this customization should apply to.",
-                          "$ref": "#/components/schemas/note_section_key"
-                        },
-                        "custom_instruction": {
-                          "type": "string",
-                          "maxLength": 700,
-                          "example": "Include discussion about first symptoms",
-                          "nullable": true,
-                          "description": "Allow to customize a note section by providing specific guidelines.  These guidelines must be as clear and concise as possible for best results."
-                        },
-                        "split_by_problem": {
-                          "type": "boolean",
-                          "description": "Flag to structure the content of the note sections according to distinct clinical problems or topics addressed during the consultation."
-                        },
-                        "style": {
-                          "$ref": "#/components/schemas/note_section_customization_section_style"
-                        },
-                        "level_of_detail": {
-                          "$ref": "#/components/schemas/note_section_customization_level_of_detail"
-                        }
-                      }
-                    }
-                  }
-                }
+                "type": "object"
               }
             }
           }
         }
       }
     },
-    "/jwt/refresh": {
+    "/jwt/authenticate/{user_id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/user_id"
+        }
+      ],
       "post": {
-        "summary": "Refresh a token",
-        "description": "Access tokens have a short lifespan of 5 minutes as they are irrevocable. Conversely, refresh tokens last for 30 days and can be revoked using the [logout endpoint](/api-reference/user/authentication/logout-a-user). \n\nTherefore, the user's front-end should invoke this endpoint to obtain a new set of session tokens (both access and refresh) when the access token expires.\n\nIt's advisable to treat a token as expired under these conditions:\n\n• An HTTP 401 Unauthorized error is received when using the token.\n\n• The token's expiration date (`exp` field in the JWT) is approaching within a few seconds.\n  Avoid relying on any other JWT fields apart from `exp` as they are subject to change and are not part of the API contract.\n\n\nNote that this endpoint does not require authentication, so omit any authentication headers and only include your `refresh_token` in the request body.",
+        "summary": "Authenticate a user",
+        "description": "Use this endpoint to get JWT tokens to authenticate a user with the Nabla Core API. These tokens only gives access to resources for the specified user. This endpoint should typically be called by your backend on behalf of an authenticated user, and the resulting JWT tokens should be forwarded to the user's frontend securely.",
         "tags": [
-          "Authentication"
+          "Manage users"
         ],
-        "operationId": "jwt-refresh",
-        "x-unauthenticated": true,
-        "security": [],
+        "operationId": "jwt-authenticate-user",
         "responses": {
           "200": {
             "description": "Tokens.",
@@ -1330,59 +858,6 @@
                 "schema": {
                   "$ref": "#/components/schemas/session_tokens"
                 }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "refresh_token": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "refresh_token"
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    "/jwt/logout": {
-      "post": {
-        "summary": "Logout a user",
-        "description": "This endpoint will revoke and invalidate the specified user's session. \n\nFollowing a request to this endpoint, user will shortly need to obtain a new set of session tokens (access and refresh) from your server via the [Authenticate endpoint](/api-reference/server/authentication/authenticate-a-user).\n\nNote that this endpoint does not require authentication, so omit any authentication headers and only include your `refresh_token` in the request body.",
-        "tags": [
-          "Authentication"
-        ],
-        "operationId": "jwt-logout",
-        "x-unauthenticated": true,
-        "security": [],
-        "responses": {
-          "204": {
-            "description": "The resource was deleted successfully."
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "refresh_token": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "refresh_token"
-                ]
               }
             }
           }
@@ -1398,8 +873,54 @@
       }
     },
     "schemas": {
-      "transcribe_error_message": {
-        "$ref": "#/components/schemas/ws_error_message"
+      "ws_error_message": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "ERROR_MESSAGE"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "A human-readable explanation of the error, often including contextual details to help understand what went wrong."
+          },
+          "code": {
+            "type": "integer",
+            "description": "A numeric identifier for the error. This may either be a standard HTTP status code (e.g. 400, 401) or a more specific application-level code (typically >1000). Some errors —like an audio buffer overflow due to client misuse— have dedicated codes, while others —like malformed JSON— use broader and generic codes.\n\n**Tip**: You should use this field as the primary reference for implementing error handling logic."
+          },
+          "name": {
+            "type": "string",
+            "description": "An internal enum-style name associated with the error code. While it may help with debugging, it’s mainly for reference—always rely on the numeric code for programmatic handling."
+          },
+          "trace_id": {
+            "type": "string",
+            "description": "A unique identifier for the failed API request. This is especially useful when reaching out to Nabla support, as it allows us to trace the exact request in our systems."
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "code",
+          "name"
+        ],
+        "example": [
+          {
+            "type": "ERROR_MESSAGE",
+            "message": "Unable to parse JSON at path $.speech_locales",
+            "code": 400,
+            "name": "BAD_REQUEST",
+            "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+          },
+          {
+            "type": "ERROR_MESSAGE",
+            "message": "Received a huge amount of audio in a very short window time.",
+            "code": 83016,
+            "name": "AUDIO_CHUNKS_BUFFER_OVERFLOW",
+            "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
+          }
+        ]
       },
       "transcribe_config": {
         "type": "object",
@@ -1441,6 +962,9 @@
             "type": "boolean",
             "default": false,
             "description": "If enabled, audio chunks should contain a `seq_id`, and the server will periodically send acknowledgements up to the specified `seq_id`.\n\nRead more in [Make transcription and dictation resilient to network interruptions](/core-api/best-practices/transcription-network-resilience)."
+          },
+          "specialty": {
+            "$ref": "#/components/schemas/specialty_kind"
           }
         },
         "required": [
@@ -1865,6 +1389,9 @@
           },
           "text_field_context": {
             "$ref": "#/components/schemas/smart_dictate_config_text_field_context"
+          },
+          "specialty": {
+            "$ref": "#/components/schemas/specialty_kind"
           }
         },
         "required": [
@@ -2378,6 +1905,32 @@
           "message": "Unable to parse JSON at path $.language"
         }
       },
+      "api_webhook_event": {
+        "$ref": "#/components/schemas/webhook_event"
+      },
+      "generate_note_async.succeeded": {
+        "$ref": "#/components/schemas/generate_note_async_succeeded"
+      },
+      "generate_note_async.failed": {
+        "$ref": "#/components/schemas/generate_note_async_failed"
+      },
+      "transcribe_async.succeeded": {
+        "$ref": "#/components/schemas/transcribe_async_succeeded"
+      },
+      "transcribe_async.failed": {
+        "$ref": "#/components/schemas/transcribe_async_failed"
+      },
+      "dictate_async.succeeded": {
+        "$ref": "#/components/schemas/dictate_async_succeeded"
+      },
+      "dictate_async.failed": {
+        "$ref": "#/components/schemas/dictate_async_failed"
+      },
+      "jwt_token": {
+        "type": "string",
+        "description": "An authentication token using the JWT serialization format. JWT tokens contain varying data (depending on their intended use) and use a signature to guarantee their authenticity.",
+        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWNjZXNzIiwic3ViIjoiMTIzNDU2Nzg5MCIsIm5hbWUiOiJKb2huIERvZSIsImlhdCI6MTUxNjIzOTAyMn0.v5qdy8w9Ygs5fdic9a1LuX76PUdx3omYd5GlDTAF3Ug"
+      },
       "speech_locale": {
         "type": "string",
         "enum": [
@@ -2428,6 +1981,95 @@
         "maxItems": 2,
         "uniqueItems": true
       },
+      "specialty_kind": {
+        "type": "string",
+        "description": "The medical specialty of the provider.",
+        "nullable": true,
+        "enum": [
+          "ADDICTION_MEDICINE",
+          "PAIN_MEDICINE",
+          "ALLERGY_AND_IMMUNOLOGY",
+          "ANESTHESIOLOGY",
+          "ONCOLOGY",
+          "CARDIOLOGY",
+          "SURGERY",
+          "DERMATOLOGY",
+          "DIABETOLOGY",
+          "ENDOCRINOLOGY",
+          "GENETICS",
+          "GERIATRICS",
+          "GYNECOLOGY",
+          "HEMATOLOGY",
+          "HEPATOLOGY",
+          "GASTROENTEROLOGY",
+          "SPORTS_MEDICINE",
+          "OCCUPATIONAL_MEDICINE",
+          "GENERAL_MEDICINE",
+          "FORENSIC_MEDICINE",
+          "PHYSICAL_MEDICINE_AND_REHABILITATION",
+          "NEPHROLOGY",
+          "NEUROLOGY",
+          "NUTRITION",
+          "DIETETICS",
+          "OPHTHALMOLOGY",
+          "ENT",
+          "PEDIATRICS",
+          "PULMONOLOGY",
+          "PSYCHIATRY",
+          "RHEUMATOLOGY",
+          "RADIOLOGY",
+          "IMMUNOLOGY",
+          "INFECTIOUS_DISEASE",
+          "SEXUAL_MEDICINE",
+          "TOXICOLOGY",
+          "UROLOGY",
+          "MIDWIFE",
+          "EMERGENCY_MEDICINE",
+          "NURSE",
+          "PSYCHOLOGY",
+          "PSYCHOTHERAPY",
+          "INTERNAL_MEDICINE",
+          "FAMILY_MEDICINE",
+          "DENTIST",
+          "VETERINARIAN",
+          "PHYSIOTHERAPY",
+          "CHIROPRACTIC",
+          "OSTEOPATHIC_MEDICINE",
+          "ORTHOPEDICS",
+          "OTHER",
+          "LACTATION_CONSULTANT",
+          "PODIATRY",
+          "GENERAL_PRACTICE",
+          "HOSPITAL_MEDICINE",
+          "BEHAVIORAL_HEALTH",
+          "MENTAL_HEALTH",
+          "SUBSTANCE_USE_DISORDER",
+          "VASCULAR_MEDICINE",
+          "LIFESTYLE_MEDICINE",
+          "PREVENTIVE_MEDICINE",
+          "PUBLIC_HEALTH",
+          "ADOLESCENT_MEDICINE",
+          "WOUND_CARE",
+          "NEUROSURGERY",
+          "PLASTIC_SURGERY",
+          "PALLIATIVE_CARE",
+          "TRANSPLANT_MEDICINE",
+          "OBESITY_MEDICINE",
+          "CASE_MANAGEMENT",
+          "CARE_MANAGEMENT",
+          "CARE_COORDINATION",
+          "SOCIAL_WORK",
+          "PATHOLOGY",
+          "RADIATION_ONCOLOGY",
+          "SLEEP_MEDICINE",
+          "AUDIOLOGY",
+          "REPRODUCTIVE_ENDOCRINOLOGY",
+          "PHARMACIST",
+          "OCCUPATIONAL_THERAPY",
+          "SPEECH_LANGUAGE_PATHOLOGY"
+        ],
+        "example": "GENERAL_PRACTICE"
+      },
       "transcribe_request": {
         "type": "object",
         "description": "The object containing all the information needed along with the audio file to transcribe.",
@@ -2440,6 +2082,9 @@
             "type": "boolean",
             "default": false,
             "description": "Indicates whether to segment transcription results at sentence boundaries. Default is false, meaning that a single transcript item may encompass multiple sentences, provided they are not delineated by pauses (silence) in the audio."
+          },
+          "specialty": {
+            "$ref": "#/components/schemas/specialty_kind"
           }
         },
         "required": [
@@ -2529,6 +2174,9 @@
             "type": "boolean",
             "default": false,
             "description": "Indicates whether to segment transcription results at sentence boundaries. Default is false, meaning that a single transcript item may encompass multiple sentences, provided they are not delineated by pauses (silence) in the audio."
+          },
+          "specialty": {
+            "$ref": "#/components/schemas/specialty_kind"
           },
           "client_request_id": {
             "$ref": "#/components/schemas/client_request_id"
@@ -2685,6 +2333,9 @@
           },
           "punctuation_mode": {
             "$ref": "#/components/schemas/punctuation_mode"
+          },
+          "specialty": {
+            "$ref": "#/components/schemas/specialty_kind"
           }
         },
         "required": [
@@ -2716,6 +2367,9 @@
           },
           "punctuation_mode": {
             "$ref": "#/components/schemas/punctuation_mode"
+          },
+          "specialty": {
+            "$ref": "#/components/schemas/specialty_kind"
           },
           "client_request_id": {
             "$ref": "#/components/schemas/client_request_id"
@@ -2786,6 +2440,16 @@
           }
         }
       },
+      "note_locale": {
+        "type": "string",
+        "description": "Locale of the note.",
+        "enum": [
+          "ENGLISH_US",
+          "ENGLISH_UK",
+          "FRENCH_FR"
+        ],
+        "example": "ENGLISH_US"
+      },
       "transcript_item_request": {
         "type": "object",
         "description": "A portion of the transcribed consultation.",
@@ -2803,6 +2467,28 @@
           "text",
           "speaker_type"
         ]
+      },
+      "note_template": {
+        "type": "string",
+        "enum": [
+          "GENERIC_MULTIPLE_SECTIONS",
+          "GENERIC_MULTIPLE_SECTIONS_AP_MERGED",
+          "GENERIC_SOAP",
+          "GENERIC_SOAP_AP_MERGED",
+          "GENERIC_SOAP_PLUS_EXAM_TESTS_AP_MERGED",
+          "GENERIC_APSO_AP_MERGED",
+          "EMERGENCY_MULTIPLE_SECTIONS",
+          "EMERGENCY_SOAP",
+          "WCC_MULTIPLE_SECTIONS",
+          "WCC_SOAP",
+          "PSYCHIATRY_MULTIPLE_SECTIONS",
+          "PSYCHIATRY_SOAP",
+          "PSYCHOLOGY_MULTIPLE_SECTIONS",
+          "CARDIOLOGY_MULTIPLE_SECTIONS",
+          "DIET_MULTIPLE_SECTIONS"
+        ],
+        "description": "The template of the note.\n\nSome templates are **only available in specific languages**. Check [Note template](/core-api/note-templates/sections) for details.",
+        "example": "GENERIC_MULTIPLE_SECTIONS"
       },
       "note_section_key": {
         "type": "string",
@@ -2841,6 +2527,55 @@
           "WELL_CHILD_CARE"
         ]
       },
+      "note_section_customization_custom_instruction": {
+        "type": "string",
+        "maxLength": 700,
+        "example": "Include discussion about first symptoms",
+        "description": "Allow to customize a note section by providing specific guidelines.  These guidelines must be as clear and concise as possible for best results."
+      },
+      "note_section_customization_section_style": {
+        "type": "string",
+        "enum": [
+          "AUTO",
+          "PARAGRAPH",
+          "BULLET_POINTS"
+        ],
+        "example": "PARAGRAPH",
+        "description": "Specifies the desired style for the note section:\n\n  • `PARAGRAPH`: Prioritizes generating paragraphs;\n\n  • `BULLET_POINTS`: Prioritizes structuring content using bullet points.\n\n  • `AUTO`: Automatically picks the most natural formatting option.\n\nDefault is `AUTO`."
+      },
+      "note_section_customization_level_of_detail": {
+        "type": "string",
+        "enum": [
+          "DEFAULT",
+          "DETAILED"
+        ],
+        "description": "Specifies the desired level of details. Use `detailed` to get more details in the note section."
+      },
+      "note_section_customization_request": {
+        "type": "object",
+        "properties": {
+          "section_key": {
+            "description": "Key of the note section this customization should apply to.",
+            "$ref": "#/components/schemas/note_section_key"
+          },
+          "custom_instruction": {
+            "$ref": "#/components/schemas/note_section_customization_custom_instruction"
+          },
+          "style": {
+            "$ref": "#/components/schemas/note_section_customization_section_style"
+          },
+          "level_of_detail": {
+            "$ref": "#/components/schemas/note_section_customization_level_of_detail"
+          },
+          "split_by_problem": {
+            "type": "boolean",
+            "description": "Flag to structure the content of the note sections according to distinct clinical problems or topics addressed during the consultation."
+          }
+        },
+        "required": [
+          "section_key"
+        ]
+      },
       "note_section_request": {
         "type": "object",
         "description": "A note section.",
@@ -2864,38 +2599,6 @@
           "title",
           "text"
         ]
-      },
-      "note_locale": {
-        "type": "string",
-        "description": "Locale of the note.",
-        "enum": [
-          "ENGLISH_US",
-          "ENGLISH_UK",
-          "FRENCH_FR"
-        ],
-        "example": "ENGLISH_US"
-      },
-      "note_template": {
-        "type": "string",
-        "enum": [
-          "GENERIC_MULTIPLE_SECTIONS",
-          "GENERIC_MULTIPLE_SECTIONS_AP_MERGED",
-          "GENERIC_SOAP",
-          "GENERIC_SOAP_AP_MERGED",
-          "GENERIC_SOAP_PLUS_EXAM_TESTS_AP_MERGED",
-          "GENERIC_APSO_AP_MERGED",
-          "EMERGENCY_MULTIPLE_SECTIONS",
-          "EMERGENCY_SOAP",
-          "WCC_MULTIPLE_SECTIONS",
-          "WCC_SOAP",
-          "PSYCHIATRY_MULTIPLE_SECTIONS",
-          "PSYCHIATRY_SOAP",
-          "PSYCHOLOGY_MULTIPLE_SECTIONS",
-          "CARDIOLOGY_MULTIPLE_SECTIONS",
-          "DIET_MULTIPLE_SECTIONS"
-        ],
-        "description": "The template of the note.\n\nSome templates are **only available in specific languages**. Check [Note template](/core-api/note-templates/sections) for details.",
-        "example": "GENERIC_MULTIPLE_SECTIONS"
       },
       "note_request": {
         "type": "object",
@@ -3019,16 +2722,26 @@
       "generate_note_request": {
         "type": "object",
         "description": "Input for note generation.",
-        "required": [
-          "transcript_items"
-        ],
         "properties": {
+          "note_locale": {
+            "$ref": "#/components/schemas/note_locale"
+          },
           "transcript_items": {
             "type": "array",
             "description": "The transcript from which to generate the note.\n\nYou don't need to specify each item's start or end time, but make sure they are sorted. In fact, due to its asynchronous nature, our [real-time transcription API](/core-api/guides/stream-a-live-encounter) does not guarantee its results order. Thus, before calling this note-generation API please **filter-out non-final items and sort them by `start_offset_ms`**.",
             "items": {
               "$ref": "#/components/schemas/transcript_item_request"
             }
+          },
+          "note_template": {
+            "$ref": "#/components/schemas/note_template"
+          },
+          "note_sections_customization": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/note_section_customization_request"
+            },
+            "description": "Advanced per-section customization options for the chosen template.\n\nYou should **only specify sections that belong to the given template**, and **only specify customization options that are supported for the given section**. Also, only specify sections you want to customize, no need to be exhaustive.\n\n\nCheck [Note templates sections](/core-api/note-templates/customization) for compatibility matrix."
           },
           "current_note": {
             "$ref": "#/components/schemas/note_request",
@@ -3042,13 +2755,20 @@
           "structured_context": {
             "$ref": "#/components/schemas/structured_context_request"
           },
+          "specialty": {
+            "$ref": "#/components/schemas/specialty_kind"
+          },
           "encounter_date": {
             "type": "string",
             "format": "date",
             "description": "The date of the encounter in YYYY-MM-DD format. It is recommended to always provide this field to improve the quality of the generated note. When provided, this date grounds relative temporal references (e.g., \"last year\") in the generated note.  Defaults to today's date when omitted.",
             "example": "2026-03-24"
           }
-        }
+        },
+        "required": [
+          "transcript_items",
+          "note_locale"
+        ]
       },
       "note_section": {
         "type": "object",
@@ -3115,121 +2835,15 @@
           "template"
         ]
       },
-      "created_at": {
-        "type": "string",
-        "format": "date-time",
-        "description": "The creation date of this object, in ISO 8601 format.",
-        "example": "2022-03-10T19:16:23.456Z"
-      },
-      "updated_at": {
-        "type": "string",
-        "format": "date-time",
-        "description": "The last update date of this object, in ISO 8601 format.",
-        "example": "2022-03-10T19:16:23.456Z"
-      },
-      "dot_phrase": {
-        "type": "object",
-        "description": "Dot phrase, also referred to as EHR (Electronic Health Record) macro, is a concise abbreviation (`trigger`) that unfolds into a predefined, extended text (`replacement`).",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "Unique identifier of the Dot Phrase."
-          },
-          "title": {
-            "type": "string",
-            "description": "A user-friendly title for the Dot Phrase. Does not impact the matching logic.",
-            "example": "Normal physical exam"
-          },
-          "trigger": {
-            "type": "string",
-            "description": "The text which, if present in the transcript, will prompt the suggestion of this Dot Phrase.",
-            "example": "Your physical exam is normal"
-          },
-          "content_auto_update_enabled": {
-            "type": "boolean",
-            "description": "If true, whenever this dot phrase is suggested, the replacement text will be automatically updated based on the encounter discussion.",
-            "example": false
-          },
-          "replacement": {
-            "type": "string",
-            "description": "The replacement text for this Dot Phrase. If the Dot Phrase's trigger is detected, this text will be suggested in the note generation's response.",
-            "example": "- Heart Examination: Normal, with regular rate and rhythm, no murmurs. - Lung Assessment: Normal breath sounds, no wheezes, crackles, or rhonchi. - Abdominal Evaluation: Normal, no tenderness, masses, or hepatosplenomegaly."
-          },
-          "created_at": {
-            "$ref": "#/components/schemas/created_at"
-          },
-          "updated_at": {
-            "$ref": "#/components/schemas/updated_at"
-          }
-        },
-        "required": [
-          "id",
-          "title",
-          "trigger",
-          "content_auto_update_enabled",
-          "replacement",
-          "created_at",
-          "updated_at"
-        ]
-      },
-      "dot_phrase_section": {
-        "type": "object",
-        "description": "The key and the title of the section in the note where this Dot Phrase is suggested to go. There are three possible scenarios:\n\n  • No suggested section: Given the Dot Phrase's content, we found no appropriate section to suggest. You should decide for a default (for instance: any kind of \"free text\" area you might have).\n\n  • Suggested section already present in the note: We recommend you append the Dot Phrase's suggested `text_to_insert` to the section's content.\n\n  • Suggested section is not present in the note: Add a new section to the note with the provided key and title and use the Dot Phrase's suggested `text_to_insert` as the section's content.",
-        "required": [
-          "key",
-          "title"
-        ],
-        "properties": {
-          "key": {
-            "$ref": "#/components/schemas/note_section_key"
-          },
-          "title": {
-            "type": "string",
-            "description": "Section title.",
-            "example": "Assessment & Plan."
-          }
-        }
-      },
-      "suggested_dot_phrase": {
-        "type": "object",
-        "description": "Suggested Dot Phrase.",
-        "required": [
-          "text_to_insert"
-        ],
-        "properties": {
-          "dot_phrase": {
-            "$ref": "#/components/schemas/dot_phrase"
-          },
-          "note_section": {
-            "$ref": "#/components/schemas/dot_phrase_section"
-          },
-          "text_to_insert": {
-            "type": "string",
-            "description": "The actual suggested content, to be inserted in the corresponding note section. Please note that the content might be different from the replacement in the original Dot Phrase definition. In fact, the `text_to_insert` takes into account the contextual information of the encounter and might change the original Dot Phrase replacement text, for instance to include exceptions.",
-            "example": "- Heart Examination: Normal, with regular rate and rhythm, no murmurs.\n- Lung Assessment: Normal breath sounds, no wheezes, crackles, or rhonchi.\n- Abdominal Evaluation: Normal, no tenderness, masses, or hepatosplenomegaly.\n"
-          }
-        }
-      },
-      "suggested_dot_phrases": {
-        "type": "array",
-        "description": "A collection of Dot Phrases that were successfully matched to the encounter's transcript, given the Dot Phrases defined on the calling user. Will be null in the context of a Server API call (i.e. no calling user).\nThis functionality enriches the generated note by expanding concise key sentences (triggers) into a more detailed format following the given Dot Phrase definition.  Thus, enhancing the depth and utility of the note and facilitating a comprehensive review of patient assessments in a structured and conventional manner.",
-        "items": {
-          "$ref": "#/components/schemas/suggested_dot_phrase"
-        }
-      },
       "generate_note_response": {
         "type": "object",
-        "description": "The generated note along with suggested Dot Phrases if applicable.",
+        "description": "The generated note.",
         "required": [
           "note"
         ],
         "properties": {
           "note": {
             "$ref": "#/components/schemas/note"
-          },
-          "suggested_dot_phrases": {
-            "$ref": "#/components/schemas/suggested_dot_phrases"
           }
         }
       },
@@ -3250,16 +2864,13 @@
       },
       "async_note_generation_succeeded_payload": {
         "type": "object",
-        "description": "The generated note along with suggested Dot Phrases if applicable.",
+        "description": "The generated note.",
         "required": [
           "note"
         ],
         "properties": {
           "note": {
             "$ref": "#/components/schemas/note"
-          },
-          "suggested_dot_phrases": {
-            "$ref": "#/components/schemas/suggested_dot_phrases"
           }
         }
       },
@@ -3734,6 +3345,12 @@
           },
           "structured_context": {
             "$ref": "#/components/schemas/structured_context_request"
+          },
+          "note_sections_customization": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/note_section_customization_request"
+            }
           }
         },
         "required": [
@@ -4208,306 +3825,59 @@
           "payload"
         ]
       },
-      "next_cursor": {
-        "type": "string",
+      "metadata": {
+        "type": "object",
+        "description": "You can use this parameter to attach key-value data to the object. You can specify up to 50 keys, with key names up to 40 characters long, all values must be of type string and up to 500 characters long.\n\nYou should **not** use this to store Protected Health Information (PHI) or any patient-related data.",
         "nullable": true,
-        "description": "An opaque cursor to fetch the next page of the collection."
+        "additionalProperties": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "maxProperties": 50
       },
-      "create_dot_phrase_item": {
-        "type": "object",
-        "required": [
-          "title",
-          "trigger",
-          "replacement"
-        ],
-        "properties": {
-          "title": {
-            "type": "string",
-            "description": "A user-friendly title for the Dot Phrase. Does not impact the matching logic.",
-            "example": "Normal physical exam"
-          },
-          "trigger": {
-            "type": "string",
-            "description": "The text which, if present in the transcript, will prompt the suggestion of this Dot Phrase.",
-            "example": "Your physical exam is normal"
-          },
-          "content_auto_update_enabled": {
-            "type": "boolean",
-            "default": false,
-            "description": "If true, whenever this dot phrase is suggested, the replacement text will be automatically updated based on the encounter discussion.",
-            "example": false
-          },
-          "replacement": {
-            "type": "string",
-            "description": "The replacement text for this Dot Phrase. If the Dot Phrase's trigger is detected, this text will be suggested in the note generation's response.",
-            "example": "- Heart Examination: Normal, with regular rate and rhythm, no murmurs. - Lung Assessment: Normal breath sounds, no wheezes, crackles, or rhonchi. - Abdominal Evaluation: Normal, no tenderness, masses, or hepatosplenomegaly."
-          }
-        }
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "description": "The creation date of this object, in ISO 8601 format.",
+        "example": "2022-03-10T19:16:23.456Z"
       },
-      "bulk_create_dot_phrases_request": {
+      "user": {
         "type": "object",
-        "required": [
-          "data"
-        ],
-        "properties": {
-          "data": {
-            "type": "array",
-            "minItems": 1,
-            "maxItems": 100,
-            "items": {
-              "$ref": "#/components/schemas/create_dot_phrase_item"
-            }
-          }
-        }
-      },
-      "bulk_create_dot_phrases_response": {
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/dot_phrase"
-            }
-          }
-        }
-      },
-      "bulk_update_dot_phrase_item": {
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "x-patch-properties": [
-          "title",
-          "trigger",
-          "replacement",
-          "content_auto_update_enabled"
-        ],
+        "description": "The user object.",
         "properties": {
           "id": {
             "$ref": "#/components/schemas/uuid"
           },
-          "title": {
-            "type": "string",
-            "description": "A user-friendly title for the Dot Phrase. Does not impact the matching logic.",
-            "example": "Normal physical exam"
-          },
-          "trigger": {
-            "type": "string",
-            "description": "The text which, if present in the transcript, will prompt the suggestion of this Dot Phrase.",
-            "example": "Your physical exam is normal"
-          },
-          "content_auto_update_enabled": {
+          "activated": {
             "type": "boolean",
-            "description": "If true, whenever this dot phrase is suggested, the replacement text will be automatically updated based on the encounter discussion.",
-            "example": false
+            "description": "Always true unless you explicitly [deactivate](/api-reference/server/manage-users/deactivate-a-user) the user."
           },
-          "replacement": {
+          "external_id": {
             "type": "string",
-            "description": "The replacement text for this Dot Phrase. If the Dot Phrase's trigger is detected, this text will be suggested in the note generation's response.",
-            "example": "- Heart Examination: Normal, with regular rate and rhythm, no murmurs. - Lung Assessment: Normal breath sounds, no wheezes, crackles, or rhonchi. - Abdominal Evaluation: Normal, no tenderness, masses, or hepatosplenomegaly."
-          }
-        }
-      },
-      "bulk_update_dot_phrases_request": {
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "properties": {
-          "data": {
-            "type": "array",
-            "minItems": 1,
-            "maxItems": 100,
-            "items": {
-              "$ref": "#/components/schemas/bulk_update_dot_phrase_item"
-            }
-          }
-        }
-      },
-      "bulk_update_dot_phrases_response": {
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/dot_phrase"
-            }
-          }
-        }
-      },
-      "bulk_delete_dot_phrases_request": {
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "properties": {
-          "data": {
-            "type": "array",
-            "minItems": 1,
-            "maxItems": 100,
-            "items": {
-              "$ref": "#/components/schemas/uuid"
-            }
-          }
-        }
-      },
-      "bulk_delete_dot_phrases_response": {
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/uuid"
-            }
-          }
-        }
-      },
-      "text_replacement": {
-        "type": "object",
-        "description": "Text replacement is a concise abbreviation (`trigger`) that unfolds into a predefined, extended text (`replacement`) during dictation.",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "Unique identifier of the Text Replacement."
+            "description": "A unique identifier for the user from another system which is given to Nabla.",
+            "nullable": true,
+            "maxLength": 256
           },
-          "trigger": {
-            "type": "string",
-            "description": "The text which, if present in the dictation, will be automatically replaced with the replacement text.",
-            "example": "Normal blood pressure"
+          "metadata": {
+            "$ref": "#/components/schemas/metadata"
           },
-          "replacement": {
-            "type": "string",
-            "description": "The replacement text for this Text Replacement. If the Text Replacement's trigger is detected during dictation, this text will be automatically applied to the dictation result.",
-            "example": "- Blood Pressure: 120/80 mmHg — within normal limits.\\n- No orthostatic change detected."
+          "created_at": {
+            "$ref": "#/components/schemas/created_at"
+          },
+          "specialty": {
+            "$ref": "#/components/schemas/specialty_kind"
           }
         },
         "required": [
           "id",
-          "trigger",
-          "replacement"
+          "activated",
+          "created_at"
         ]
       },
-      "custom_dictionary_expression": {
-        "type": "object",
-        "description": "A Custom Dictionary Expression represents a custom expression that helps improve transcription accuracy.",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "Unique identifier of the Custom Dictionary Expression."
-          },
-          "expression": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64,
-            "description": "The expression for which an improved transcription accuracy is requested.",
-            "example": "metformin"
-          },
-          "speech_locale": {
-            "$ref": "#/components/schemas/speech_locale",
-            "description": "The locale of the expression."
-          }
-        },
-        "required": [
-          "id",
-          "expression",
-          "speech_locale"
-        ]
-      },
-      "note_settings": {
-        "type": "object",
-        "description": "Settings that apply for all notes generated by the current user, e.g. through the [`/generate-note` endpoint](/api-reference/server/digest/generate-a-note).",
-        "required": [
-          "note_template",
-          "note_locale"
-        ],
-        "properties": {
-          "note_template": {
-            "$ref": "#/components/schemas/note_template"
-          },
-          "note_locale": {
-            "$ref": "#/components/schemas/note_locale"
-          }
-        }
-      },
-      "note_section_customization_custom_instruction": {
+      "next_cursor": {
         "type": "string",
-        "maxLength": 700,
-        "example": "Include discussion about first symptoms",
-        "description": "Allow to customize a note section by providing specific guidelines.  These guidelines must be as clear and concise as possible for best results."
-      },
-      "note_section_customization_section_style": {
-        "type": "string",
-        "enum": [
-          "AUTO",
-          "PARAGRAPH",
-          "BULLET_POINTS"
-        ],
-        "example": "PARAGRAPH",
-        "description": "Specifies the desired style for the note section:\n\n  • `PARAGRAPH`: Prioritizes generating paragraphs;\n\n  • `BULLET_POINTS`: Prioritizes structuring content using bullet points.\n\n  • `AUTO`: Automatically picks the most natural formatting option.\n\nDefault is `AUTO`."
-      },
-      "note_section_customization_level_of_detail": {
-        "type": "string",
-        "enum": [
-          "DEFAULT",
-          "DETAILED"
-        ],
-        "description": "Specifies the desired level of details. Use `detailed` to get more details in the note section."
-      },
-      "note_section_customization": {
-        "type": "object",
-        "required": [
-          "section_key"
-        ],
-        "properties": {
-          "section_key": {
-            "description": "Key of the note section this customization should apply to.",
-            "$ref": "#/components/schemas/note_section_key"
-          },
-          "custom_instruction": {
-            "$ref": "#/components/schemas/note_section_customization_custom_instruction"
-          },
-          "style": {
-            "$ref": "#/components/schemas/note_section_customization_section_style"
-          },
-          "level_of_detail": {
-            "$ref": "#/components/schemas/note_section_customization_level_of_detail"
-          },
-          "split_by_problem": {
-            "type": "boolean",
-            "description": "Flag to structure the content of the note sections according to distinct clinical problems or topics addressed during the consultation."
-          }
-        }
-      },
-      "note_sections_customization": {
-        "type": "object",
-        "required": [
-          "note_sections_customization"
-        ],
-        "properties": {
-          "note_sections_customization": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/note_section_customization"
-            },
-            "description": "Advanced per-section customization options for the chosen template.\n\nYou should **only specify sections that belong to the given template**, and **only specify customization options that are supported for the given section**. Also, only specify sections you want to customize, no need to be exhaustive.\n\n\nCheck [Note templates sections](/core-api/note-templates/customization) for compatibility matrix."
-          }
-        }
-      },
-      "jwt_token": {
-        "type": "string",
-        "description": "An authentication token using the JWT serialization format. JWT tokens contain varying data (depending on their intended use) and use a signature to guarantee their authenticity.",
-        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWNjZXNzIiwic3ViIjoiMTIzNDU2Nzg5MCIsIm5hbWUiOiJKb2huIERvZSIsImlhdCI6MTUxNjIzOTAyMn0.v5qdy8w9Ygs5fdic9a1LuX76PUdx3omYd5GlDTAF3Ug"
+        "nullable": true,
+        "description": "An opaque cursor to fetch the next page of the collection."
       },
       "session_tokens": {
         "type": "object",
@@ -4525,55 +3895,6 @@
         "required": [
           "access_token",
           "refresh_token"
-        ]
-      },
-      "ws_error_message": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "ERROR_MESSAGE"
-            ]
-          },
-          "message": {
-            "type": "string",
-            "description": "A human-readable explanation of the error, often including contextual details to help understand what went wrong."
-          },
-          "code": {
-            "type": "integer",
-            "description": "A numeric identifier for the error. This may either be a standard HTTP status code (e.g. 400, 401) or a more specific application-level code (typically >1000). Some errors —like an audio buffer overflow due to client misuse— have dedicated codes, while others —like malformed JSON— use broader and generic codes.\n\n**Tip**: You should use this field as the primary reference for implementing error handling logic."
-          },
-          "name": {
-            "type": "string",
-            "description": "An internal enum-style name associated with the error code. While it may help with debugging, it’s mainly for reference—always rely on the numeric code for programmatic handling."
-          },
-          "trace_id": {
-            "type": "string",
-            "description": "A unique identifier for the failed API request. This is especially useful when reaching out to Nabla support, as it allows us to trace the exact request in our systems."
-          }
-        },
-        "required": [
-          "type",
-          "message",
-          "code",
-          "name"
-        ],
-        "example": [
-          {
-            "type": "ERROR_MESSAGE",
-            "message": "Unable to parse JSON at path $.speech_locales",
-            "code": 400,
-            "name": "BAD_REQUEST",
-            "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
-          },
-          {
-            "type": "ERROR_MESSAGE",
-            "message": "Received a huge amount of audio in a very short window time.",
-            "code": 83016,
-            "name": "AUDIO_CHUNKS_BUFFER_OVERFLOW",
-            "trace_id": "projects/xxxxx/traces/abcd123456789xyz"
-          }
         ]
       },
       "transcribe_config_stream": {
@@ -4742,6 +4063,230 @@
         ],
         "example": "en-US"
       },
+      "base_webhook_event": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/uuid",
+            "description": "The unique identifier of this webhook event."
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/created_at",
+            "description": "Creation date of this webhook event."
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of this event, serves as a discriminator between the different possible webhook types."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "type"
+        ]
+      },
+      "generate_note_async_succeeded": {
+        "x-sensitive-medical-data": true,
+        "x-webhook-type": "CORE_API_GENERATE_NOTE_ASYNC_SUCCEEDED",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/base_webhook_event"
+          },
+          {
+            "type": "object",
+            "description": "Event sent when an **asynchronous** note generation succeeds.",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/async_note_generation_succeeded"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          }
+        ]
+      },
+      "generate_note_async_failed": {
+        "x-sensitive-medical-data": false,
+        "x-webhook-type": "CORE_API_GENERATE_NOTE_ASYNC_FAILED",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/base_webhook_event"
+          },
+          {
+            "type": "object",
+            "description": "Event sent when an **asynchronous** note generation fails.",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/async_request_failed"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          }
+        ]
+      },
+      "transcribe_async_succeeded": {
+        "x-sensitive-medical-data": true,
+        "x-webhook-type": "CORE_API_TRANSCRIBE_ASYNC_SUCCEEDED",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/base_webhook_event"
+          },
+          {
+            "type": "object",
+            "description": "Event sent when an **asynchronous** transcription succeeds.",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/async_transcription_succeeded"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          }
+        ]
+      },
+      "transcribe_async_failed": {
+        "x-sensitive-medical-data": false,
+        "x-webhook-type": "CORE_API_TRANSCRIBE_ASYNC_FAILED",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/base_webhook_event"
+          },
+          {
+            "type": "object",
+            "description": "Event sent when an **asynchronous** transcription fails.",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/async_request_failed"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          }
+        ]
+      },
+      "dictate_async_succeeded": {
+        "x-sensitive-medical-data": true,
+        "x-webhook-type": "CORE_API_DICTATE_ASYNC_SUCCEEDED",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/base_webhook_event"
+          },
+          {
+            "type": "object",
+            "description": "Event sent when an **asynchronous** dictation succeeds.",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/async_dictation_succeeded"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          }
+        ]
+      },
+      "dictate_async_failed": {
+        "x-sensitive-medical-data": false,
+        "x-webhook-type": "CORE_API_DICTATE_ASYNC_FAILED",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/base_webhook_event"
+          },
+          {
+            "type": "object",
+            "description": "Event sent when an **asynchronous** dictation fails.",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/async_request_failed"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          }
+        ]
+      },
+      "webhook_event": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/generate_note_async_succeeded",
+            "title": "generate_note_async.succeeded"
+          },
+          {
+            "$ref": "#/components/schemas/generate_note_async_failed",
+            "title": "generate_note_async.failed"
+          },
+          {
+            "$ref": "#/components/schemas/transcribe_async_succeeded",
+            "title": "transcribe_async.succeeded"
+          },
+          {
+            "$ref": "#/components/schemas/transcribe_async_failed",
+            "title": "transcribe_async.failed"
+          },
+          {
+            "$ref": "#/components/schemas/dictate_async_succeeded",
+            "title": "dictate_async.succeeded"
+          },
+          {
+            "$ref": "#/components/schemas/dictate_async_failed",
+            "title": "dictate_async.failed"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "generate_note_async.succeeded": "#/components/schemas/generate_note_async_succeeded",
+            "generate_note_async.failed": "#/components/schemas/generate_note_async_failed",
+            "transcribe_async.succeeded": "#/components/schemas/transcribe_async_succeeded",
+            "transcribe_async.failed": "#/components/schemas/transcribe_async_failed",
+            "dictate_async.succeeded": "#/components/schemas/dictate_async_succeeded",
+            "dictate_async.failed": "#/components/schemas/dictate_async_failed"
+          }
+        },
+        "example": {
+          "id": "0cf0b04d-5bbe-47a9-9601-3dd037644f65",
+          "created_at": "2024-07-15T12:47:34.380Z",
+          "type": "generate_note_async.succeeded",
+          "data": {
+            "id": "51abd747-ab5b-4b61-8f28-5a41b554bd7a",
+            "created_at": "2024-07-15T12:47:34.380Z",
+            "type": "generate_note_async.succeeded",
+            "data": {
+              "id": "ec546a5a-37ec-40da-b719-127366072fdc",
+              "client_request_id": "notegen_n123456789",
+              "status": "succeeded",
+              "payload": {
+                "note": {
+                  "title": "Fatigue and headache",
+                  "sections": [
+                    {
+                      "key": "CHIEF_COMPLAINT",
+                      "title": "Chief complaint",
+                      "text": "- Persistent fatigue\n- Mild headaches on the right side"
+                    },
+                    {
+                      "key": "PAST_MEDICAL_HISTORY",
+                      "title": "Past medical history",
+                      "text": "- Hypertension\n- Elevated blood sugar levels"
+                    },
+                    {
+                      "key": "LAB_RESULTS",
+                      "title": "Lab results",
+                      "text": "- Blood sugar level: 1.4 g/L\n- LDL cholesterol: 2 g/L"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
       "dictate_locale": {
         "type": "string",
         "enum": [
@@ -4799,45 +4344,44 @@
           "default": "ASC"
         }
       },
-      "dot_phrase_id": {
-        "name": "id",
-        "description": "The unique identifier of the Dot Phrase.",
+      "user_id": {
+        "name": "user_id",
+        "description": "The unique identifier of the user.",
         "in": "path",
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/uuid"
-        },
-        "example": "23A9981B-9E46-4ADB-BB0B-8E406C624540"
-      },
-      "text_replacement_id": {
-        "name": "id",
-        "description": "The unique identifier of the Text Replacement.",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "$ref": "#/components/schemas/uuid"
-        },
-        "example": "23A9981B-9E46-4ADB-BB0B-8E406C624540"
-      },
-      "custom_dictionary_expression_id": {
-        "name": "id",
-        "description": "The unique identifier of the Custom Dictionary Expression.",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "$ref": "#/components/schemas/uuid"
-        },
-        "example": "23A9981B-9E46-4ADB-BB0B-8E406C199840"
-      },
-      "note_template": {
-        "name": "note_template",
-        "description": "Template for which the customization applies.",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "$ref": "#/components/schemas/note_template"
         }
       }
     }
-  }
+  },
+  "tags": [
+    {
+      "name": "Authentication"
+    },
+    {
+      "name": "Manage users"
+    },
+    {
+      "name": "Transcribe"
+    },
+    {
+      "name": "Dictate"
+    },
+    {
+      "name": "Generate note"
+    },
+    {
+      "name": "Generate normalized data"
+    },
+    {
+      "name": "Generate patient instructions"
+    },
+    {
+      "name": "Edit note with instructions"
+    },
+    {
+      "name": "Report feedback"
+    }
+  ]
 }

@@ -4,6 +4,8 @@ description: "Pin Nabla Connect organization-wide or override the version per re
 icon: "bullseye"
 ---
 
+import { currentVersion } from '/snippets/current-version.mdx';
+
 If you haven't already, read [Versioning strategy](/connect/api-versioning/strategy) for the recommended workflow. This page covers the mechanics — how to pin your organization and how to override per request.
 
 ## Why target a specific version
@@ -26,7 +28,7 @@ https://<region>.api.nabla.com/v1/connect/server
 
 All requests use your organization's **pinned version** by default. It starts at the most recent version available at the time your organization was created. Check or change it in the [Nabla Connect Admin](https://app.nabla.com/admin/nabla-connect). You can pin to any existing version.
 
-The current version is `2026-04-24`. For the complete list, see the [Changelog](/connect/changelog).
+The current version is <code>{currentVersion}</code>. For the complete list, see the [Changelog](/connect/changelog).
 
 ## Override per request
 
