@@ -1,11 +1,36 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "aspen",
+  "theme": "maple",
   "name": "Nabla Developer Docs",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#111111",
+    "light": "#18E299",
+    "dark": "#0C8C5E"
+  },
+  "background": {
+    "decoration": "grid",
+    "color": {
+      "light": "#F5F1E8",
+      "dark": "#0F0E0C"
+    }
+  },
+  "fonts": {
+    "heading": {
+      "family": "Space Grotesk",
+      "weight": 600
+    },
+    "body": {
+      "family": "Inter Tight",
+      "weight": 400
+    }
+  },
+  "styling": {
+    "codeblocks": {
+      "theme": {
+        "light": "github-light-default",
+        "dark": "github-dark-default"
+      }
+    }
   },
   "favicon": "/favicon.svg",
   "navigation": {

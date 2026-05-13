@@ -1,0 +1,147 @@
+/* Nabla docs — editorial / parchment aesthetic
+ * Custom CSS loaded automatically by Mintlify.
+ * Tunes typography, badges, borders, and the version pill to match the
+ * cream/ink visual language defined in docs.template.json. */
+
+:root {
+  --nabla-ink: #111111;
+  --nabla-paper: #F5F1E8;
+  --nabla-paper-soft: #EDE7D8;
+  --nabla-rule: #1F1B130F;
+  --nabla-muted: #5B574C;
+
+  --nabla-method-get: #047857;
+  --nabla-method-post: #2563EB;
+  --nabla-method-patch: #B45309;
+  --nabla-method-delete: #B91C1C;
+  --nabla-method-ws: #7C3AED;
+}
+
+html[data-color-mode="dark"] {
+  --nabla-ink: #F5F1E8;
+  --nabla-paper: #0F0E0C;
+  --nabla-paper-soft: #18160F;
+  --nabla-rule: #F5F1E81F;
+  --nabla-muted: #A8A293;
+
+  --nabla-method-get: #34D399;
+  --nabla-method-post: #60A5FA;
+  --nabla-method-patch: #FBBF24;
+  --nabla-method-delete: #F87171;
+  --nabla-method-ws: #A78BFA;
+}
+
+/* ------- Typography ------- */
+
+h1, h2, h3, h4 {
+  font-family: "Space Grotesk", "Inter Tight", system-ui, sans-serif;
+  letter-spacing: -0.022em;
+}
+
+h1 {
+  letter-spacing: -0.035em;
+  font-weight: 700;
+}
+
+body, p, li {
+  font-feature-settings: "ss01", "cv11";
+}
+
+code, pre, kbd, .font-mono {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-feature-settings: "calt" 0, "liga" 0;
+}
+
+/* Inline code on cream paper reads better with a warm tinted chip */
+:not(pre) > code {
+  background: var(--nabla-paper-soft);
+  border: 1px solid var(--nabla-rule);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-size: 0.875em;
+}
+
+/* ------- Surfaces & borders ------- */
+
+hr, .border, [class*="border-"] {
+  border-color: var(--nabla-rule);
+}
+
+/* Soften card / callout backgrounds against the cream paper */
+[class*="bg-background-light"],
+[class*="bg-white"] {
+  background-color: var(--nabla-paper-soft);
+}
+
+/* ------- HTTP method badges (API reference) ------- */
+
+[class*="method"],
+[data-method],
+.api-method,
+span:where([class*="GET"], [class*="POST"], [class*="PATCH"], [class*="DELETE"], [class*="WS"]) {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+}
+
+[data-method="GET"]    { color: var(--nabla-method-get); }
+[data-method="POST"]   { color: var(--nabla-method-post); }
+[data-method="PATCH"]  { color: var(--nabla-method-patch); }
+[data-method="PUT"]    { color: var(--nabla-method-patch); }
+[data-method="DELETE"] { color: var(--nabla-method-delete); }
+[data-method="WS"]     { color: var(--nabla-method-ws); }
+
+/* ------- Version pill (navbar) ------- */
+
+[class*="version"] [class*="badge"],
+[data-version-badge] {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  letter-spacing: 0.02em;
+}
+
+/* ------- Primary buttons — ink-on-paper ------- */
+
+a[class*="btn-primary"],
+button[class*="btn-primary"],
+[class*="primary-button"] {
+  background-color: var(--nabla-ink);
+  color: var(--nabla-paper);
+  border-radius: 6px;
+}
+
+a[class*="btn-primary"]:hover,
+button[class*="btn-primary"]:hover {
+  background-color: var(--nabla-ink);
+  opacity: 0.88;
+}
+
+/* ------- Sidebar ------- */
+
+nav a[aria-current="page"],
+nav [class*="active"] {
+  font-weight: 600;
+}
+
+/* ------- Reduce visual noise on the homepage hero ------- */
+
+html[data-current-path="/"] h1 {
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+}
+
+/* ------- Tables ------- */
+
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+th {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.72rem;
+  color: var(--nabla-muted);
+}
