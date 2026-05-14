@@ -3,3 +3,18 @@
   letter-spacing: 0.05em;
   color: rgb(var(--gray-500));
 }
+
+[data-component-part="products-selector-trigger"],
+[data-component-part="version-select-trigger"] {
+  border: 1px solid rgb(var(--gray-200));
+}
+
+[data-component-part="version-select-trigger"] span,
+[data-component-part="version-select-item"] p {
+  font-family: var(--font-jetbrains-mono, monospace);
+}
+
+.method-nav-pill span {
+  font-family: var(--font-jetbrains-mono, monospace);
+  border: 1px solid
+}
