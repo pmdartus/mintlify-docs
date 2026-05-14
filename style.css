@@ -1,0 +1,5 @@
+.sidebar-group-header {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgb(var(--gray-500));
+}

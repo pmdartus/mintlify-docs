@@ -2,6 +2,12 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "aspen",
   "name": "Nabla Developer Docs",
+  "background": {
+    "color": {
+      "light": "#fbfaf8",
+      "dark": "#111827"
+    }
+  },
   "colors": {
     "primary": "#16A34A",
     "light": "#07C983",
