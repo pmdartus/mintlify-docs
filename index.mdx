@@ -1,88 +1,246 @@
 ---
 title: "Nabla Developer Docs"
-description: "Build with the Nabla Core API and Nabla Connect."
-icon: "house"
+description: "The clinical AI platform for builders."
+mode: "custom"
 ---
 
-Nabla provides clinical AI building blocks for healthcare apps and EHRs. Pick the product you're integrating with to get started.
+export const eyebrowStyle = { fontSize: 12, letterSpacing: "0.14em" };
+export const cardStyle = {
+  padding: "22px 22px 24px",
+  borderWidth: 1,
+  borderStyle: "solid",
+  borderColor: "rgba(10,10,10,0.08)",
+  borderRadius: 12,
+  background: "rgba(10,10,10,0.025)",
+  display: "block",
+  color: "inherit",
+  textDecoration: "none",
+  transition: "transform 0.15s ease, border-color 0.15s ease, background 0.15s ease",
+};
+export const iconBoxStyle = {
+  width: 36,
+  height: 36,
+  borderRadius: 8,
+  borderWidth: 1,
+  borderStyle: "solid",
+  borderColor: "rgba(10,10,10,0.08)",
+  background: "#ffffff",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: "rgb(38,38,38)",
+};
+export const btnPrimary = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 10,
+  height: 48,
+  padding: "0 22px",
+  borderRadius: 10,
+  background: "#0a0a0a",
+  color: "#fafafa",
+  border: "1px solid #0a0a0a",
+  fontSize: 15,
+  fontWeight: 500,
+  textDecoration: "none",
+};
+export const btnSecondary = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 10,
+  height: 48,
+  padding: "0 22px",
+  borderRadius: 10,
+  background: "transparent",
+  color: "#0a0a0a",
+  border: "1px solid rgba(10,10,10,0.18)",
+  fontSize: 15,
+  fontWeight: 500,
+  textDecoration: "none",
+};
+export const sectionEyebrow = {
+  fontSize: 12,
+  letterSpacing: "0.14em",
+  color: "rgb(115,115,115)",
+  marginBottom: 18,
+};
+export const sectionTitle = {
+  fontWeight: 700,
+  lineHeight: 1.02,
+  letterSpacing: "-0.025em",
+  margin: 0,
+  marginBottom: 24,
+};
+export const sectionSub = {
+  fontSize: 17,
+  lineHeight: 1.55,
+  color: "rgb(107,114,128)",
+  maxWidth: "44ch",
+  margin: 0,
+};
 
-<Columns cols={2}>
-  <Card
-    title="Core API"
-    icon="plug"
-    href="/core-api/introduction"
-    horizontal
-  >
-    Medical transcription, clinical note generation, FHIR-normalized data, dictation, and more — for healthcare apps, telehealth platforms, and EHRs.
-  </Card>
-  <Card
-    title="Nabla Connect"
-    icon="rocket"
-    href="/connect/introduction"
-    horizontal
-  >
-    Embed Nabla into your product with our EHR integration protocol.
-  </Card>
-</Columns>
+<div className="mx-auto" style={{ maxWidth: 1180, padding: "80px 32px 96px", color: "#0a0a0a" }}>
 
-## Start building
+  {/* ============== HERO ============== */}
+  <section>
+    <div className="font-mono uppercase flex items-center" style={{ ...eyebrowStyle, color: "rgb(115,115,115)", marginBottom: 28, gap: 12 }}>
+      <span style={{ display: "inline-block", width: 28, height: 1, background: "rgba(10,10,10,0.6)" }} />
+      NABLA CORE API · V2025-09-01
+    </div>
 
-<Columns cols={2}>
-  <Card
-    title="Quickstart"
-    icon="bolt"
-    href="/core-api/quickstart"
-  >
-    Make your first Nabla API call in under five minutes — authenticate, transcribe a clip, and generate a clinical note.
-  </Card>
-  <Card
-    title="Authenticate your API calls"
-    icon="key"
-    href="/core-api/authentication"
-  >
-    Set up OAuth 2.0 for the Server API and generate User API tokens.
-  </Card>
-</Columns>
+    <h1 className="font-bold" style={{ fontSize: "clamp(40px, 6.4vw, 84px)", lineHeight: 0.98, letterSpacing: "-0.035em", maxWidth: "16ch", margin: 0, marginBottom: 28 }}>
+      The clinical AI platform for builders.
+    </h1>
 
-## Popular guides
+    <p style={{ fontSize: "clamp(17px, 1.4vw, 20px)", lineHeight: 1.55, color: "rgb(107,114,128)", maxWidth: "56ch", margin: 0, marginBottom: 36 }}>
+      Real-time medical transcription, structured note generation, and normalized
+      clinical data — accessible through a single, consistent API.
+    </p>
 
-<Columns cols={2}>
-  <Card
-    title="Generate a clinical note"
-    icon="file-lines"
-    href="/core-api/guides/generate-a-clinical-note"
-  >
-    Turn a transcript into a structured SOAP, APSO, or specialty note.
-  </Card>
-  <Card
-    title="Stream a live encounter"
-    icon="microphone"
-    href="/core-api/guides/stream-a-live-encounter"
-  >
-    Send audio over WebSocket and receive transcripts in real time.
-  </Card>
-  <Card
-    title="Set up webhooks"
-    icon="webhook"
-    href="/core-api/webhooks/setup"
-  >
-    Receive real-time event notifications with HMAC-signed payloads.
-  </Card>
-  <Card
-    title="Integrate with an EHR"
-    icon="hospital"
-    href="/core-api/guides/ehr-integration"
-  >
-    Push Nabla-generated notes into your EHR via the browser or your backend.
-  </Card>
-</Columns>
+    <div className="flex flex-wrap" style={{ gap: 12, marginBottom: 72 }}>
+      <a href="/core-api/quickstart" style={btnPrimary}>
+        Quickstart <span aria-hidden="true">→</span>
+      </a>
+      <a href="/api-reference" style={btnSecondary}>
+        Read the API reference
+      </a>
+    </div>
 
-## Need help?
+    {/* Demo card */}
+    <div className="grid grid-cols-1 md:grid-cols-2 overflow-hidden" style={{ border: "1px solid rgba(10,10,10,0.08)", borderRadius: 16, background: "rgba(10,10,10,0.025)" }}>
 
-<Card
-  title="Contact support"
-  icon="envelope"
-  href="mailto:hi@nabla.com"
->
-  Reach the Nabla team for integration help, account questions, or feedback.
-</Card>
+      {/* Live transcript */}
+      <div style={{ padding: 32, borderRight: "1px solid rgba(10,10,10,0.08)" }}>
+        <div className="font-mono uppercase" style={{ ...eyebrowStyle, color: "rgb(115,115,115)", marginBottom: 22 }}>
+          LIVE TRANSCRIPT · <span style={{ color: "rgb(163,163,163)" }}>00:42</span>
+        </div>
+        <div className="flex flex-col" style={{ gap: 14 }}>
+          {[
+            { ts: "00:08", speaker: "Clinician", color: "#2563eb", text: "Hi, what brings you in today?" },
+            { ts: "00:11", speaker: "Patient", color: "#be185d", text: "I've had this dry cough for about three days, and last night I was really short of breath." },
+            { ts: "00:24", speaker: "Clinician", color: "#2563eb", text: "Any wheezing, fever?" },
+          ].map((l) => (
+            <div key={l.ts} style={{ display: "grid", gridTemplateColumns: "48px 1fr", gap: 14, fontSize: 14.5, lineHeight: 1.55 }}>
+              <span className="font-mono" style={{ fontSize: 12, color: "rgb(163,163,163)", paddingTop: 3 }}>{l.ts}</span>
+              <p style={{ margin: 0, color: "rgb(38,38,38)" }}>
+                <span style={{ fontWeight: 600, color: l.color }}>{l.speaker}:</span> {l.text}
+              </p>
+            </div>
+          ))}
+          <div style={{ display: "grid", gridTemplateColumns: "48px 1fr", gap: 14, fontSize: 14.5, lineHeight: 1.55 }}>
+            <span className="font-mono" style={{ fontSize: 12, color: "rgb(163,163,163)", paddingTop: 3 }}>00:31</span>
+            <p style={{ margin: 0, color: "rgb(38,38,38)" }}>
+              <span style={{ fontWeight: 600, color: "#be185d" }}>Patient:</span> Some wheezing,{" "}
+              <span style={{ display: "inline-block", background: "#dbeafe", color: "#1d4ed8", padding: "1px 8px", borderRadius: 5, fontSize: 13.5 }}>no fever</span>
+              <span className="animate-pulse" style={{ display: "inline-block", width: 7, height: 14, background: "#0a0a0a", verticalAlign: -2, marginLeft: 4 }} />
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Generated note */}
+      <div style={{ padding: 32 }}>
+        <div className="font-mono uppercase" style={{ ...eyebrowStyle, color: "rgb(115,115,115)", marginBottom: 22 }}>
+          <span style={{ color: "rgb(163,163,163)", marginRight: 4 }}>✦</span> GENERATED NOTE · GENERIC_SOAP
+        </div>
+        <h4 className="font-mono uppercase" style={{ fontSize: 11.5, letterSpacing: "0.14em", fontWeight: 600, margin: 0, marginBottom: 8 }}>SUBJECTIVE</h4>
+        <p style={{ margin: 0, marginBottom: 18, fontSize: 14.5, lineHeight: 1.6, color: "rgb(38,38,38)" }}>
+          Patient reports a 3-day history of dry cough with new-onset dyspnea overnight. Endorses wheezing. Denies fever.
+        </p>
+        <h4 className="font-mono uppercase" style={{ fontSize: 11.5, letterSpacing: "0.14em", fontWeight: 600, margin: 0, marginBottom: 8 }}>ASSESSMENT</h4>
+        <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, color: "rgb(115,115,115)", fontStyle: "italic" }}>
+          Streaming…
+          <span className="animate-pulse" style={{ display: "inline-block", width: 7, height: 14, background: "#0a0a0a", verticalAlign: -2, marginLeft: 4, fontStyle: "normal" }} />
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <hr style={{ border: 0, borderTop: "1px solid rgba(10,10,10,0.08)", margin: "96px 0" }} />
+
+  {/* ============== CAPABILITIES ============== */}
+  <section>
+    <div className="grid grid-cols-1 items-start" style={{ gap: 56, gridTemplateColumns: "minmax(0, 5fr) minmax(0, 7fr)" }}>
+      <div>
+        <div className="font-mono uppercase" style={sectionEyebrow}>§01 — CAPABILITIES</div>
+        <h2 className="font-bold" style={{ ...sectionTitle, fontSize: "clamp(30px, 3.2vw, 44px)" }}>
+          Built for clinical<br/>workflows, not chat
+        </h2>
+        <p style={sectionSub}>
+          Composable primitives that match how clinicians actually work — capture,
+          summarize, and structure encounters in a single pass.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 14 }}>
+        {[
+          { href: "/core-api/guides/stream-a-live-encounter", icon: "microphone", title: "Transcribe", body: "Stream audio or upload a recording. Diarized, medical-grade transcripts in 35+ languages." },
+          { href: "/core-api/guides/generate-a-clinical-note", icon: "file-lines", title: "Note generation", body: "SOAP, APSO, specialty templates, or your own — generated synchronously or async." },
+          { href: "/core-api/guides/extract-fhir-normalized-data", icon: "layer-group", title: "Normalized data", body: "FHIR-aligned problems, medications, allergies, and orders, ready for your EHR." },
+        ].map((c) => (
+          <a key={c.title} href={c.href} style={cardStyle}>
+            <div style={{ ...iconBoxStyle, marginBottom: 36 }}>
+              <Icon icon={c.icon} size={18} />
+            </div>
+            <h3 style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", margin: 0, marginBottom: 8 }}>{c.title}</h3>
+            <p style={{ fontSize: 14, lineHeight: 1.55, color: "rgb(107,114,128)", margin: 0 }}>{c.body}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <hr style={{ border: 0, borderTop: "1px solid rgba(10,10,10,0.08)", margin: "96px 0" }} />
+
+  {/* ============== QUICKSTART STEPS ============== */}
+  <section>
+    <div className="grid grid-cols-1 items-start" style={{ gap: 56, gridTemplateColumns: "minmax(0, 5fr) minmax(0, 7fr)" }}>
+      <div>
+        <div className="font-mono uppercase" style={sectionEyebrow}>§02 — START BUILDING</div>
+        <h2 className="font-bold" style={{ ...sectionTitle, fontSize: "clamp(30px, 3.2vw, 44px)" }}>
+          From zero to first note<br/>in under five minutes.
+        </h2>
+        <p style={sectionSub}>
+          A guided path from your first API call to a webhook-driven EHR integration.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 14 }}>
+        {[
+          { num: "01", href: "/core-api/quickstart", icon: "bolt", title: "Quickstart", body: "Authenticate, transcribe a clip, and generate a clinical note end-to-end." },
+          { num: "02", href: "/core-api/authentication", icon: "key", title: "Authenticate", body: "Set up OAuth 2.0 for the Server API or mint short-lived User API tokens." },
+          { num: "03", href: "/core-api/webhooks/setup", icon: "bell", title: "Webhooks", body: "Receive HMAC-signed events for transcripts, notes, and async jobs." },
+          { num: "04", href: "/core-api/guides/ehr-integration", icon: "hospital", title: "EHR integration", body: "Push notes into your EHR from the browser or your backend." },
+        ].map((s) => (
+          <a key={s.num} href={s.href} style={cardStyle}>
+            <div className="flex items-center justify-between" style={{ marginBottom: 36 }}>
+              <div style={iconBoxStyle}>
+                <Icon icon={s.icon} size={18} />
+              </div>
+              <span className="font-mono" style={{ fontSize: 12, color: "rgb(163,163,163)", letterSpacing: "0.1em" }}>{s.num}</span>
+            </div>
+            <h3 style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", margin: 0, marginBottom: 8 }}>{s.title}</h3>
+            <p style={{ fontSize: 14, lineHeight: 1.55, color: "rgb(107,114,128)", margin: 0 }}>{s.body}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <hr style={{ border: 0, borderTop: "1px solid rgba(10,10,10,0.08)", margin: "96px 0" }} />
+
+  {/* ============== FOOTER CTA ============== */}
+  <section className="flex flex-wrap items-end justify-between" style={{ gap: 32 }}>
+    <div>
+      <div className="font-mono uppercase" style={sectionEyebrow}>§03 — SUPPORT</div>
+      <h2 className="font-bold" style={{ ...sectionTitle, fontSize: "clamp(30px, 3.2vw, 44px)", marginBottom: 12 }}>Talk to a human.</h2>
+      <p style={sectionSub}>
+        Integration help, account questions, or product feedback — we read every message.
+      </p>
+    </div>
+    <a href="mailto:hi@nabla.com" style={btnPrimary}>
+      Contact support <span aria-hidden="true">→</span>
+    </a>
+  </section>
+
+</div>
