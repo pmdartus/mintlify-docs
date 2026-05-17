@@ -9,9 +9,9 @@ export const cardStyle = {
   padding: "22px 22px 24px",
   borderWidth: 1,
   borderStyle: "solid",
-  borderColor: "rgba(10,10,10,0.08)",
+  borderColor: "var(--landing-border)",
   borderRadius: 12,
-  background: "rgba(10,10,10,0.025)",
+  background: "var(--landing-surface)",
   display: "block",
   color: "inherit",
   textDecoration: "none",
@@ -23,12 +23,12 @@ export const iconBoxStyle = {
   borderRadius: 8,
   borderWidth: 1,
   borderStyle: "solid",
-  borderColor: "rgba(10,10,10,0.08)",
-  background: "#ffffff",
+  borderColor: "var(--landing-border)",
+  background: "var(--landing-icon-bg)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  color: "rgb(38,38,38)",
+  color: "var(--landing-fg-strong)",
 };
 export const btnPrimary = {
   display: "inline-flex",
@@ -37,9 +37,9 @@ export const btnPrimary = {
   height: 48,
   padding: "0 22px",
   borderRadius: 10,
-  background: "#0a0a0a",
-  color: "#fafafa",
-  border: "1px solid #0a0a0a",
+  background: "var(--landing-btn-primary-bg)",
+  color: "var(--landing-btn-primary-fg)",
+  border: "1px solid var(--landing-btn-primary-bg)",
   fontSize: 15,
   fontWeight: 500,
   textDecoration: "none",
@@ -52,8 +52,8 @@ export const btnSecondary = {
   padding: "0 22px",
   borderRadius: 10,
   background: "transparent",
-  color: "#0a0a0a",
-  border: "1px solid rgba(10,10,10,0.18)",
+  color: "var(--landing-fg)",
+  border: "1px solid var(--landing-border-strong)",
   fontSize: 15,
   fontWeight: 500,
   textDecoration: "none",
@@ -61,7 +61,7 @@ export const btnSecondary = {
 export const sectionEyebrow = {
   fontSize: 12,
   letterSpacing: "0.14em",
-  color: "rgb(115,115,115)",
+  color: "var(--landing-fg-subtle)",
   marginBottom: 18,
 };
 export const sectionTitle = {
@@ -74,17 +74,17 @@ export const sectionTitle = {
 export const sectionSub = {
   fontSize: 17,
   lineHeight: 1.55,
-  color: "rgb(107,114,128)",
+  color: "var(--landing-fg-muted)",
   maxWidth: "44ch",
   margin: 0,
 };
 
-<div className="mx-auto" style={{ maxWidth: 1180, padding: "80px 32px 96px", color: "#0a0a0a" }}>
+<div className="mx-auto" style={{ maxWidth: 1180, padding: "80px 32px 96px", color: "var(--landing-fg)" }}>
 
   {/* ============== HERO ============== */}
   <section>
-    <div className="font-mono uppercase flex items-center" style={{ ...eyebrowStyle, color: "rgb(115,115,115)", marginBottom: 28, gap: 12 }}>
-      <span style={{ display: "inline-block", width: 28, height: 1, background: "rgba(10,10,10,0.6)" }} />
+    <div className="font-mono uppercase flex items-center" style={{ ...eyebrowStyle, color: "var(--landing-fg-subtle)", marginBottom: 28, gap: 12 }}>
+      <span style={{ display: "inline-block", width: 28, height: 1, background: "var(--landing-rule)" }} />
       NABLA CORE API · V2025-09-01
     </div>
 
@@ -92,7 +92,7 @@ export const sectionSub = {
       The clinical AI platform for builders.
     </h1>
 
-    <p style={{ fontSize: "clamp(17px, 1.4vw, 20px)", lineHeight: 1.55, color: "rgb(107,114,128)", maxWidth: "56ch", margin: 0, marginBottom: 36 }}>
+    <p style={{ fontSize: "clamp(17px, 1.4vw, 20px)", lineHeight: 1.55, color: "var(--landing-fg-muted)", maxWidth: "56ch", margin: 0, marginBottom: 36 }}>
       Real-time medical transcription, structured note generation, and normalized
       clinical data — accessible through a single, consistent API.
     </p>
@@ -107,32 +107,32 @@ export const sectionSub = {
     </div>
 
     {/* Demo card */}
-    <div className="grid grid-cols-1 md:grid-cols-2 overflow-hidden" style={{ border: "1px solid rgba(10,10,10,0.08)", borderRadius: 16, background: "rgba(10,10,10,0.025)" }}>
+    <div className="grid grid-cols-1 md:grid-cols-2 overflow-hidden" style={{ border: "1px solid var(--landing-border)", borderRadius: 16, background: "var(--landing-surface)" }}>
 
       {/* Live transcript */}
-      <div style={{ padding: 32, borderRight: "1px solid rgba(10,10,10,0.08)" }}>
-        <div className="font-mono uppercase" style={{ ...eyebrowStyle, color: "rgb(115,115,115)", marginBottom: 22 }}>
-          LIVE TRANSCRIPT · <span style={{ color: "rgb(163,163,163)" }}>00:42</span>
+      <div style={{ padding: 32, borderRight: "1px solid var(--landing-border)" }}>
+        <div className="font-mono uppercase" style={{ ...eyebrowStyle, color: "var(--landing-fg-subtle)", marginBottom: 22 }}>
+          LIVE TRANSCRIPT · <span style={{ color: "var(--landing-fg-faint)" }}>00:42</span>
         </div>
         <div className="flex flex-col" style={{ gap: 14 }}>
           {[
-            { ts: "00:08", speaker: "Clinician", color: "#2563eb", text: "Hi, what brings you in today?" },
-            { ts: "00:11", speaker: "Patient", color: "#be185d", text: "I've had this dry cough for about three days, and last night I was really short of breath." },
-            { ts: "00:24", speaker: "Clinician", color: "#2563eb", text: "Any wheezing, fever?" },
+            { ts: "00:08", speaker: "Clinician", color: "var(--landing-speaker-clinician)", text: "Hi, what brings you in today?" },
+            { ts: "00:11", speaker: "Patient", color: "var(--landing-speaker-patient)", text: "I've had this dry cough for about three days, and last night I was really short of breath." },
+            { ts: "00:24", speaker: "Clinician", color: "var(--landing-speaker-clinician)", text: "Any wheezing, fever?" },
           ].map((l) => (
             <div key={l.ts} style={{ display: "grid", gridTemplateColumns: "48px 1fr", gap: 14, fontSize: 14.5, lineHeight: 1.55 }}>
-              <span className="font-mono" style={{ fontSize: 12, color: "rgb(163,163,163)", paddingTop: 3 }}>{l.ts}</span>
-              <p style={{ margin: 0, color: "rgb(38,38,38)" }}>
+              <span className="font-mono" style={{ fontSize: 12, color: "var(--landing-fg-faint)", paddingTop: 3 }}>{l.ts}</span>
+              <p style={{ margin: 0, color: "var(--landing-fg-strong)" }}>
                 <span style={{ fontWeight: 600, color: l.color }}>{l.speaker}:</span> {l.text}
               </p>
             </div>
           ))}
           <div style={{ display: "grid", gridTemplateColumns: "48px 1fr", gap: 14, fontSize: 14.5, lineHeight: 1.55 }}>
-            <span className="font-mono" style={{ fontSize: 12, color: "rgb(163,163,163)", paddingTop: 3 }}>00:31</span>
-            <p style={{ margin: 0, color: "rgb(38,38,38)" }}>
-              <span style={{ fontWeight: 600, color: "#be185d" }}>Patient:</span> Some wheezing,{" "}
-              <span style={{ display: "inline-block", background: "#dbeafe", color: "#1d4ed8", padding: "1px 8px", borderRadius: 5, fontSize: 13.5 }}>no fever</span>
-              <span className="animate-pulse" style={{ display: "inline-block", width: 7, height: 14, background: "#0a0a0a", verticalAlign: -2, marginLeft: 4 }} />
+            <span className="font-mono" style={{ fontSize: 12, color: "var(--landing-fg-faint)", paddingTop: 3 }}>00:31</span>
+            <p style={{ margin: 0, color: "var(--landing-fg-strong)" }}>
+              <span style={{ fontWeight: 600, color: "var(--landing-speaker-patient)" }}>Patient:</span> Some wheezing,{" "}
+              <span style={{ display: "inline-block", background: "var(--landing-pill-bg)", color: "var(--landing-pill-fg)", padding: "1px 8px", borderRadius: 5, fontSize: 13.5 }}>no fever</span>
+              <span className="animate-pulse" style={{ display: "inline-block", width: 7, height: 14, background: "var(--landing-cursor)", verticalAlign: -2, marginLeft: 4 }} />
             </p>
           </div>
         </div>
@@ -140,23 +140,23 @@ export const sectionSub = {
 
       {/* Generated note */}
       <div style={{ padding: 32 }}>
-        <div className="font-mono uppercase" style={{ ...eyebrowStyle, color: "rgb(115,115,115)", marginBottom: 22 }}>
-          <span style={{ color: "rgb(163,163,163)", marginRight: 4 }}>✦</span> GENERATED NOTE · GENERIC_SOAP
+        <div className="font-mono uppercase" style={{ ...eyebrowStyle, color: "var(--landing-fg-subtle)", marginBottom: 22 }}>
+          <span style={{ color: "var(--landing-fg-faint)", marginRight: 4 }}>✦</span> GENERATED NOTE · GENERIC_SOAP
         </div>
         <h4 className="font-mono uppercase" style={{ fontSize: 11.5, letterSpacing: "0.14em", fontWeight: 600, margin: 0, marginBottom: 8 }}>SUBJECTIVE</h4>
-        <p style={{ margin: 0, marginBottom: 18, fontSize: 14.5, lineHeight: 1.6, color: "rgb(38,38,38)" }}>
+        <p style={{ margin: 0, marginBottom: 18, fontSize: 14.5, lineHeight: 1.6, color: "var(--landing-fg-strong)" }}>
           Patient reports a 3-day history of dry cough with new-onset dyspnea overnight. Endorses wheezing. Denies fever.
         </p>
         <h4 className="font-mono uppercase" style={{ fontSize: 11.5, letterSpacing: "0.14em", fontWeight: 600, margin: 0, marginBottom: 8 }}>ASSESSMENT</h4>
-        <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, color: "rgb(115,115,115)", fontStyle: "italic" }}>
+        <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, color: "var(--landing-fg-subtle)", fontStyle: "italic" }}>
           Streaming…
-          <span className="animate-pulse" style={{ display: "inline-block", width: 7, height: 14, background: "#0a0a0a", verticalAlign: -2, marginLeft: 4, fontStyle: "normal" }} />
+          <span className="animate-pulse" style={{ display: "inline-block", width: 7, height: 14, background: "var(--landing-cursor)", verticalAlign: -2, marginLeft: 4, fontStyle: "normal" }} />
         </p>
       </div>
     </div>
   </section>
 
-  <hr style={{ border: 0, borderTop: "1px solid rgba(10,10,10,0.08)", margin: "96px 0" }} />
+  <hr style={{ border: 0, borderTop: "1px solid var(--landing-border)", margin: "96px 0" }} />
 
   {/* ============== CAPABILITIES ============== */}
   <section>
@@ -183,14 +183,14 @@ export const sectionSub = {
               <Icon icon={c.icon} size={18} />
             </div>
             <h3 style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", margin: 0, marginBottom: 8 }}>{c.title}</h3>
-            <p style={{ fontSize: 14, lineHeight: 1.55, color: "rgb(107,114,128)", margin: 0 }}>{c.body}</p>
+            <p style={{ fontSize: 14, lineHeight: 1.55, color: "var(--landing-fg-muted)", margin: 0 }}>{c.body}</p>
           </a>
         ))}
       </div>
     </div>
   </section>
 
-  <hr style={{ border: 0, borderTop: "1px solid rgba(10,10,10,0.08)", margin: "96px 0" }} />
+  <hr style={{ border: 0, borderTop: "1px solid var(--landing-border)", margin: "96px 0" }} />
 
   {/* ============== QUICKSTART STEPS ============== */}
   <section>
@@ -217,17 +217,17 @@ export const sectionSub = {
               <div style={iconBoxStyle}>
                 <Icon icon={s.icon} size={18} />
               </div>
-              <span className="font-mono" style={{ fontSize: 12, color: "rgb(163,163,163)", letterSpacing: "0.1em" }}>{s.num}</span>
+              <span className="font-mono" style={{ fontSize: 12, color: "var(--landing-fg-faint)", letterSpacing: "0.1em" }}>{s.num}</span>
             </div>
             <h3 style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", margin: 0, marginBottom: 8 }}>{s.title}</h3>
-            <p style={{ fontSize: 14, lineHeight: 1.55, color: "rgb(107,114,128)", margin: 0 }}>{s.body}</p>
+            <p style={{ fontSize: 14, lineHeight: 1.55, color: "var(--landing-fg-muted)", margin: 0 }}>{s.body}</p>
           </a>
         ))}
       </div>
     </div>
   </section>
 
-  <hr style={{ border: 0, borderTop: "1px solid rgba(10,10,10,0.08)", margin: "96px 0" }} />
+  <hr style={{ border: 0, borderTop: "1px solid var(--landing-border)", margin: "96px 0" }} />
 
   {/* ============== FOOTER CTA ============== */}
   <section className="flex flex-wrap items-end justify-between" style={{ gap: 32 }}>
