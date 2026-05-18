@@ -162,7 +162,7 @@ The table below explains the meaning of each code and how your client should res
 
 For all other codes (1001, 1011, 1012, 1013), along with unlisted or unknown ones,
 **you should retry opening a new WebSocket with an exponential backoff** (first attempt immediately, then 2 seconds later, then 4s, 8s, 16s, etc) and resume transcription from the latest acknowledged audio chunk.
-See [resilience best practices](https://docs.nabla.com/guides/best-practices/transcription-network-resilience).
+See [resilience best practices](/core-api/best-practices/transcription-network-resilience).
 
 ### Error details frame
 

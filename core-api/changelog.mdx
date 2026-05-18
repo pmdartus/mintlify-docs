@@ -13,7 +13,7 @@ That said, some updates — like internal AI model improvements, bug fixes, or s
 Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entries that change the wire format or observable behavior are tagged **Breaking change** in the right-side filter panel — read those carefully before rolling forward. For the recommended upgrade workflow, see [Versioning strategy](/core-api/api-versioning/strategy).
 
 <Update label="2026-04-24" description="Optional provider specialty and encounter date for note generation." tags={["New Release"]}>
-  - Introduce an optional provider `specialty` field. This field lets you set a user's medical specialty. If set, it will for now have impact, but in the near future, this piece of information will be leveraged to improve the dictation, transcription, and note generation.
+  - Introduce an optional provider `specialty` field. This field lets you set a user's medical specialty. If set, it will for now have no impact, but in the near future, this piece of information will be leveraged to improve the dictation, transcription, and note generation.
     - Added optional `specialty` field to user management endpoints on the **Server API** (`POST /users`, `PATCH /users/{id}`, `GET /users/{id}`, `GET /users`).
     - On the other **Server API**, the same `specialty` field is available on the request bodies for `/transcribe`, `/transcribe-async`, `/dictate`, `/dictate-async`, `/generate-note`, and `/generate-note-async`.
     - On the **User API**, transcription, dictation, and note generation use the authenticated user's profile specialty instead (no `specialty` field on those request bodies).
@@ -38,7 +38,7 @@ Versions are dated (`YYYY-MM-DD`). Entries below are reverse-chronological. Entr
       Starting with this API version, when `speaker_type=UNSPECIFIED` is set in the configuration of an audio stream, the Nabla transcription engine will perform speaker diarization.
       For each transcript item, the system will infer and return either `speaker_type=DOCTOR` or `speaker_type=PATIENT`.
     - Diarization support for transcription HTTP endpoints (`/transcribe` and `transcribe-async`).
-      Starting with this API version, the returned
+      Starting with this API version, the returned transcript items include an inferred `speaker_type` for each item.
 
     If there is not enough context to reliably determine whether the speaker is a healthcare provider or a patient, the speaker_type will remain `UNSPECIFIED`, effectively behaving as if diarization were not enabled.
   - The `locale` and `template` fields are now **required properties** of the note request schemas for both Server and User APIs. These fields specify the locale and template used to generate the note and must be included in note data structures.
